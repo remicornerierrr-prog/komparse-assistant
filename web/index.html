@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Komparse Assistant</title>
+
+
+    <!-- Supabase JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+
+    <style>
+
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+            color: #222;
+        }
+
+
+        h1 {
+            margin-bottom: 30px;
+        }
+
+
+        section {
+            background: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+        }
+
+
+        label {
+            display: block;
+            margin-top: 12px;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+
+        input,
+        select,
+        button {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 10px;
+            font-size: 16px;
+        }
+
+
+        button {
+            margin-top: 15px;
+            cursor: pointer;
+        }
+
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+
+        .hidden {
+            display: none !important;
+        }
+
+
+        /* =========================================
+           MESSAGE GÉNÉRAL
+        ========================================= */
+
+        #message {
+            display: none;
+            margin-bottom: 20px;
+            padding: 12px;
+            border-radius: 6px;
+            background: #e8f5e9;
+            color: #1b5e20;
+        }
+
+
+        /* =========================================
+           MESSAGE PROFIL
+        ========================================= */
+
+        #profile-save-message {
+            display: none;
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 6px;
+            background: #e8f5e9;
+            color: #1b5e20;
+        }
+
+
+        /* =========================================
+           PHOTOS
+        ========================================= */
+
+        .photo-section {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+        }
+
+
+        .photo-section h3 {
+            margin-bottom: 8px;
+        }
+
+
+        .photo-section-description {
+            color: #555;
+            margin-bottom: 15px;
+        }
+
+
+        .privacy-note {
+            padding: 12px;
+            margin-bottom: 20px;
+            background: #f5f5f5;
+            border-radius: 6px;
+            color: #555;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+
+        .photo-upload {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+
+
+        .photo-upload label {
+            margin-top: 0;
+            font-size: 17px;
+        }
+
+
+        .photo-preview-container {
+            margin-top: 12px;
+            margin-bottom: 10px;
+        }
+
+
+        .photo-preview {
+            width: 160px;
+            height: 160px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            background: #eee;
+        }
+
+
+        .photo-preview.full-body-preview {
+            width: 160px;
+            height: 220px;
+            object-fit: cover;
+        }
+
+
+        .photo-status {
+            margin-top: 10px;
+            font-size: 14px;
+        }
+
+
+        .photo-status.success {
+            color: #1b5e20;
+        }
+
+
+        .photo-status.error {
+            color: #b71c1c;
+        }
+
+
+        /* =========================================
+           NOTIFICATIONS PUSH
+        ========================================= */
+
+        .push-section {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+        }
+
+
+        .push-description {
+            color: #555;
+            line-height: 1.5;
+        }
+
+
+        #push-status {
+            margin-top: 10px;
+            font-size: 14px;
+        }
+
+
+        #push-status.success {
+            color: #1b5e20;
+        }
+
+
+        #push-status.error {
+            color: #b71c1c;
+        }
+
+
+        #push-status.info {
+            color: #555;
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+    <h1>
+        Komparse Assistant
+    </h1>
+
+
+    <!-- ========================================= -->
+    <!-- CONNEXION / INSCRIPTION -->
+    <!-- ========================================= -->
+
+    <section id="auth-section">
+
+        <h2>
+            Créer un compte / Se connecter
+        </h2>
+
+
+        <label for="email">
+            Email
+        </label>
+
+        <input
+            type="email"
+            id="email"
+            placeholder="votre@email.com"
+        >
+
+
+        <label for="password">
+            Mot de passe
+        </label>
+
+        <input
+            type="password"
+            id="password"
+            placeholder="Votre mot de passe"
+        >
+
+
+        <button id="signup-button">
+            Créer mon compte
+        </button>
+
+
+        <button id="login-button">
+            Se connecter
+        </button>
+
+    </section>
+
+
+    <!-- ========================================= -->
+    <!-- MESSAGE GÉNÉRAL -->
+    <!-- ========================================= -->
+
+    <div id="message"></div>
+
+
+    <!-- ========================================= -->
+    <!-- PROFIL -->
+    <!-- ========================================= -->
+
+    <section
+        id="profile-section"
+        class="hidden"
+    >
+
+        <h2>
+            Mon profil
+        </h2>
+
+
+        <p>
+            Complétez vos informations une seule fois.
+            Elles pourront ensuite être utilisées automatiquement
+            pour vos candidatures.
+        </p>
+
+
+        <label for="first-name">
+            Prénom
+        </label>
+
+        <input
+            type="text"
+            id="first-name"
+        >
+
+
+        <label for="last-name">
+            Nom
+        </label>
+
+        <input
+            type="text"
+            id="last-name"
+        >
+
+
+        <label for="profile-email">
+            Email
+        </label>
+
+        <input
+            type="email"
+            id="profile-email"
+            readonly
+        >
+
+
+        <label for="phone">
+            Téléphone
+        </label>
+
+        <input
+            type="tel"
+            id="phone"
+        >
+
+
+        <label for="birth-date">
+            Date de naissance
+        </label>
+
+        <input
+            type="date"
+            id="birth-date"
+        >
+
+
+        <label for="gender">
+            Sexe
+        </label>
+
+        <select id="gender">
+
+            <option value="">
+                Sélectionner
+            </option>
+
+            <option value="male">
+                Homme
+            </option>
+
+            <option value="female">
+                Femme
+            </option>
+
+        </select>
+
+
+        <label for="address">
+            Adresse
+        </label>
+
+        <input
+            type="text"
+            id="address"
+        >
+
+
+        <label for="city">
+            Ville
+        </label>
+
+        <input
+            type="text"
+            id="city"
+        >
+
+
+        <label for="height">
+            Taille (cm)
+        </label>
+
+        <input
+            type="number"
+            id="height"
+            min="50"
+            max="250"
+        >
+
+
+        <label for="shoe-size">
+            Pointure
+        </label>
+
+        <input
+            type="text"
+            id="shoe-size"
+        >
+
+
+        <label for="clothing-size">
+            Taille de vêtements
+        </label>
+
+        <input
+            type="text"
+            id="clothing-size"
+        >
+
+
+        <label for="profession">
+            Profession
+        </label>
+
+        <input
+            type="text"
+            id="profession"
+        >
+
+
+        <!-- ========================================= -->
+        <!-- PHOTOS -->
+        <!-- ========================================= -->
+
+        <div class="photo-section">
+
+            <h3>
+                Mes photos
+            </h3>
+
+
+            <p class="photo-section-description">
+                Ajoutez vos 4 photos de profil.
+                Formats acceptés : JPG, PNG et WebP.
+                Taille maximale : 5 Mo par photo.
+            </p>
+
+
+            <div class="privacy-note">
+                Vos photos sont stockées dans un espace privé.
+                Elles ne sont pas accessibles via une URL publique permanente.
+            </div>
+
+
+            <!-- PORTRAIT -->
+
+            <div
+                class="photo-upload"
+                data-photo-type="portrait"
+            >
+
+                <label for="photo-portrait">
+                    Portrait
+                </label>
+
+
+                <div class="photo-preview-container">
+
+                    <img
+                        id="photo-preview-portrait"
+                        class="photo-preview hidden"
+                        alt="Aperçu du portrait"
+                    >
+
+                </div>
+
+
+                <input
+                    type="file"
+                    id="photo-portrait"
+                    class="photo-file-input"
+                    accept="image/jpeg,image/png,image/webp"
+                >
+
+
+                <button
+                    type="button"
+                    class="replace-photo-button hidden"
+                    data-photo-type="portrait"
+                >
+                    Remplacer
+                </button>
+
+
+                <div
+                    id="photo-status-portrait"
+                    class="photo-status"
+                ></div>
+
+            </div>
+
+
+            <!-- REGARD GAUCHE -->
+
+            <div
+                class="photo-upload"
+                data-photo-type="left"
+            >
+
+                <label for="photo-left">
+                    Regard gauche
+                </label>
+
+
+                <div class="photo-preview-container">
+
+                    <img
+                        id="photo-preview-left"
+                        class="photo-preview hidden"
+                        alt="Aperçu du regard gauche"
+                    >
+
+                </div>
+
+
+                <input
+                    type="file"
+                    id="photo-left"
+                    class="photo-file-input"
+                    accept="image/jpeg,image/png,image/webp"
+                >
+
+
+                <button
+                    type="button"
+                    class="replace-photo-button hidden"
+                    data-photo-type="left"
+                >
+                    Remplacer
+                </button>
+
+
+                <div
+                    id="photo-status-left"
+                    class="photo-status"
+                ></div>
+
+            </div>
+
+
+            <!-- REGARD DROIT -->
+
+            <div
+                class="photo-upload"
+                data-photo-type="right"
+            >
+
+                <label for="photo-right">
+                    Regard droit
+                </label>
+
+
+                <div class="photo-preview-container">
+
+                    <img
+                        id="photo-preview-right"
+                        class="photo-preview hidden"
+                        alt="Aperçu du regard droit"
+                    >
+
+                </div>
+
+
+                <input
+                    type="file"
+                    id="photo-right"
+                    class="photo-file-input"
+                    accept="image/jpeg,image/png,image/webp"
+                >
+
+
+                <button
+                    type="button"
+                    class="replace-photo-button hidden"
+                    data-photo-type="right"
+                >
+                    Remplacer
+                </button>
+
+
+                <div
+                    id="photo-status-right"
+                    class="photo-status"
+                ></div>
+
+            </div>
+
+
+            <!-- PLEIN PIED -->
+
+            <div
+                class="photo-upload"
+                data-photo-type="full_body"
+            >
+
+                <label for="photo-full-body">
+                    Plein pied
+                </label>
+
+
+                <div class="photo-preview-container">
+
+                    <img
+                        id="photo-preview-full_body"
+                        class="photo-preview full-body-preview hidden"
+                        alt="Aperçu de la photo plein pied"
+                    >
+
+                </div>
+
+
+                <input
+                    type="file"
+                    id="photo-full-body"
+                    class="photo-file-input"
+                    accept="image/jpeg,image/png,image/webp"
+                >
+
+
+                <button
+                    type="button"
+                    class="replace-photo-button hidden"
+                    data-photo-type="full_body"
+                >
+                    Remplacer
+                </button>
+
+
+                <div
+                    id="photo-status-full_body"
+                    class="photo-status"
+                ></div>
+
+            </div>
+
+        </div>
+
+
+        <!-- ========================================= -->
+        <!-- NOTIFICATIONS -->
+        <!-- ========================================= -->
+
+        <div class="push-section">
+
+            <h3>
+                Notifications
+            </h3>
+
+
+            <p class="push-description">
+                Activez les notifications pour être averti
+                lorsqu'une offre correspond à votre profil.
+            </p>
+
+
+            <button
+                id="enable-push-button"
+                type="button"
+            >
+                🔔 Activer les notifications
+            </button>
+
+
+            <div
+                id="push-status"
+                class="info"
+            ></div>
+
+        </div>
+
+
+        <!-- ========================================= -->
+        <!-- ENREGISTREMENT PROFIL -->
+        <!-- ========================================= -->
+
+        <button id="save-profile-button">
+            Enregistrer mon profil
+        </button>
+
+
+        <div id="profile-save-message"></div>
+
+
+        <button id="logout-button">
+            Se déconnecter
+        </button>
+
+
+        <!-- ========================================= -->
+        <!-- ÂGE -->
+        <!-- ========================================= -->
+
+        <h3>
+            Âge
+        </h3>
+
+        <p id="calculated-age">
+            -
+        </p>
+
+    </section>
+
+
+    <!-- ========================================= -->
+    <!-- SERVICE WORKER -->
+    <!-- ========================================= -->
+
+    <script>
+
+        if (
+            "serviceWorker" in navigator
+        ) {
+
+            window.addEventListener(
+                "load",
+                async function () {
+
+                    try {
+
+                        const registration =
+                            await navigator
+                                .serviceWorker
+                                .register(
+                                    "/sw.js"
+                                );
+
+
+                        console.log(
+                            "Service Worker enregistré :",
+                            registration.scope
+                        );
+
+                    }
+
+
+                    catch (error) {
+
+                        console.error(
+                            "Erreur d'enregistrement du Service Worker :",
+                            error
+                        );
+
+                    }
+
+                }
+            );
+
+        }
+
+    </script>
+
+
+    <!-- Push API -->
+
+    <script src="push.js"></script>
+
+
+    <!-- Application -->
+
+    <script src="app.js"></script>
+
+</body>
+
+</html>
