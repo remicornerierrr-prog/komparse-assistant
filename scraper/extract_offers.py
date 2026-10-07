@@ -2,7 +2,6 @@ import re
 import json
 import requests
 from bs4 import BeautifulSoup
-from datetime import datetime
 
 
 URL = "https://komparse.de/hauptframe.htm"
@@ -11,7 +10,11 @@ HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
 }
 
-# Mois allemands utilisés par Komparse
+
+# ============================================================
+# MOIS ALLEMANDS
+# ============================================================
+
 GERMAN_MONTHS = {
     "Januar": 1,
     "Februar": 2,
@@ -28,43 +31,142 @@ GERMAN_MONTHS = {
 }
 
 
-def download_page():
-    """Télécharge la page principale de Komparse et la décode correctement."""
+# ============================================================
+# TÉLÉCHARGEMENT
+# ============================================================
+
+def download_page() -> str:
+    """
+    Télécharge la page principale de Komparse
+    et la décode en Windows-1252.
+    """
 
     response = requests.get(
         URL,
         headers=HEADERS,
-        timeout=20
+        timeout=20,
     )
 
     response.raise_for_status()
 
-    # Komparse indique Windows-1252 dans son HTML.
-    html = response.content.decode(
+    return response.content.decode(
         "cp1252",
-        errors="replace"
+        errors="replace",
     )
 
-    return html
+
+# ============================================================
+# ID D'ANNONCE
+# ============================================================
+
+OFFER_ID_PATTERN = re.compile(
+    r"\b\d{2}\.\d{3}\b"
+)
+
+HREF_PATTERN = re.compile(
+    r"""href=["'](?:https?://(?:www\.)?komparse\.de/)?Gesuch(\d{5})\.htm["']""",
+    re.I,
+)
 
 
-def extract_offer_id(text):
+def extract_displayed_offer_id(
+    html_segment: str,
+) -> str | None:
     """
-    Cherche le numéro d'annonce dans le bloc.
-    Exemple : 91.309
+    Cherche l'ID affiché au début du bloc d'annonce.
+
+    Exemple :
+    91.300
+
+    On cherche en priorité dans les premières
+    parties du bloc, car l'ID visible est normalement
+    placé avant la date, le statut et le titre.
     """
 
-    match = re.search(r"\b(\d{2}\.\d{3})\b", text)
+    soup = BeautifulSoup(
+        html_segment,
+        "html.parser",
+    )
 
-    if match:
-        return match.group(1)
+    text = soup.get_text(
+        " ",
+        strip=True,
+    )
+
+    text = re.sub(
+        r"\s+",
+        " ",
+        text,
+    ).strip()
+
+    if not text:
+        return None
+
+
+    # --------------------------------------------------------
+    # Priorité aux premiers caractères du bloc.
+    # --------------------------------------------------------
+
+    header_text = text[:2500]
+
+    matches = OFFER_ID_PATTERN.findall(
+        header_text
+    )
+
+    if matches:
+        return matches[0]
+
+
+    # --------------------------------------------------------
+    # Fallback : n'importe où dans le bloc.
+    # --------------------------------------------------------
+
+    matches = OFFER_ID_PATTERN.findall(
+        text
+    )
+
+    if matches:
+        return matches[0]
+
 
     return None
 
 
-def extract_publication_date(text):
+# ============================================================
+# ID CONTENU DANS LE HREF
+# ============================================================
+
+def extract_offer_id_from_href(
+    href: str,
+) -> str | None:
+
+    match = re.search(
+        r"Gesuch(\d{5})\.htm$",
+        href,
+        re.I,
+    )
+
+    if not match:
+        return None
+
+    digits = match.group(1)
+
+    return (
+        f"{digits[:2]}."
+        f"{digits[2:]}"
+    )
+
+
+# ============================================================
+# DATE DE PUBLICATION
+# ============================================================
+
+def extract_publication_date(
+    text: str,
+) -> str | None:
     """
     Extrait une date de publication du type :
+
     7. Oktober 2026 15:52
     """
 
@@ -76,134 +178,436 @@ def extract_publication_date(text):
         r"(\d{1,2}:\d{2})"
     )
 
-    match = re.search(pattern, text)
+    match = re.search(
+        pattern,
+        text,
+        re.I,
+    )
 
     if not match:
         return None
 
-    day = int(match.group(1))
+
+    day = int(
+        match.group(1)
+    )
+
     month_name = match.group(2)
-    year = int(match.group(3))
+
+    year = int(
+        match.group(3)
+    )
+
     time = match.group(4)
 
-    month = GERMAN_MONTHS[month_name]
 
-    return f"{year:04d}-{month:02d}-{day:02d} {time}"
+    month_key = (
+        month_name[0].upper()
+        +
+        month_name[1:].lower()
+    )
 
 
-def extract_offers(html):
-    """Extrait les annonces individuelles de la page Komparse."""
+    if month_key.lower() == "märz":
+        month_key = "März"
 
-    soup = BeautifulSoup(html, "html.parser")
+
+    month = GERMAN_MONTHS.get(
+        month_key
+    )
+
+    if month is None:
+        return None
+
+
+    return (
+        f"{year:04d}-"
+        f"{month:02d}-"
+        f"{day:02d} "
+        f"{time}"
+    )
+
+
+# ============================================================
+# TEXTE / TITRE
+# ============================================================
+
+def clean_text(
+    text: str,
+) -> str:
+
+    return re.sub(
+        r"\s+",
+        " ",
+        text,
+    ).strip()
+
+
+def extract_title(
+    html_segment: str,
+) -> str:
+
+    soup = BeautifulSoup(
+        html_segment,
+        "html.parser",
+    )
+
+
+    # --------------------------------------------------------
+    # Le <b> correspond généralement au titre principal.
+    # --------------------------------------------------------
+
+    bold = soup.find("b")
+
+    if bold is not None:
+
+        title = bold.get_text(
+            " ",
+            strip=True,
+        )
+
+        title = clean_text(
+            title
+        )
+
+        if title:
+            return title
+
+
+    # --------------------------------------------------------
+    # Fallback : paragraphe principal.
+    # --------------------------------------------------------
+
+    p = soup.find("p")
+
+    if p is not None:
+
+        title = p.get_text(
+            " ",
+            strip=True,
+        )
+
+        title = clean_text(
+            title
+        )
+
+        if title:
+            return title
+
+
+    # --------------------------------------------------------
+    # Dernier fallback : tout le bloc.
+    # --------------------------------------------------------
+
+    return clean_text(
+        soup.get_text(
+            " ",
+            strip=True,
+        )
+    )
+
+
+# ============================================================
+# EXTRACTION DES ANNONCES
+# ============================================================
+
+def extract_offers(
+    html: str,
+) -> list[dict]:
+
+    """
+    Extrait les annonces depuis le HTML brut.
+
+    Stratégie :
+
+    - repérer tous les liens GesuchXXXXX.htm ;
+    - prendre le contenu situé entre deux liens successifs ;
+    - ce bloc contient l'ID affiché, la date, le titre et
+      le lien de l'annonce ;
+    - ne dépend donc pas de la structure <tr>/<td> parfois
+      mal formée sur l'ancien site Komparse.
+    """
 
     offers = []
+
     seen_offer_ids = set()
 
-    # Chaque annonce possède un lien du type Gesuch91309.htm
-    for link in soup.find_all("a", href=re.compile(r"^Gesuch\d+\.htm$", re.I)):
 
-        href = link.get("href")
-        p = link.find_parent("p")
+    href_matches = list(
+        HREF_PATTERN.finditer(
+            html
+        )
+    )
 
-        if p is None:
+
+    for index, match in enumerate(
+        href_matches
+    ):
+
+        href = match.group(
+            0
+        )
+
+
+        # ----------------------------------------------------
+        # Début du segment :
+        # après le lien précédent.
+        # ----------------------------------------------------
+
+        if index == 0:
+
+            segment_start = 0
+
+        else:
+
+            segment_start = (
+                href_matches[
+                    index - 1
+                ].end()
+            )
+
+
+        segment_end = (
+            match.start()
+        )
+
+
+        segment_html = html[
+            segment_start:
+            segment_end
+        ]
+
+
+        # ----------------------------------------------------
+        # Texte du segment.
+        # ----------------------------------------------------
+
+        soup = BeautifulSoup(
+            segment_html,
+            "html.parser",
+        )
+
+        full_text = clean_text(
+            soup.get_text(
+                " ",
+                strip=True,
+            )
+        )
+
+
+        if not full_text:
             continue
 
-        # On remonte jusqu'au bloc <td> qui contient l'annonce.
-        container = p.find_parent("td")
 
-        if container is None:
-            continue
+        # ----------------------------------------------------
+        # ID visible.
+        # ----------------------------------------------------
 
-        full_text = container.get_text(" ", strip=True)
+        offer_id = (
+            extract_displayed_offer_id(
+                segment_html
+            )
+        )
 
-        # Numéro de l'annonce affiché sur la page.
-        # Important : on ne prend PAS le numéro du href.
-        # Une annonce "Aktualisierung" peut pointer vers une ancienne annonce.
-        offer_id = extract_offer_id(full_text)
+
+        # ----------------------------------------------------
+        # Fallback sur le href.
+        # ----------------------------------------------------
+
+        if offer_id is None:
+
+            offer_id = (
+                extract_offer_id_from_href(
+                    href
+                )
+            )
+
 
         if offer_id is None:
             continue
 
-        # Évite les doublons éventuels.
+
+        # ----------------------------------------------------
+        # Déduplication.
+        # ----------------------------------------------------
+
         if offer_id in seen_offer_ids:
             continue
 
-        seen_offer_ids.add(offer_id)
-
-        # Le <b> contient le titre / résumé principal de l'offre.
-        bold = p.find("b")
-
-        if bold:
-            title = bold.get_text(" ", strip=True)
-        else:
-            title = p.get_text(" ", strip=True)
-
-        # Nettoyage léger
-        title = re.sub(r"\s+", " ", title).strip()
-
-        publication_date = extract_publication_date(full_text)
-
-        # URL complète vers la fiche de l'offre
-        detail_url = requests.compat.urljoin(
-            URL,
-            href
+        seen_offer_ids.add(
+            offer_id
         )
 
+
+        # ----------------------------------------------------
+        # Titre.
+        # ----------------------------------------------------
+
+        title = extract_title(
+            segment_html
+        )
+
+
+        # ----------------------------------------------------
+        # Date de publication.
+        # ----------------------------------------------------
+
+        publication_date = (
+            extract_publication_date(
+                full_text
+            )
+        )
+
+
+        # ----------------------------------------------------
+        # URL complète.
+        # ----------------------------------------------------
+
+        detail_url = (
+            requests.compat.urljoin(
+                URL,
+                href.strip(
+                    "\"'"
+                ),
+            )
+        )
+
+
+        # ----------------------------------------------------
+        # Offre finale.
+        # ----------------------------------------------------
+
         offer = {
-            "offer_id": offer_id,
-            "publication_date": publication_date,
-            "title": title,
-            "detail_url": detail_url,
-            "source_href": href,
-            "raw_text": full_text,
+
+            "offer_id":
+                offer_id,
+
+            "publication_date":
+                publication_date,
+
+            "title":
+                title,
+
+            "detail_url":
+                detail_url,
+
+            "source_href":
+                href,
+
+            "raw_text":
+                full_text,
+
         }
 
-        offers.append(offer)
+
+        offers.append(
+            offer
+        )
+
 
     return offers
 
 
+# ============================================================
+# MAIN
+# ============================================================
+
 def main():
 
-    print("Téléchargement de Komparse...")
+    print(
+        "Téléchargement de Komparse..."
+    )
+
     html = download_page()
 
-    print("Page téléchargée.")
-    print("Analyse des annonces...")
+    print(
+        "Page téléchargée."
+    )
 
-    offers = extract_offers(html)
+    print(
+        "Analyse des annonces..."
+    )
 
-    print(f"\nNombre d'annonces trouvées : {len(offers)}")
 
-    # Affichage dans le terminal
-    print("\n" + "=" * 80)
+    offers = extract_offers(
+        html
+    )
 
-    for offer in offers[:20]:
 
-        print(f"ANNONCE : {offer['offer_id']}")
-        print(f"Date   : {offer['publication_date']}")
-        print(f"Titre  : {offer['title']}")
-        print(f"Lien   : {offer['detail_url']}")
-        print("-" * 80)
+    print(
+        f"\nNombre d'annonces trouvées : "
+        f"{len(offers)}"
+    )
 
-    # Sauvegarde JSON
-    output_file = "komparse_offers.json"
+
+    # --------------------------------------------------------
+    # Affichage de toutes les annonces
+    # --------------------------------------------------------
+
+    print(
+        "\n" + "=" * 80
+    )
+
+
+    for offer in offers:
+
+        print(
+            f"ANNONCE : "
+            f"{offer['offer_id']}"
+        )
+
+        print(
+            f"Date   : "
+            f"{offer['publication_date']}"
+        )
+
+        print(
+            f"Titre  : "
+            f"{offer['title']}"
+        )
+
+        print(
+            f"Lien   : "
+            f"{offer['detail_url']}"
+        )
+
+        print(
+            "-" * 80
+        )
+
+
+    # --------------------------------------------------------
+    # Sauvegarde
+    # --------------------------------------------------------
+
+    output_file = (
+        "komparse_offers.json"
+    )
+
 
     with open(
         output_file,
         "w",
-        encoding="utf-8"
+        encoding="utf-8",
     ) as f:
 
         json.dump(
             offers,
             f,
             ensure_ascii=False,
-            indent=4
+            indent=4,
         )
 
-    print(f"\nFichier créé : {output_file}")
 
+    print(
+        f"\nFichier créé : "
+        f"{output_file}"
+    )
+
+
+# ============================================================
+# POINT D'ENTRÉE
+# ============================================================
 
 if __name__ == "__main__":
     main()
