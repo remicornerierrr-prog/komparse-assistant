@@ -196,8 +196,10 @@
         "publication_date": "2026-10-07 15:48",
         "location_text": "Großraum Köln",
         "matches_mvp_location": true,
-        "shoot_date": null,
-        "shoot_dates": [],
+        "shoot_date": "2026-11-10",
+        "shoot_dates": [
+            "2026-11-10"
+        ],
         "age_min": 18,
         "age_max": 35,
         "gender": [
@@ -226,8 +228,10 @@
         "publication_date": "2026-10-07 15:40",
         "location_text": "Großraum Köln",
         "matches_mvp_location": true,
-        "shoot_date": null,
-        "shoot_dates": [],
+        "shoot_date": "2026-11-05",
+        "shoot_dates": [
+            "2026-11-05"
+        ],
         "age_min": 15,
         "age_max": 18,
         "gender": [
@@ -256,8 +260,10 @@
         "publication_date": "2026-10-07 15:37",
         "location_text": "Großraum Köln",
         "matches_mvp_location": true,
-        "shoot_date": null,
-        "shoot_dates": [],
+        "shoot_date": "2026-11-05",
+        "shoot_dates": [
+            "2026-11-05"
+        ],
         "age_min": 30,
         "age_max": 55,
         "gender": [
@@ -286,8 +292,10 @@
         "publication_date": "2026-10-07 15:34",
         "location_text": "Großraum Köln",
         "matches_mvp_location": true,
-        "shoot_date": null,
-        "shoot_dates": [],
+        "shoot_date": "2026-11-03",
+        "shoot_dates": [
+            "2026-11-03"
+        ],
         "age_min": 35,
         "age_max": 55,
         "gender": [

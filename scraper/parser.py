@@ -379,15 +379,14 @@ def extract_shoot_dates(
     dates = []
 
     # --------------------------------------------------------
-    # 08.10. / 22.10.26
+    # 08.10 / 08.10. / 08.10, / 08.10.2026 / 08.10.26
     # --------------------------------------------------------
 
     numeric_pattern = (
         r"\b(\d{1,2})"
         r"\."
         r"(\d{1,2})"
-        r"\."
-        r"(?:(\d{2,4}))?"
+        r"(?:\.(\d{2,4}))?"
     )
 
     for match in re.finditer(
@@ -477,7 +476,7 @@ def extract_shoot_dates(
 
 def extract_email(text: str) -> str | None:
     pattern = (
-        r"[A-Za-z0-9.\_%+-]+"
+        r"[A-Za-z0-9._%+-]+"
         r"@"
         r"[A-Za-z0-9.-]+"
         r"\.[A-Za-z]{2,}"
@@ -628,7 +627,6 @@ def parse_detail_page(
         "html.parser"
     )
 
-    # Texte avec espaces
     detail_text = normalize_text(
         soup.get_text(
             " ",
@@ -694,9 +692,6 @@ def parse_detail_page(
 
     # --------------------------------------------------------
     # Date de tournage
-    #
-    # Komparse utilise souvent :
-    # Termin: Donnerstag, 08.10.2026
     # --------------------------------------------------------
 
     shoot_dates = []
@@ -759,10 +754,6 @@ def parse_offer(
         title
     )
 
-    # IMPORTANT :
-    # On conserve la date de publication issue
-    # de extract_offers.py afin que main.py puisse
-    # l'enregistrer dans offers.published_at.
     publication_date = offer.get(
         "publication_date"
     )
@@ -845,11 +836,6 @@ def parse_offer(
 
         "raw_text":
             raw_text,
-
-        # ----------------------------------------------------
-        # CORRECTION :
-        # conserver la date de publication
-        # ----------------------------------------------------
 
         "publication_date":
             publication_date,
@@ -978,9 +964,8 @@ def main():
             )
 
             # ------------------------------------------------
-            # IMPORTANT :
-            # Si la fiche détaillée fournit une ligne
-            # "Termin:", elle devient prioritaire.
+            # La fiche détaillée est prioritaire pour la date
+            # de tournage lorsqu'une ligne "Termin:" existe.
             # ------------------------------------------------
 
             if detail_data["shoot_dates"]:
