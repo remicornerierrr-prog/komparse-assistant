@@ -146,6 +146,7 @@ function formatAge(offer) {
         max !== null &&
         max !== undefined
     ) {
+
         if (Number(min) === Number(max)) {
             return String(min);
         }
@@ -305,10 +306,6 @@ async function loadOffers() {
     const offers = result.data || [];
 
 
-    // --------------------------------------------------------
-    // Tableau des dernières offres
-    // --------------------------------------------------------
-
     if (offers.length === 0) {
 
         offersBody.innerHTML = `
@@ -401,10 +398,6 @@ async function loadOffers() {
             .join("");
     }
 
-
-    // --------------------------------------------------------
-    // Tableau des offres à vérifier
-    // --------------------------------------------------------
 
     const reviewOffers = offers.filter(
         offer =>
@@ -522,7 +515,7 @@ async function loadOffers() {
 
 
 // ============================================================
-// MARQUER UNE OFFRE À VÉRIFIER
+// MODIFIER LE STATUT DE VÉRIFICATION
 // ============================================================
 
 async function setReviewStatus(
@@ -602,6 +595,51 @@ document.addEventListener(
 
 
 // ============================================================
+// CHARGER LE DASHBOARD
+// ============================================================
+
+async function loadAdminDashboard(
+    session
+) {
+
+    adminUserEmail.textContent =
+        session.user.email ||
+        "Administrateur";
+
+
+    const adminResult =
+        await supabaseClient.rpc(
+            "is_admin"
+        );
+
+    if (adminResult.error) {
+        throw adminResult.error;
+    }
+
+
+    if (adminResult.data !== true) {
+
+        showError(
+            "Accès refusé : ce compte "
+            + "n'est pas administrateur."
+        );
+
+        return;
+    }
+
+
+    adminApp.classList.remove(
+        "admin-hidden"
+    );
+
+
+    await loadCounters();
+
+    await loadOffers();
+}
+
+
+// ============================================================
 // INITIALISATION
 // ============================================================
 
@@ -610,7 +648,7 @@ async function initializeAdmin() {
     try {
 
         // ----------------------------------------------------
-        // Vérifier la session
+        // Récupérer la session existante
         // ----------------------------------------------------
 
         const sessionResult =
@@ -620,59 +658,63 @@ async function initializeAdmin() {
             throw sessionResult.error;
         }
 
-        const session =
+        let session =
             sessionResult.data.session;
+
+
+        // ----------------------------------------------------
+        // Attendre brièvement le rétablissement de session
+        // ----------------------------------------------------
+        //
+        // Utile lorsqu'on arrive sur admin.html juste après
+        // une connexion ou un changement de page.
+        // ----------------------------------------------------
 
         if (!session) {
 
-            window.location.href =
-                "./index.html";
-
-            return;
-        }
-
-
-        adminUserEmail.textContent =
-            session.user.email ||
-            "Administrateur";
-
-
-        // ----------------------------------------------------
-        // Vérifier le rôle admin
-        // ----------------------------------------------------
-
-        const adminResult =
-            await supabaseClient.rpc(
-                "is_admin"
+            await new Promise(
+                resolve =>
+                    setTimeout(
+                        resolve,
+                        800
+                    )
             );
 
-        if (adminResult.error) {
-            throw adminResult.error;
+
+            const retryResult =
+                await supabaseClient.auth.getSession();
+
+            if (retryResult.error) {
+                throw retryResult.error;
+            }
+
+            session =
+                retryResult.data.session;
         }
 
-        if (adminResult.data !== true) {
+
+        // ----------------------------------------------------
+        // Ne plus rediriger automatiquement.
+        // ----------------------------------------------------
+
+        if (!session) {
+
+            adminUserEmail.textContent =
+                "Non connecté";
 
             showError(
-                "Accès refusé : ce compte "
-                + "n'est pas administrateur."
+                "Vous devez être connecté "
+                + "pour accéder au tableau de bord "
+                + "administrateur."
             );
 
             return;
         }
 
 
-        // ----------------------------------------------------
-        // Afficher le dashboard
-        // ----------------------------------------------------
-
-        adminApp.classList.remove(
-            "admin-hidden"
+        await loadAdminDashboard(
+            session
         );
-
-
-        await loadCounters();
-
-        await loadOffers();
 
 
     } catch (error) {
