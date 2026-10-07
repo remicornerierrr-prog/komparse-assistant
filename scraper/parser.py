@@ -35,7 +35,6 @@ def normalize_text(text: str) -> str:
 # ============================================================
 
 def detect_location(text: str) -> dict:
-
     text = normalize_text(text)
 
     location_text = text.split("|")[0].strip()
@@ -79,13 +78,11 @@ def detect_location(text: str) -> dict:
     ]
 
     for pattern in patterns:
-
         if re.search(
             pattern,
             t,
             re.IGNORECASE
         ):
-
             return {
                 "matches_mvp": True,
                 "location_text": location_text
@@ -102,7 +99,6 @@ def detect_location(text: str) -> dict:
 # ============================================================
 
 def detect_gender(text: str) -> set:
-
     t = normalize_text(text).casefold()
 
     genders = set()
@@ -137,20 +133,18 @@ def detect_gender(text: str) -> set:
         r"\bmann\b",
         r"\bmännl\.\b",
 
-        # m isolé : m, m., m;
+        # m isolé
         r"(^|[\s(,/|\-])m(?=[\s),;./|\-]|$)",
 
         r"\bdarsteller\b",
     ]
 
     for pattern in male_patterns:
-
         if re.search(
             pattern,
             t,
             re.IGNORECASE
         ):
-
             genders.add("male")
             break
 
@@ -167,18 +161,16 @@ def detect_gender(text: str) -> set:
         r"\bmädchen\b",
         r"\bweibl\.\b",
 
-        # w isolé : w, w., w;
+        # w isolé
         r"(^|[\s(,/|\-])w(?=[\s),;./|\-]|$)",
     ]
 
     for pattern in female_patterns:
-
         if re.search(
             pattern,
             t,
             re.IGNORECASE
         ):
-
             genders.add("female")
             break
 
@@ -190,7 +182,6 @@ def detect_gender(text: str) -> set:
 # ============================================================
 
 def extract_age_ranges(text: str) -> list:
-
     t = normalize_text(text)
 
     ranges = []
@@ -213,7 +204,6 @@ def extract_age_ranges(text: str) -> list:
         t,
         re.IGNORECASE
     ):
-
         ranges.append({
             "min": int(match.group(1)),
             "max": int(match.group(2)),
@@ -237,7 +227,6 @@ def extract_age_ranges(text: str) -> list:
         t,
         re.IGNORECASE
     ):
-
         ranges.append({
             "min": int(match.group(1)),
             "max": int(match.group(2)),
@@ -260,11 +249,9 @@ def extract_age_ranges(text: str) -> list:
         t,
         re.IGNORECASE
     ):
-
         already_in_range = False
 
         for existing in ranges:
-
             if (
                 match.start() >= existing["start"]
                 and match.end() <= existing["end"]
@@ -273,7 +260,6 @@ def extract_age_ranges(text: str) -> list:
                 break
 
         if not already_in_range:
-
             age = int(match.group(1))
 
             ranges.append({
@@ -291,7 +277,6 @@ def extract_age_ranges(text: str) -> list:
         ranges,
         key=lambda x: x["start"]
     ):
-
         key = (
             item["min"],
             item["max"],
@@ -299,7 +284,6 @@ def extract_age_ranges(text: str) -> list:
         )
 
         if key not in seen:
-
             seen.add(key)
             unique.append(item)
 
@@ -311,17 +295,14 @@ def extract_age_ranges(text: str) -> list:
 # ============================================================
 
 def extract_profiles(text: str) -> list:
-
     t = normalize_text(text)
 
     age_ranges = extract_age_ranges(t)
 
     if not age_ranges:
-
         genders = detect_gender(t)
 
         if genders:
-
             return [
                 {
                     "gender": sorted(
@@ -337,7 +318,6 @@ def extract_profiles(text: str) -> list:
     profiles = []
 
     for age in age_ranges:
-
         start = max(
             0,
             age["start"] - 160
@@ -391,7 +371,6 @@ def extract_shoot_dates(
     text: str,
     default_year: int | None = None
 ) -> list:
-
     t = normalize_text(text)
 
     if default_year is None:
@@ -415,12 +394,10 @@ def extract_shoot_dates(
         numeric_pattern,
         t
     ):
-
         day = int(match.group(1))
         month = int(match.group(2))
 
         if match.group(3):
-
             year = int(
                 match.group(3)
             )
@@ -429,11 +406,9 @@ def extract_shoot_dates(
                 year += 2000
 
         else:
-
             year = default_year
 
         try:
-
             value = datetime(
                 year,
                 month,
@@ -467,7 +442,6 @@ def extract_shoot_dates(
         t,
         re.IGNORECASE
     ):
-
         day = int(match.group(1))
 
         month = GERMAN_MONTHS.get(
@@ -478,7 +452,6 @@ def extract_shoot_dates(
             continue
 
         try:
-
             value = datetime(
                 default_year,
                 month,
@@ -503,9 +476,8 @@ def extract_shoot_dates(
 # ============================================================
 
 def extract_email(text: str) -> str | None:
-
     pattern = (
-        r"[A-Za-z0-9._%+-]+"
+        r"[A-Za-z0-9.\_%+-]+"
         r"@"
         r"[A-Za-z0-9.-]+"
         r"\.[A-Za-z]{2,}"
@@ -527,13 +499,12 @@ def extract_email(text: str) -> str | None:
 # ============================================================
 
 def clean_subject(subject: str) -> str:
-
     subject = normalize_text(
         subject
     )
 
     subject = subject.strip(
-    ' "\'„“”‚‘’»«'
+        ' "\'„“”‚‘’»«'
     )
 
     return subject.strip()
@@ -549,7 +520,6 @@ def extract_subject_keyword(
     # --------------------------------------------------------
 
     if mailto_subject:
-
         subject = clean_subject(
             mailto_subject
         )
@@ -559,12 +529,9 @@ def extract_subject_keyword(
 
     # --------------------------------------------------------
     # 2. Betreff: "..."
-    #
-    # Accepte tous les guillemets allemands
     # --------------------------------------------------------
 
     quote_patterns = [
-
         r'Betreff\s*:\s*[„“”"](.+?)[„“”"]',
 
         r'mit\s+(?:dem\s+)?Betreff\s+[„“”"](.+?)[„“”"]',
@@ -575,7 +542,6 @@ def extract_subject_keyword(
     ]
 
     for pattern in quote_patterns:
-
         match = re.search(
             pattern,
             text,
@@ -583,7 +549,6 @@ def extract_subject_keyword(
         )
 
         if match:
-
             subject = clean_subject(
                 match.group(1)
             )
@@ -596,18 +561,15 @@ def extract_subject_keyword(
 
     # --------------------------------------------------------
     # 3. Betreff sans guillemets
-    #
-    # On s'arrête avant le bloc Datenschutz.
     # --------------------------------------------------------
 
     match = re.search(
-        r'Betreff\s*:\s*(.+?)(?:\s+Datenschutz|\s+\* \* \*|$)',
+        r'Betreff\s*:\s*(.+?)(?:\s+Datenschutz|\s+\*\s*\*\s*\*|$)',
         text,
         re.IGNORECASE
     )
 
     if match:
-
         subject = clean_subject(
             match.group(1)
         )
@@ -627,7 +589,6 @@ def download_detail_page(
 ) -> str | None:
 
     try:
-
         response = requests.get(
             url,
             headers=HEADERS,
@@ -642,7 +603,6 @@ def download_detail_page(
         )
 
     except requests.RequestException as error:
-
         print(
             f"Erreur téléchargement "
             f"{url} : {error}"
@@ -656,7 +616,6 @@ def parse_detail_page(
 ) -> dict:
 
     if not html:
-
         return {
             "detail_text": "",
             "email": None,
@@ -711,7 +670,6 @@ def parse_detail_page(
                 )
 
                 if "subject" in params:
-
                     mailto_subject = unquote(
                         params["subject"][0]
                     )
@@ -725,7 +683,6 @@ def parse_detail_page(
                     email = mailto_data.strip()
 
     if not email:
-
         email = extract_email(
             detail_text
         )
@@ -802,6 +759,10 @@ def parse_offer(
         title
     )
 
+    # IMPORTANT :
+    # On conserve la date de publication issue
+    # de extract_offers.py afin que main.py puisse
+    # l'enregistrer dans offers.published_at.
     publication_date = offer.get(
         "publication_date"
     )
@@ -884,6 +845,14 @@ def parse_offer(
 
         "raw_text":
             raw_text,
+
+        # ----------------------------------------------------
+        # CORRECTION :
+        # conserver la date de publication
+        # ----------------------------------------------------
+
+        "publication_date":
+            publication_date,
 
         "location_text":
             location_info[
@@ -1012,8 +981,6 @@ def main():
             # IMPORTANT :
             # Si la fiche détaillée fournit une ligne
             # "Termin:", elle devient prioritaire.
-            # Cela évite de prendre "Bewerbung bis..."
-            # comme date de tournage.
             # ------------------------------------------------
 
             if detail_data["shoot_dates"]:
@@ -1072,6 +1039,11 @@ def main():
         print(
             f"Annonce : "
             f"{offer['komparse_id']}"
+        )
+
+        print(
+            f"Publication : "
+            f"{offer['publication_date']}"
         )
 
         print(
