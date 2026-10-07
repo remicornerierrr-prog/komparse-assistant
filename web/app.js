@@ -68,6 +68,12 @@ const logoutButton =
     );
 
 
+const adminButton =
+    document.getElementById(
+        "admin-button"
+    );
+
+
 const profileEmailInput =
     document.getElementById(
         "profile-email"
@@ -321,6 +327,14 @@ function showLoggedOut() {
     }
 
 
+    if (adminButton) {
+
+        adminButton.style.display =
+            "none";
+
+    }
+
+
     clearAllPhotoUI();
 }
 
@@ -350,6 +364,90 @@ function showLoggedIn(user) {
             user.email;
 
     }
+
+}
+
+
+// ============================================================
+// ADMINISTRATION
+// ============================================================
+
+async function updateAdminUI() {
+
+    if (!adminButton) {
+        return;
+    }
+
+
+    // Par défaut, le bouton reste caché.
+    // Il n'apparaît que si Supabase confirme
+    // que l'utilisateur est administrateur.
+
+    adminButton.style.display =
+        "none";
+
+
+    try {
+
+        const {
+            data,
+            error
+        } =
+            await supabaseClient
+                .rpc(
+                    "is_admin"
+                );
+
+
+        if (error) {
+
+            console.error(
+                "Erreur vérification admin :",
+                error
+            );
+
+
+            return;
+        }
+
+
+        if (data === true) {
+
+            adminButton.style.display =
+                "block";
+
+        }
+
+    }
+
+
+    catch (error) {
+
+        console.error(
+            "Erreur inattendue vérification admin :",
+            error
+        );
+
+    }
+
+}
+
+
+// ============================================================
+// BOUTON ADMIN
+// ============================================================
+
+if (adminButton) {
+
+    adminButton.addEventListener(
+        "click",
+        function () {
+
+            window.location.href =
+                "./admin.html";
+
+        }
+    );
 
 }
 
@@ -1678,6 +1776,9 @@ signupButton.addEventListener(
             await updatePushUI();
 
 
+            await updateAdminUI();
+
+
             showMessage(
                 "Compte créé avec succès."
             );
@@ -1807,6 +1908,9 @@ loginButton.addEventListener(
 
 
             await updatePushUI();
+
+
+            await updateAdminUI();
 
         }
 
@@ -2489,6 +2593,9 @@ async function checkCurrentSession() {
 
             await updatePushUI();
 
+
+            await updateAdminUI();
+
         }
         else {
 
@@ -2544,6 +2651,9 @@ supabaseClient.auth.onAuthStateChange(
 
 
             await updatePushUI();
+
+
+            await updateAdminUI();
 
         }
         else if (
