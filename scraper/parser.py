@@ -1,6 +1,7 @@
 import json
 import re
 import requests
+
 from bs4 import BeautifulSoup
 from datetime import datetime
 from urllib.parse import parse_qs, unquote
@@ -38,7 +39,6 @@ def detect_location(text: str) -> dict:
     text = normalize_text(text)
 
     location_text = text.split("|")[0].strip()
-
     t = location_text.casefold()
 
     patterns = [
@@ -56,6 +56,14 @@ def detect_location(text: str) -> dict:
         r"\bgrossraum\s+düsseldorf\b",
         r"\bgrossraum\s+duesseldorf\b",
 
+        r"\bgroßraum\s+köln\s*/\s*bonn\s*/\s*düsseldorf\b",
+        r"\bgrossraum\s+köln\s*/\s*bonn\s*/\s*düsseldorf\b",
+        r"\bgrossraum\s+koeln\s*/\s*bonn\s*/\s*duesseldorf\b",
+
+        r"\bgroßraum\s+köln\s*/\s*düsseldorf\b",
+        r"\bgrossraum\s+köln\s*/\s*düsseldorf\b",
+        r"\bgrossraum\s+koeln\s*/\s*duesseldorf\b",
+
         r"\braum\s+köln\b",
         r"\braum\s+koeln\b",
 
@@ -67,30 +75,18 @@ def detect_location(text: str) -> dict:
 
         r"\bköln\s*\+\s*\d+\s*km\s+umkreis\b",
         r"\bkoeln\s*\+\s*\d+\s*km\s+umkreis\b",
-
-        r"\bgroßraum\s+köln\s*/\s*bonn\s*/\s*düsseldorf\b",
-        r"\bgrossraum\s+köln\s*/\s*bonn\s*/\s*düsseldorf\b",
-        r"\bgrossraum\s+koeln\s*/\s*bonn\s*/\s*duesseldorf\b",
-
-        r"\bgroßraum\s+köln\s*/\s*düsseldorf\b",
-        r"\bgrossraum\s+köln\s*/\s*düsseldorf\b",
-        r"\bgrossraum\s+koeln\s*/\s*duesseldorf\b",
     ]
 
     for pattern in patterns:
-        if re.search(
-            pattern,
-            t,
-            re.IGNORECASE
-        ):
+        if re.search(pattern, t, re.IGNORECASE):
             return {
                 "matches_mvp": True,
-                "location_text": location_text
+                "location_text": location_text,
             }
 
     return {
         "matches_mvp": False,
-        "location_text": location_text
+        "location_text": location_text,
     }
 
 
@@ -101,42 +97,63 @@ def detect_location(text: str) -> dict:
 def detect_gender(text: str) -> set:
     t = normalize_text(text).casefold()
 
-    genders = set()
+    # --------------------------------------------------------
+    # Forme inclusive : Kompars*innen
+    # --------------------------------------------------------
 
-    # m/w/d
+    if re.search(
+        r"\bkompars\*innen\b",
+        t,
+        re.IGNORECASE
+    ):
+        return {"male", "female"}
+
+    # --------------------------------------------------------
+    # Formes explicitement mixtes
+    # --------------------------------------------------------
+
     if re.search(
         r"\bm\s*/\s*w\s*/\s*d\b",
-        t
+        t,
+        re.IGNORECASE
     ):
         return {"male", "female"}
 
-    # m/w
     if re.search(
         r"\bm\s*/\s*w\b",
-        t
+        t,
+        re.IGNORECASE
     ):
         return {"male", "female"}
 
-    # w/m
     if re.search(
         r"\bw\s*/\s*m\b",
-        t
+        t,
+        re.IGNORECASE
     ):
         return {"male", "female"}
 
-    # Homme
+    genders = set()
+
+    # --------------------------------------------------------
+    # HOMME
+    # --------------------------------------------------------
+
     male_patterns = [
         r"\bmännlich\b",
         r"\bmännliche\b",
         r"\bmännlicher\b",
         r"\bmänner\b",
         r"\bmann\b",
-        r"\bmännl\.\b",
-
-        # m isolé
+        r"\bmännl\.",
         r"(^|[\s(,/|\-])m(?=[\s),;./|\-]|$)",
 
+        r"\bkleindarsteller\b",
         r"\bdarsteller\b",
+
+        r"\bkomparse\b",
+        r"\bkomparsen\b",
+        r"\bkompars\*e\b",
     ]
 
     for pattern in male_patterns:
@@ -148,21 +165,30 @@ def detect_gender(text: str) -> set:
             genders.add("male")
             break
 
-    # Femme
+    # --------------------------------------------------------
+    # FEMME
+    # --------------------------------------------------------
+
     female_patterns = [
         r"\bweiblich\b",
         r"\bweibliche\b",
         r"\bweiblicher\b",
         r"\bfrauen\b",
         r"\bfrau\b",
+
         r"\bkomparsin\b",
+        r"\bkomparsinnen\b",
+
         r"\bdarstellerin\b",
+        r"\bkleindarstellerin\b",
+
         r"\bseniorinnen\b",
         r"\bmädchen\b",
-        r"\bweibl\.\b",
 
-        # w isolé
+        r"\bweibl\.",
         r"(^|[\s(,/|\-])w(?=[\s),;./|\-]|$)",
+
+        r"\bkompars\*innen\b",
     ]
 
     for pattern in female_patterns:
@@ -208,7 +234,7 @@ def extract_age_ranges(text: str) -> list:
             "min": int(match.group(1)),
             "max": int(match.group(2)),
             "start": match.start(),
-            "end": match.end()
+            "end": match.end(),
         })
 
     # --------------------------------------------------------
@@ -231,7 +257,7 @@ def extract_age_ranges(text: str) -> list:
             "min": int(match.group(1)),
             "max": int(match.group(2)),
             "start": match.start(),
-            "end": match.end()
+            "end": match.end(),
         })
 
     # --------------------------------------------------------
@@ -266,11 +292,10 @@ def extract_age_ranges(text: str) -> list:
                 "min": age,
                 "max": age,
                 "start": match.start(),
-                "end": match.end()
+                "end": match.end(),
             })
 
     unique = []
-
     seen = set()
 
     for item in sorted(
@@ -280,7 +305,7 @@ def extract_age_ranges(text: str) -> list:
         key = (
             item["min"],
             item["max"],
-            item["start"]
+            item["start"],
         )
 
         if key not in seen:
@@ -299,21 +324,51 @@ def extract_profiles(text: str) -> list:
 
     age_ranges = extract_age_ranges(t)
 
+    # --------------------------------------------------------
+    # Cas "25+" / "25 Jahre+"
+    # --------------------------------------------------------
+
+    plus_match = re.search(
+        r"\b(\d{1,2})\s*(?:J\.?|Jahre|Jahren)\s*\+",
+        t,
+        re.IGNORECASE
+    )
+
+    if plus_match:
+        age_min = int(plus_match.group(1))
+        genders = detect_gender(t)
+
+        return [
+            {
+                "gender": sorted(list(genders)),
+                "age_min": age_min,
+                "age_max": None,
+                "context": t,
+            }
+        ]
+
+    # --------------------------------------------------------
+    # Aucun âge détecté
+    # --------------------------------------------------------
+
     if not age_ranges:
         genders = detect_gender(t)
 
         if genders:
             return [
                 {
-                    "gender": sorted(
-                        list(genders)
-                    ),
+                    "gender": sorted(list(genders)),
                     "age_min": None,
-                    "age_max": None
+                    "age_max": None,
+                    "context": t,
                 }
             ]
 
         return []
+
+    # --------------------------------------------------------
+    # Profils avec âge
+    # --------------------------------------------------------
 
     profiles = []
 
@@ -330,17 +385,13 @@ def extract_profiles(text: str) -> list:
 
         context = t[start:end]
 
-        genders = detect_gender(
-            context
-        )
+        genders = detect_gender(context)
 
         profiles.append({
-            "gender": sorted(
-                list(genders)
-            ),
+            "gender": sorted(list(genders)),
             "age_min": age["min"],
             "age_max": age["max"],
-            "context": context
+            "context": context,
         })
 
     return profiles
@@ -379,7 +430,11 @@ def extract_shoot_dates(
     dates = []
 
     # --------------------------------------------------------
-    # 08.10 / 08.10. / 08.10, / 08.10.2026 / 08.10.26
+    # 08.10
+    # 08.10.
+    # 08.10,
+    # 08.10.2026
+    # 08.10.26
     # --------------------------------------------------------
 
     numeric_pattern = (
@@ -397,13 +452,10 @@ def extract_shoot_dates(
         month = int(match.group(2))
 
         if match.group(3):
-            year = int(
-                match.group(3)
-            )
+            year = int(match.group(3))
 
             if year < 100:
                 year += 2000
-
         else:
             year = default_year
 
@@ -413,13 +465,10 @@ def extract_shoot_dates(
                 month,
                 day
             )
-
         except ValueError:
             continue
 
-        iso = value.strftime(
-            "%Y-%m-%d"
-        )
+        iso = value.strftime("%Y-%m-%d")
 
         if iso not in dates:
             dates.append(iso)
@@ -456,13 +505,10 @@ def extract_shoot_dates(
                 month,
                 day
             )
-
         except ValueError:
             continue
 
-        iso = value.strftime(
-            "%Y-%m-%d"
-        )
+        iso = value.strftime("%Y-%m-%d")
 
         if iso not in dates:
             dates.append(iso)
@@ -498,9 +544,7 @@ def extract_email(text: str) -> str | None:
 # ============================================================
 
 def clean_subject(subject: str) -> str:
-    subject = normalize_text(
-        subject
-    )
+    subject = normalize_text(subject)
 
     subject = subject.strip(
         ' "\'„“”‚‘’»«'
@@ -532,11 +576,8 @@ def extract_subject_keyword(
 
     quote_patterns = [
         r'Betreff\s*:\s*[„“”"](.+?)[„“”"]',
-
         r'mit\s+(?:dem\s+)?Betreff\s+[„“”"](.+?)[„“”"]',
-
         r'mit\s+[„“”"](.+?)[„“”"]\s+im\s+Betreff',
-
         r'mit\s+"(.+?)"\s+im\s+Betreff',
     ]
 
@@ -552,10 +593,7 @@ def extract_subject_keyword(
                 match.group(1)
             )
 
-            if (
-                subject
-                and len(subject) <= 150
-            ):
+            if subject and len(subject) <= 150:
                 return subject
 
     # --------------------------------------------------------
@@ -603,8 +641,7 @@ def download_detail_page(
 
     except requests.RequestException as error:
         print(
-            f"Erreur téléchargement "
-            f"{url} : {error}"
+            f"Erreur téléchargement {url} : {error}"
         )
 
         return None
@@ -619,7 +656,7 @@ def parse_detail_page(
             "detail_text": "",
             "email": None,
             "subject_keyword": None,
-            "shoot_dates": []
+            "shoot_dates": [],
         }
 
     soup = BeautifulSoup(
@@ -645,27 +682,18 @@ def parse_detail_page(
         "a",
         href=True
     ):
-
         href = link["href"]
 
-        if href.lower().startswith(
-            "mailto:"
-        ):
-
+        if href.lower().startswith("mailto:"):
             mailto_data = href[7:]
 
             if "?" in mailto_data:
-
-                address, query = (
-                    mailto_data.split(
-                        "?",
-                        1
-                    )
+                address, query = mailto_data.split(
+                    "?",
+                    1
                 )
 
-                params = parse_qs(
-                    query
-                )
+                params = parse_qs(query)
 
                 if "subject" in params:
                     mailto_subject = unquote(
@@ -676,7 +704,6 @@ def parse_detail_page(
                     email = address.strip()
 
             else:
-
                 if not email:
                     email = mailto_data.strip()
 
@@ -702,17 +729,13 @@ def parse_detail_page(
     ).splitlines()
 
     for line in lines:
-
-        clean_line = normalize_text(
-            line
-        )
+        clean_line = normalize_text(line)
 
         if re.match(
             r"^Termin\s*:",
             clean_line,
             re.IGNORECASE
         ):
-
             date_text = re.sub(
                 r"^Termin\s*:\s*",
                 "",
@@ -730,7 +753,7 @@ def parse_detail_page(
         "detail_text": detail_text,
         "email": email,
         "subject_keyword": subject_keyword,
-        "shoot_dates": shoot_dates
+        "shoot_dates": shoot_dates,
     }
 
 
@@ -761,7 +784,6 @@ def parse_offer(
     publication_year = None
 
     if publication_date:
-
         match = re.search(
             r"(\d{4})",
             publication_date
@@ -781,40 +803,32 @@ def parse_offer(
         title
     )
 
+    # --------------------------------------------------------
+    # Normalisation du profil principal
+    # --------------------------------------------------------
+
     if len(profiles) == 1:
-
-        age_min = profiles[0][
-            "age_min"
-        ]
-
-        age_max = profiles[0][
-            "age_max"
-        ]
-
-        gender = profiles[0][
-            "gender"
-        ]
+        age_min = profiles[0]["age_min"]
+        age_max = profiles[0]["age_max"]
+        gender = profiles[0]["gender"]
 
     else:
-
         age_min = None
         age_max = None
 
         all_genders = set()
 
         for profile in profiles:
-
-            for gender_value in profile[
-                "gender"
-            ]:
-
-                all_genders.add(
-                    gender_value
-                )
+            for gender_value in profile["gender"]:
+                all_genders.add(gender_value)
 
         gender = sorted(
             list(all_genders)
         )
+
+    # --------------------------------------------------------
+    # Review
+    # --------------------------------------------------------
 
     needs_review = False
 
@@ -822,70 +836,39 @@ def parse_offer(
         needs_review = True
 
     for profile in profiles:
-
         if not profile["gender"]:
             needs_review = True
 
     return {
+        "komparse_id": offer.get("offer_id"),
+        "title": title,
+        "raw_text": raw_text,
+        "publication_date": publication_date,
 
-        "komparse_id":
-            offer.get("offer_id"),
+        "location_text": location_info["location_text"],
+        "matches_mvp_location": location_info["matches_mvp"],
 
-        "title":
-            title,
-
-        "raw_text":
-            raw_text,
-
-        "publication_date":
-            publication_date,
-
-        "location_text":
-            location_info[
-                "location_text"
-            ],
-
-        "matches_mvp_location":
-            location_info[
-                "matches_mvp"
-            ],
-
-        "shoot_date":
+        "shoot_date": (
             title_shoot_dates[0]
             if title_shoot_dates
-            else None,
+            else None
+        ),
 
-        "shoot_dates":
-            title_shoot_dates,
+        "shoot_dates": title_shoot_dates,
 
-        "age_min":
-            age_min,
+        "age_min": age_min,
+        "age_max": age_max,
+        "gender": gender,
 
-        "age_max":
-            age_max,
+        "profiles": profiles,
 
-        "gender":
-            gender,
+        "email": None,
+        "subject_keyword": None,
 
-        "profiles":
-            profiles,
+        "detail_url": offer.get("detail_url"),
+        "detail_text": "",
 
-        "email":
-            None,
-
-        "subject_keyword":
-            None,
-
-        "detail_url":
-            offer.get(
-                "detail_url"
-            ),
-
-        "detail_text":
-            "",
-
-        "needs_review":
-            needs_review
+        "needs_review": needs_review,
     }
 
 
@@ -904,7 +887,6 @@ def main():
         "r",
         encoding="utf-8"
     ) as f:
-
         offers = json.load(f)
 
     print(
@@ -917,7 +899,6 @@ def main():
         offers,
         start=1
     ):
-
         offer_id = offer.get(
             "offer_id"
         )
@@ -936,7 +917,6 @@ def main():
         )
 
         if detail_url:
-
             detail_html = download_detail_page(
                 detail_url
             )
@@ -946,21 +926,15 @@ def main():
             )
 
             parsed["detail_text"] = (
-                detail_data[
-                    "detail_text"
-                ]
+                detail_data["detail_text"]
             )
 
             parsed["email"] = (
-                detail_data[
-                    "email"
-                ]
+                detail_data["email"]
             )
 
             parsed["subject_keyword"] = (
-                detail_data[
-                    "subject_keyword"
-                ]
+                detail_data["subject_keyword"]
             )
 
             # ------------------------------------------------
@@ -969,17 +943,12 @@ def main():
             # ------------------------------------------------
 
             if detail_data["shoot_dates"]:
-
                 parsed["shoot_dates"] = (
-                    detail_data[
-                        "shoot_dates"
-                    ]
+                    detail_data["shoot_dates"]
                 )
 
                 parsed["shoot_date"] = (
-                    detail_data[
-                        "shoot_dates"
-                    ][0]
+                    detail_data["shoot_dates"][0]
                 )
 
         parsed_offers.append(
@@ -995,7 +964,6 @@ def main():
         "w",
         encoding="utf-8"
     ) as f:
-
         json.dump(
             parsed_offers,
             f,
