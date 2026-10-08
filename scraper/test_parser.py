@@ -2,7 +2,9 @@ import unittest
 
 from scraper.parser import (
     detect_gender,
+    determine_application_method,
     extract_age_ranges,
+    extract_application_url,
     extract_profiles,
     extract_shoot_dates,
 )
@@ -176,6 +178,104 @@ class TestShootDates(unittest.TestCase):
         self.assertEqual(
             result,
             ["2026-10-22"],
+        )
+
+
+class TestApplicationDetection(unittest.TestCase):
+
+    def test_website_application_url(self):
+        html = """
+        <html>
+            <body>
+                <p>Bewerbungen bitte über unsere Homepage:</p>
+                <a href="http://www.mavies.de/bewerben">
+                    www.mavies.de/bewerben
+                </a>
+            </body>
+        </html>
+        """
+
+        result = extract_application_url(
+            html,
+            base_url="https://komparse.de/Gesuch91273.htm",
+        )
+
+        self.assertEqual(
+            result,
+            "http://www.mavies.de/bewerben",
+        )
+
+    def test_application_method_website(self):
+        result = determine_application_method(
+            email=None,
+            application_url="http://www.mavies.de/bewerben",
+        )
+
+        self.assertEqual(
+            result,
+            "website",
+        )
+
+    def test_application_method_email(self):
+        result = determine_application_method(
+            email="casting@example.com",
+            application_url=None,
+        )
+
+        self.assertEqual(
+            result,
+            "email",
+        )
+
+    def test_application_method_multiple(self):
+        result = determine_application_method(
+            email="casting@example.com",
+            application_url="https://example.com/apply",
+        )
+
+        self.assertEqual(
+            result,
+            "multiple",
+        )
+
+    def test_application_method_unknown(self):
+        result = determine_application_method(
+            email=None,
+            application_url=None,
+        )
+
+        self.assertEqual(
+            result,
+            "unknown",
+        )
+
+    def test_real_mavies_instruction_text(self):
+        html = """
+        <html>
+            <body>
+                <p>
+                    Bewerbungen bitte über unsere Homepage:
+                </p>
+
+                <a href="http://www.mavies.de/bewerben">
+                    www.mavies.de/bewerben
+                </a>
+
+                <p>
+                    Projektauswahl: Stichwort „Komparse“
+                </p>
+            </body>
+        </html>
+        """
+
+        result = extract_application_url(
+            html,
+            base_url="https://komparse.de/Gesuch91273.htm",
+        )
+
+        self.assertEqual(
+            result,
+            "http://www.mavies.de/bewerben",
         )
 
 

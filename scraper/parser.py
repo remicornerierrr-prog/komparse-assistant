@@ -4,7 +4,7 @@ import requests
 
 from bs4 import BeautifulSoup
 from datetime import datetime
-from urllib.parse import parse_qs, unquote
+from urllib.parse import parse_qs, unquote, urljoin
 
 
 INPUT_FILE = "komparse_offers.json"
@@ -114,22 +114,19 @@ def detect_gender(text: str) -> set:
 
     if re.search(
         r"\bm\s*/\s*w\s*/\s*d\b",
-        t,
-        re.IGNORECASE
+        t
     ):
         return {"male", "female"}
 
     if re.search(
         r"\bm\s*/\s*w\b",
-        t,
-        re.IGNORECASE
+        t
     ):
         return {"male", "female"}
 
     if re.search(
         r"\bw\s*/\s*m\b",
-        t,
-        re.IGNORECASE
+        t
     ):
         return {"male", "female"}
 
@@ -422,6 +419,7 @@ def extract_shoot_dates(
     text: str,
     default_year: int | None = None
 ) -> list:
+
     t = normalize_text(text)
 
     if default_year is None:
@@ -521,6 +519,7 @@ def extract_shoot_dates(
 # ============================================================
 
 def extract_email(text: str) -> str | None:
+
     pattern = (
         r"[A-Za-z0-9._%+-]+"
         r"@"
@@ -571,7 +570,7 @@ def extract_subject_keyword(
             return subject
 
     # --------------------------------------------------------
-    # 2. Betreff: "..."
+    # 2. Betreff avec guillemets
     # --------------------------------------------------------
 
     quote_patterns = [
@@ -614,7 +613,285 @@ def extract_subject_keyword(
         if subject:
             return subject
 
+    # --------------------------------------------------------
+    # 4. Stichwort / Suchwort / Keyword avec guillemets
+    #
+    # Exemples :
+    # Stichwort „Komparse“
+    # Stichwort: „Komparse“
+    # Suchwort "Casting"
+    # Keyword: "XYZ"
+    # --------------------------------------------------------
+
+    keyword_quote_patterns = [
+        r'(?:Stichwort|Suchwort|Keyword)'
+        r'\s*[:\-]?\s*'
+        r'[„“”"](.+?)[„“”"]',
+
+        r'(?:Projekt(?:auswahl)?|Auswahl)'
+        r'\s*:\s*'
+        r'(?:Stichwort|Suchwort|Keyword)'
+        r'\s*[:\-]?\s*'
+        r'[„“”"](.+?)[„“”"]',
+    ]
+
+    for pattern in keyword_quote_patterns:
+        match = re.search(
+            pattern,
+            text,
+            re.IGNORECASE
+        )
+
+        if match:
+            subject = clean_subject(
+                match.group(1)
+            )
+
+            if subject and len(subject) <= 150:
+                return subject
+
     return None
+
+
+# ============================================================
+# CANDIDATURE EXTERNE
+# ============================================================
+
+def extract_application_url(
+    html: str,
+    base_url: str | None = None
+) -> str | None:
+
+    if not html:
+        return None
+
+    soup = BeautifulSoup(
+        html,
+        "html.parser"
+    )
+
+    candidates = []
+
+    application_keywords = [
+        "bewerb",
+        "bewerben",
+        "bewerbung",
+        "apply",
+        "application",
+        "casting",
+        "anmeldung",
+        "registrieren",
+        "formular",
+        "form",
+        "projekt",
+    ]
+
+    context_keywords = [
+        "bewerbung",
+        "bewerbungen",
+        "bewerben",
+        "homepage",
+        "online",
+        "formular",
+        "website",
+        "internet",
+        "apply",
+    ]
+
+    excluded_domains = [
+        "komparse.de",
+        "facebook.com",
+        "instagram.com",
+        "youtube.com",
+        "linkedin.com",
+        "tiktok.com",
+    ]
+
+    # --------------------------------------------------------
+    # Liens directs
+    # --------------------------------------------------------
+
+    for link in soup.find_all(
+        "a",
+        href=True
+    ):
+        href = link.get("href", "").strip()
+
+        if not href:
+            continue
+
+        lower_href = href.casefold()
+
+        if lower_href.startswith(
+            ("mailto:", "tel:", "javascript:")
+        ):
+            continue
+
+        if lower_href.startswith("//"):
+            href = "https:" + href
+
+        elif base_url:
+            href = urljoin(
+                base_url,
+                href
+            )
+
+        if not re.match(
+            r"^https?://",
+            href,
+            re.IGNORECASE
+        ):
+            continue
+
+        href_lower = href.casefold()
+
+        # On ignore les liens internes à Komparse.
+        if any(
+            domain in href_lower
+            for domain in excluded_domains
+        ):
+            continue
+
+        anchor_text = normalize_text(
+            link.get_text(" ", strip=True)
+        ).casefold()
+
+        score = 0
+
+        # Le lien lui-même indique une candidature.
+        for keyword in application_keywords:
+            if keyword in href_lower:
+                score += 10
+
+            if keyword in anchor_text:
+                score += 15
+
+        # On regarde le texte proche du lien.
+        parent_text = normalize_text(
+            link.parent.get_text(
+                " ",
+                strip=True
+            )
+            if link.parent
+            else ""
+        ).casefold()
+
+        nearby_text = parent_text
+
+        # Si le parent ne contient presque rien, on regarde
+        # le conteneur immédiat supérieur.
+        if len(nearby_text) < 25 and link.parent:
+            grandparent = link.parent.parent
+
+            if grandparent:
+                nearby_text = normalize_text(
+                    grandparent.get_text(
+                        " ",
+                        strip=True
+                    )
+                ).casefold()
+
+        for keyword in context_keywords:
+            if keyword in nearby_text:
+                score += 5
+
+        if score > 0:
+            candidates.append(
+                (
+                    score,
+                    href,
+                    anchor_text,
+                )
+            )
+
+    # --------------------------------------------------------
+    # Choix du meilleur candidat
+    # --------------------------------------------------------
+
+    if candidates:
+        candidates.sort(
+            key=lambda item: (
+                item[0],
+                len(item[1]),
+            ),
+            reverse=True
+        )
+
+        return candidates[0][1]
+
+    # --------------------------------------------------------
+    # Fallback : URL explicite dans le texte
+    # --------------------------------------------------------
+
+    text = normalize_text(
+        soup.get_text(
+            " ",
+            strip=True
+        )
+    )
+
+    url_pattern = (
+        r"(https?://[^\s<>\]]+)"
+        r"|"
+        r"\b(?:www\.)[A-Za-z0-9.-]+\.[A-Za-z]{2,}(?:/[^\s<>\]]*)?"
+    )
+
+    urls = re.findall(
+        url_pattern,
+        text,
+        re.IGNORECASE
+    )
+
+    flat_urls = []
+
+    for item in urls:
+        if isinstance(item, tuple):
+            for value in item:
+                if value:
+                    flat_urls.append(value)
+        else:
+            flat_urls.append(item)
+
+    for raw_url in flat_urls:
+        candidate = raw_url.strip(
+            ".,;:()[]{}<>\"'"
+        )
+
+        candidate_lower = candidate.casefold()
+
+        if any(
+            domain in candidate_lower
+            for domain in excluded_domains
+        ):
+            continue
+
+        if any(
+            keyword in candidate_lower
+            for keyword in application_keywords
+        ):
+            if candidate_lower.startswith("www."):
+                return "https://" + candidate
+
+            return candidate
+
+    return None
+
+
+def determine_application_method(
+    email: str | None,
+    application_url: str | None
+) -> str:
+
+    if email and application_url:
+        return "multiple"
+
+    if email:
+        return "email"
+
+    if application_url:
+        return "website"
+
+    return "unknown"
 
 
 # ============================================================
@@ -648,7 +925,8 @@ def download_detail_page(
 
 
 def parse_detail_page(
-    html: str | None
+    html: str | None,
+    base_url: str | None = None
 ) -> dict:
 
     if not html:
@@ -657,6 +935,8 @@ def parse_detail_page(
             "email": None,
             "subject_keyword": None,
             "shoot_dates": [],
+            "application_url": None,
+            "application_method": "unknown",
         }
 
     soup = BeautifulSoup(
@@ -717,6 +997,16 @@ def parse_detail_page(
         mailto_subject
     )
 
+    application_url = extract_application_url(
+        html,
+        base_url=base_url
+    )
+
+    application_method = determine_application_method(
+        email,
+        application_url
+    )
+
     # --------------------------------------------------------
     # Date de tournage
     # --------------------------------------------------------
@@ -754,6 +1044,8 @@ def parse_detail_page(
         "email": email,
         "subject_keyword": subject_keyword,
         "shoot_dates": shoot_dates,
+        "application_url": application_url,
+        "application_method": application_method,
     }
 
 
@@ -865,6 +1157,9 @@ def parse_offer(
         "email": None,
         "subject_keyword": None,
 
+        "application_method": "unknown",
+        "application_url": None,
+
         "detail_url": offer.get("detail_url"),
         "detail_text": "",
 
@@ -922,7 +1217,8 @@ def main():
             )
 
             detail_data = parse_detail_page(
-                detail_html
+                detail_html,
+                base_url=detail_url
             )
 
             parsed["detail_text"] = (
@@ -935,6 +1231,14 @@ def main():
 
             parsed["subject_keyword"] = (
                 detail_data["subject_keyword"]
+            )
+
+            parsed["application_url"] = (
+                detail_data["application_url"]
+            )
+
+            parsed["application_method"] = (
+                detail_data["application_method"]
             )
 
             # ------------------------------------------------
@@ -1043,6 +1347,16 @@ def main():
         print(
             f"Objet : "
             f"{offer['subject_keyword']}"
+        )
+
+        print(
+            f"Méthode candidature : "
+            f"{offer['application_method']}"
+        )
+
+        print(
+            f"URL candidature : "
+            f"{offer['application_url']}"
         )
 
         print(

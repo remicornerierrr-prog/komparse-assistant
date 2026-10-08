@@ -229,6 +229,18 @@ def as_int(value: Any) -> int | None:
         return None
 
 
+def as_optional_string(value: Any) -> str | None:
+    if value is None:
+        return None
+
+    value = str(value).strip()
+
+    if not value:
+        return None
+
+    return value
+
+
 # ============================================================
 # GENRE DE L'OFFRE
 # ============================================================
@@ -372,20 +384,40 @@ def normalize_offer(
         parsed
     )
 
-    email = first_value(
-        parsed,
-        "email",
-        "recipient_email",
-        default="",
+    email = as_optional_string(
+        first_value(
+            parsed,
+            "email",
+            "recipient_email",
+            default=None,
+        )
     )
 
-    subject_keyword = first_value(
-        parsed,
-        "subject_keyword",
-        "subject",
-        "betreff",
-        "kennwort",
-        default="",
+    subject_keyword = as_optional_string(
+        first_value(
+            parsed,
+            "subject_keyword",
+            "subject",
+            "betreff",
+            "kennwort",
+            default=None,
+        )
+    )
+
+    application_method = as_optional_string(
+        first_value(
+            parsed,
+            "application_method",
+            default=None,
+        )
+    )
+
+    application_url = as_optional_string(
+        first_value(
+            parsed,
+            "application_url",
+            default=None,
+        )
     )
 
     source_url = first_value(
@@ -417,8 +449,13 @@ def normalize_offer(
         "age_max": age_max,
         "gender_male": gender_male,
         "gender_female": gender_female,
-        "email": str(email or ""),
-        "subject_keyword": str(subject_keyword or ""),
+
+        "email": email,
+        "subject_keyword": subject_keyword,
+
+        "application_method": application_method,
+        "application_url": application_url,
+
         "source_url": str(source_url or ""),
         "published_at": published_at,
 
@@ -510,8 +547,18 @@ def save_offer(
         "age_max": offer["age_max"],
         "gender_male": offer["gender_male"],
         "gender_female": offer["gender_female"],
+
         "email": offer["email"],
         "subject_keyword": offer["subject_keyword"],
+
+        # Nouveau : mode et URL de candidature.
+        "application_method": offer[
+            "application_method"
+        ],
+        "application_url": offer[
+            "application_url"
+        ],
+
         "source_url": offer["source_url"],
         "published_at": offer["published_at"],
         "updated_at": datetime.now(
@@ -640,6 +687,15 @@ def build_matching_offer(
         "genders": genders,
         "email": offer["email"],
         "subject_keyword": offer["subject_keyword"],
+
+        # Conservés pour la future logique de candidature.
+        "application_method": offer[
+            "application_method"
+        ],
+        "application_url": offer[
+            "application_url"
+        ],
+
         "source_url": offer["source_url"],
     }
 
@@ -929,7 +985,7 @@ def mark_match_notified(
         timezone.utc
     ).isoformat()
 
-    response = (
+    (
         supabase
         .table("matches")
         .update({
@@ -941,10 +997,6 @@ def mark_match_notified(
         )
         .execute()
     )
-
-    # Supabase peut ne pas retourner une ligne pour certains
-    # UPDATE, mais l'absence de réponse d'erreur signifie
-    # que la requête a été acceptée.
 
 
 # ============================================================
@@ -973,6 +1025,29 @@ def process_offer(
         f"Offre {offer['komparse_id']} : "
         f"{offer['title']}"
     )
+
+    print(
+        f"  → Candidature : "
+        f"{offer['application_method'] or 'unknown'}"
+    )
+
+    if offer["application_url"]:
+        print(
+            f"  → URL candidature : "
+            f"{offer['application_url']}"
+        )
+
+    if offer["email"]:
+        print(
+            f"  → Email : "
+            f"{offer['email']}"
+        )
+
+    if offer["subject_keyword"]:
+        print(
+            f"  → Mot-clé / objet : "
+            f"{offer['subject_keyword']}"
+        )
 
     offer_id, is_new = save_offer(
         supabase,
