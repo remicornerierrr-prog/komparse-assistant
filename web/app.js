@@ -1696,6 +1696,18 @@ signupButton.addEventListener(
             return;
         }
 
+        // Confirmation supplémentaire pour éviter une inscription
+        // accidentelle, notamment sur écran mobile.
+        const confirmSignup = window.confirm(
+            "Vous allez lancer une nouvelle inscription.\n\n" +
+            "Si vous avez déjà un compte, cliquez sur Annuler puis sur « Se connecter ».\n\n" +
+            "Voulez-vous continuer ?"
+        );
+
+        if (!confirmSignup) {
+            return;
+        }
+
 
         signupButton.disabled =
             true;
@@ -1736,12 +1748,39 @@ signupButton.addEventListener(
                     error
                 );
 
+                const signupErrorCode = String(
+                    error.code || ""
+                ).toLowerCase();
 
-                showMessage(
-                    "Erreur lors de la création du compte : " +
-                    error.message
-                );
+                const signupErrorMessage = String(
+                    error.message || ""
+                ).toLowerCase();
 
+                const duplicateOrObfuscatedSignup =
+                    [
+                        "user_already_exists",
+                        "user_already_registered",
+                        "email_exists",
+                        "user_exists"
+                    ].includes(signupErrorCode) ||
+                    signupErrorMessage.includes("user already registered") ||
+                    signupErrorMessage.includes("user already exists") ||
+                    signupErrorMessage.includes("email address already exists");
+
+                if (duplicateOrObfuscatedSignup) {
+                    // Ne pas révéler publiquement si une adresse est enregistrée.
+                    showMessage(
+                        "Impossible de finaliser cette demande d'inscription. " +
+                        "Si vous avez déjà un compte, utilisez « Se connecter » " +
+                        "avec votre mot de passe habituel. Sinon, vérifiez les " +
+                        "informations saisies et réessayez."
+                    );
+                } else {
+                    showMessage(
+                        "Erreur lors de la création du compte : " +
+                        error.message
+                    );
+                }
 
                 return;
             }
@@ -1749,9 +1788,16 @@ signupButton.addEventListener(
 
             if (!data.session) {
 
+                // Avec la confirmation d'e-mail activée, Supabase peut renvoyer
+                // une réponse obfusquée lorsqu'une adresse existe déjà.
+                // L'absence de session ne prouve donc pas qu'un compte vient
+                // d'être créé : ne jamais afficher un faux succès.
                 showMessage(
-                    "Compte créé avec succès. " +
-                    "Vérifiez votre boîte email et cliquez sur le lien de confirmation."
+                    "Nous ne pouvons pas confirmer qu'un nouveau compte a été créé, " +
+                    "et vous n'êtes pas connecté. Si vous avez déjà un compte, " +
+                    "cliquez sur « Se connecter » avec votre mot de passe habituel. " +
+                    "S'il s'agit de votre première inscription, vérifiez votre boîte " +
+                    "e-mail pour un éventuel lien de confirmation."
                 );
 
 

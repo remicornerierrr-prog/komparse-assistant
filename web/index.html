@@ -72,6 +72,14 @@
         }
 
 
+        .auth-hint {
+            margin-top: 14px;
+            color: #555;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+
         .hidden {
             display: none !important;
         }
@@ -248,8 +256,13 @@
     <section id="auth-section">
 
         <h2>
-            Créer un compte / Se connecter
+            Accéder à votre compte
         </h2>
+
+        <p class="auth-hint">
+            Déjà inscrit(e) ? Saisissez l'e-mail et le mot de passe de votre compte, puis cliquez sur « Se connecter ».
+            « Créer mon compte » est réservé aux nouvelles inscriptions.
+        </p>
 
 
         <label for="email">
@@ -290,7 +303,7 @@
     <!-- MESSAGE GÉNÉRAL -->
     <!-- ========================================= -->
 
-    <div id="message"></div>
+    <div id="message" role="status" aria-live="polite"></div>
 
 
     <!-- ========================================= -->
