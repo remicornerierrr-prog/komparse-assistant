@@ -34,9 +34,7 @@ from matching import match_offer_to_profile
 # ============================================================
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-
 SCRAPER_DIR = PROJECT_ROOT / "scraper"
-
 PARSED_OFFERS_FILE = PROJECT_ROOT / "komparse_parsed_offers.json"
 
 
@@ -45,13 +43,9 @@ PARSED_OFFERS_FILE = PROJECT_ROOT / "komparse_parsed_offers.json"
 # ============================================================
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
-
 SUPABASE_SECRET_KEY = os.environ.get("SUPABASE_SECRET_KEY")
-
 VAPID_PUBLIC_KEY = os.environ.get("VAPID_PUBLIC_KEY")
-
 VAPID_PRIVATE_KEY = os.environ.get("VAPID_PRIVATE_KEY")
-
 VAPID_SUBJECT = os.environ.get("VAPID_SUBJECT")
 
 
@@ -224,7 +218,6 @@ def as_int(value: Any) -> int | None:
 
     try:
         return int(value)
-
     except (TypeError, ValueError):
         return None
 
@@ -250,7 +243,6 @@ def extract_top_level_gender_flags(
 ) -> tuple[bool, bool]:
 
     gender_male = parsed.get("gender_male")
-
     gender_female = parsed.get("gender_female")
 
     if (
@@ -271,21 +263,15 @@ def extract_top_level_gender_flags(
     )
 
     if gender_value is None:
-        return (
-            False,
-            False,
-        )
+        return False, False
 
     if isinstance(gender_value, list):
         gender_text = " ".join(
             str(item)
             for item in gender_value
         ).lower()
-
     else:
-        gender_text = str(
-            gender_value
-        ).lower()
+        gender_text = str(gender_value).lower()
 
     male = (
         "m/w/d" in gender_text
@@ -309,10 +295,7 @@ def extract_top_level_gender_flags(
         or gender_text.strip() == "w"
     )
 
-    return (
-        male,
-        female,
-    )
+    return male, female
 
 
 # ============================================================
@@ -341,6 +324,15 @@ def normalize_offer(
         parsed,
         "raw_text",
         "text",
+        default="",
+    )
+
+    # Nouveau : conserver le texte détaillé de l'annonce.
+    # Il permet notamment de reconnaître les formulations
+    # comme "gemischtes Alter" dans le tableau de bord.
+    detail_text = first_value(
+        parsed,
+        "detail_text",
         default="",
     )
 
@@ -380,9 +372,7 @@ def normalize_offer(
     (
         gender_male,
         gender_female,
-    ) = extract_top_level_gender_flags(
-        parsed
-    )
+    ) = extract_top_level_gender_flags(parsed)
 
     email = as_optional_string(
         first_value(
@@ -443,19 +433,20 @@ def normalize_offer(
         ),
         "title": str(title or ""),
         "raw_text": str(raw_text or ""),
+
+        # Nouveau champ transmis à Supabase.
+        "detail_text": str(detail_text or ""),
+
         "location_text": str(location or ""),
         "shoot_date": shoot_date,
         "age_min": age_min,
         "age_max": age_max,
         "gender_male": gender_male,
         "gender_female": gender_female,
-
         "email": email,
         "subject_keyword": subject_keyword,
-
         "application_method": application_method,
         "application_url": application_url,
-
         "source_url": str(source_url or ""),
         "published_at": published_at,
 
@@ -541,24 +532,20 @@ def save_offer(
         "komparse_id": offer["komparse_id"],
         "title": offer["title"],
         "raw_text": offer["raw_text"],
+
+        # Nouveau : stocker le texte détaillé dans Supabase.
+        "detail_text": offer["detail_text"],
+
         "location_text": offer["location_text"],
         "shoot_date": offer["shoot_date"],
         "age_min": offer["age_min"],
         "age_max": offer["age_max"],
         "gender_male": offer["gender_male"],
         "gender_female": offer["gender_female"],
-
         "email": offer["email"],
         "subject_keyword": offer["subject_keyword"],
-
-        # Nouveau : mode et URL de candidature.
-        "application_method": offer[
-            "application_method"
-        ],
-        "application_url": offer[
-            "application_url"
-        ],
-
+        "application_method": offer["application_method"],
+        "application_url": offer["application_url"],
         "source_url": offer["source_url"],
         "published_at": offer["published_at"],
         "updated_at": datetime.now(
@@ -585,10 +572,7 @@ def save_offer(
         rows = response.data or []
 
         if rows:
-            return (
-                rows[0]["id"],
-                False,
-            )
+            return rows[0]["id"], False
 
         # Certains appels UPDATE peuvent ne pas retourner
         # de représentation de ligne. On recharge alors
@@ -603,10 +587,7 @@ def save_offer(
                 "La mise à jour de l'offre a échoué."
             )
 
-        return (
-            refreshed["id"],
-            False,
-        )
+        return refreshed["id"], False
 
     # --------------------------------------------------------
     # Nouvelle offre
@@ -622,10 +603,7 @@ def save_offer(
     rows = response.data or []
 
     if rows:
-        return (
-            rows[0]["id"],
-            True,
-        )
+        return rows[0]["id"], True
 
     # Protection en cas de création concurrente.
     refreshed = get_existing_offer(
@@ -638,10 +616,7 @@ def save_offer(
             "La création de l'offre a échoué."
         )
 
-    return (
-        refreshed["id"],
-        False,
-    )
+    return refreshed["id"], False
 
 
 # ============================================================
@@ -652,25 +627,12 @@ def build_matching_offer(
     offer: dict[str, Any],
 ) -> dict[str, Any]:
 
-    if (
-        offer["gender_male"]
-        and offer["gender_female"]
-    ):
-        genders = [
-            "male",
-            "female",
-        ]
-
+    if offer["gender_male"] and offer["gender_female"]:
+        genders = ["male", "female"]
     elif offer["gender_male"]:
-        genders = [
-            "male"
-        ]
-
+        genders = ["male"]
     elif offer["gender_female"]:
-        genders = [
-            "female"
-        ]
-
+        genders = ["female"]
     else:
         genders = []
 
@@ -687,15 +649,8 @@ def build_matching_offer(
         "genders": genders,
         "email": offer["email"],
         "subject_keyword": offer["subject_keyword"],
-
-        # Conservés pour la future logique de candidature.
-        "application_method": offer[
-            "application_method"
-        ],
-        "application_url": offer[
-            "application_url"
-        ],
-
+        "application_method": offer["application_method"],
+        "application_url": offer["application_url"],
         "source_url": offer["source_url"],
     }
 
@@ -728,14 +683,10 @@ def build_matching_offer(
             if role_gender is not None:
                 role_copy["genders"] = role_gender
 
-            matching_profiles.append(
-                role_copy
-            )
+            matching_profiles.append(role_copy)
 
         if matching_profiles:
-            matching_offer["profiles"] = (
-                matching_profiles
-            )
+            matching_offer["profiles"] = matching_profiles
 
     return matching_offer
 
@@ -757,14 +708,8 @@ def get_existing_match(
             "id,offer_id,user_id,reason,"
             "notified_at,application_status"
         )
-        .eq(
-            "offer_id",
-            offer_id,
-        )
-        .eq(
-            "user_id",
-            user_id,
-        )
+        .eq("offer_id", offer_id)
+        .eq("user_id", user_id)
         .limit(1)
         .execute()
     )
@@ -821,10 +766,7 @@ def create_match(
             f"user={user_id}"
         )
 
-        return (
-            existing["id"],
-            False,
-        )
+        return existing["id"], False
 
     response = (
         supabase
@@ -845,10 +787,7 @@ def create_match(
             "Le match n'a pas pu être créé."
         )
 
-    return (
-        rows[0]["id"],
-        True,
-    )
+    return rows[0]["id"], True
 
 
 # ============================================================
@@ -863,13 +802,8 @@ def get_push_subscription(
     response = (
         supabase
         .table("push_subscriptions")
-        .select(
-            "id,subscription_json"
-        )
-        .eq(
-            "user_id",
-            user_id,
-        )
+        .select("id,subscription_json")
+        .eq("user_id", user_id)
         .limit(1)
         .execute()
     )
@@ -895,13 +829,9 @@ def send_push_notification(
         "title": "Nouvelle offre Komparse",
         "body": (
             offer["title"]
-            or
-            "Une offre correspond à votre profil."
+            or "Une offre correspond à votre profil."
         ),
-        "url": (
-            offer["source_url"]
-            or "/"
-        ),
+        "url": offer["source_url"] or "/",
     }
 
     try:
@@ -945,8 +875,7 @@ def notify_match_user(
 
     if not subscription_row:
         print(
-            f"    Aucun abonnement push pour "
-            f"{user_id}"
+            f"    Aucun abonnement push pour {user_id}"
         )
 
         return False
@@ -955,13 +884,9 @@ def notify_match_user(
         "subscription_json"
     )
 
-    if not isinstance(
-        subscription,
-        dict,
-    ):
+    if not isinstance(subscription, dict):
         print(
-            f"    subscription_json invalide "
-            f"pour {user_id}"
+            f"    subscription_json invalide pour {user_id}"
         )
 
         return False
@@ -991,10 +916,7 @@ def mark_match_notified(
         .update({
             "notified_at": now,
         })
-        .eq(
-            "id",
-            match_id,
-        )
+        .eq("id", match_id)
         .execute()
     )
 
@@ -1009,9 +931,7 @@ def process_offer(
     profiles: list[dict[str, Any]],
 ) -> None:
 
-    offer = normalize_offer(
-        raw_parsed_offer
-    )
+    offer = normalize_offer(raw_parsed_offer)
 
     if not offer["komparse_id"]:
         print(
@@ -1055,35 +975,21 @@ def process_offer(
     )
 
     print(
-        f"  → Supabase offers.id = "
-        f"{offer_id}"
+        f"  → Supabase offers.id = {offer_id}"
     )
 
     if is_new:
-        print(
-            "  → Nouvelle offre"
-        )
+        print("  → Nouvelle offre")
     else:
-        print(
-            "  → Offre existante mise à jour"
-        )
+        print("  → Offre existante mise à jour")
 
-    # --------------------------------------------------------
-    # IMPORTANT :
-    # On traite aussi les offres existantes.
-    #
-    # Cela permet :
-    # - de recréer les matches supprimés ;
-    # - de notifier les matches existants dont
-    #   notified_at est encore NULL.
-    # --------------------------------------------------------
+    # Traiter également les offres existantes pour
+    # recréer les matches supprimés ou notifier les
+    # matches existants dont notified_at est encore NULL.
 
-    matching_offer = build_matching_offer(
-        offer
-    )
+    matching_offer = build_matching_offer(offer)
 
     for profile in profiles:
-
         try:
             result = match_offer_to_profile(
                 matching_offer,
@@ -1092,14 +998,11 @@ def process_offer(
 
             if (
                 result is False
-                or
-                result.get("matched") is not True
+                or result.get("matched") is not True
             ):
                 continue
 
-            user_id = profile.get(
-                "id"
-            )
+            user_id = profile.get("id")
 
             if not user_id:
                 continue
@@ -1112,10 +1015,6 @@ def process_offer(
                     "gender": True,
                 },
             )
-
-            # ------------------------------------------------
-            # Créer le match ou récupérer celui qui existe
-            # ------------------------------------------------
 
             match_id, match_created = create_match(
                 supabase,
@@ -1137,8 +1036,6 @@ def process_offer(
                 }
 
             else:
-                # Recharger le match pour connaître
-                # précisément son état de notification.
                 match_row = get_existing_match(
                     supabase,
                     offer_id,
@@ -1151,11 +1048,7 @@ def process_offer(
                         "être relu."
                     )
 
-            # ------------------------------------------------
-            # Notification uniquement si elle n'a pas
-            # encore été envoyée.
-            # ------------------------------------------------
-
+            # Ne pas renvoyer de notification déjà envoyée.
             if match_row.get("notified_at") is not None:
                 continue
 
@@ -1171,23 +1064,18 @@ def process_offer(
                     match_id,
                 )
 
-                print(
-                    "    ✓ Notification push envoyée"
-                )
+                print("    ✓ Notification push envoyée")
             else:
-                print(
-                    "    ! Notification non envoyée"
-                )
+                print("    ! Notification non envoyée")
 
         except Exception as error:
             print(
                 f"  ! Erreur pour le profil "
-                f"{profile.get('id')} : "
-                f"{error}"
+                f"{profile.get('id')} : {error}"
             )
 
             # Une erreur sur un profil ne bloque pas
-            # les autres profils.
+            # le traitement des autres profils.
 
 
 # ============================================================
@@ -1195,56 +1083,32 @@ def process_offer(
 # ============================================================
 
 def main() -> None:
-
-    print(
-        "=========================================="
-    )
-
-    print(
-        " Komparse Assistant — pipeline principal"
-    )
-
-    print(
-        "=========================================="
-    )
+    print("==========================================")
+    print(" Komparse Assistant — pipeline principal")
+    print("==========================================")
 
     validate_environment()
 
     supabase = create_supabase_client()
 
-    # --------------------------------------------------------
-    # Scraper + parser
-    # --------------------------------------------------------
-
+    # Scraper et parser.
     run_existing_scripts()
 
-    # --------------------------------------------------------
-    # Offres
-    # --------------------------------------------------------
-
+    # Charger les offres.
     parsed_offers = load_parsed_offers()
 
     print(
         f"\n{len(parsed_offers)} offres parsées."
     )
 
-    # --------------------------------------------------------
-    # Profils
-    # --------------------------------------------------------
+    # Charger les profils.
+    profiles = load_profiles(supabase)
 
-    profiles = load_profiles(
-        supabase
-    )
-
-    # --------------------------------------------------------
-    # Traiter les offres
-    # --------------------------------------------------------
-
+    # Traiter les offres.
     success_count = 0
     error_count = 0
 
     for raw_offer in parsed_offers:
-
         try:
             process_offer(
                 supabase,
@@ -1263,44 +1127,20 @@ def main() -> None:
                 error,
             )
 
-            # Une offre en erreur ne bloque pas
-            # les suivantes.
-
+            # Une erreur sur une offre ne bloque pas
+            # le traitement des suivantes.
             continue
 
-    # --------------------------------------------------------
-    # Résumé
-    # --------------------------------------------------------
-
+    # Résumé.
     print()
-    print(
-        "=========================================="
-    )
+    print("==========================================")
+    print(f"Offres traitées : {success_count}")
+    print(f"Offres en erreur : {error_count}")
+    print("Pipeline terminé.")
+    print("==========================================")
 
-    print(
-        f"Offres traitées : "
-        f"{success_count}"
-    )
-
-    print(
-        f"Offres en erreur : "
-        f"{error_count}"
-    )
-
-    print(
-        "Pipeline terminé."
-    )
-
-    print(
-        "=========================================="
-    )
-
-    # --------------------------------------------------------
-    # IMPORTANT :
-    # Un workflow GitHub Actions ne doit pas apparaître
-    # comme "Success" lorsque des offres ont réellement échoué.
-    # --------------------------------------------------------
-
+    # Le workflow GitHub Actions doit échouer si
+    # certaines offres n'ont pas pu être traitées.
     if error_count > 0:
         raise RuntimeError(
             f"{error_count} offre(s) "

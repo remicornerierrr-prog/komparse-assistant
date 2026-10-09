@@ -2,67 +2,44 @@
 // KOMPARSE ASSISTANT — DASHBOARD ADMIN
 // ============================================================
 
-// IMPORTANT : utiliser uniquement la clé publique/publishable.
+// Utiliser uniquement la clé publique/publishable.
 // Ne jamais mettre SUPABASE_SECRET_KEY ici.
 
 const SUPABASE_URL = "https://glufyxsdmaccuuqpoxbo.supabase.co";
-
 const SUPABASE_ANON_KEY = "sb_publishable_RdYDH-Ez9SGoLxMaKceXsQ_KQPQmwBu";
-
 
 const supabaseClient = window.supabase.createClient(
     SUPABASE_URL,
     SUPABASE_ANON_KEY
 );
 
-
 // ============================================================
 // ÉLÉMENTS HTML
 // ============================================================
 
 const adminApp = document.getElementById("admin-app");
-
 const adminError = document.getElementById("admin-error");
-
-const adminUserEmail =
-    document.getElementById("admin-user-email");
-
-const offersCount =
-    document.getElementById("offers-count");
-
-const matchesCount =
-    document.getElementById("matches-count");
-
-const notificationsCount =
-    document.getElementById("notifications-count");
-
-const reviewOffersBody =
-    document.getElementById("review-offers-body");
-
-const offersBody =
-    document.getElementById("offers-body");
-
+const adminUserEmail = document.getElementById("admin-user-email");
+const offersCount = document.getElementById("offers-count");
+const matchesCount = document.getElementById("matches-count");
+const notificationsCount = document.getElementById("notifications-count");
+const reviewOffersBody = document.getElementById("review-offers-body");
+const offersBody = document.getElementById("offers-body");
 
 // ============================================================
 // AFFICHER UNE ERREUR
 // ============================================================
 
 function showError(message) {
-
     adminError.textContent = message;
-
-    adminError.classList.remove(
-        "admin-hidden"
-    );
+    adminError.classList.remove("admin-hidden");
 }
-
 
 // ============================================================
 // ÉCHAPPER LE HTML
 // ============================================================
 
 function escapeHtml(value) {
-
     if (value === null || value === undefined) {
         return "";
     }
@@ -75,13 +52,11 @@ function escapeHtml(value) {
         .replaceAll("'", "&#039;");
 }
 
-
 // ============================================================
 // FORMATER UNE DATE
 // ============================================================
 
 function formatDate(value) {
-
     if (!value) {
         return "—";
     }
@@ -92,22 +67,17 @@ function formatDate(value) {
         return escapeHtml(value);
     }
 
-    return date.toLocaleString(
-        "fr-FR",
-        {
-            dateStyle: "short",
-            timeStyle: "short"
-        }
-    );
+    return date.toLocaleString("fr-FR", {
+        dateStyle: "short",
+        timeStyle: "short"
+    });
 }
-
 
 // ============================================================
 // FORMATER LE SEXE
 // ============================================================
 
 function formatGender(offer) {
-
     const genders = [];
 
     if (offer.gender_male) {
@@ -125,28 +95,50 @@ function formatGender(offer) {
     return genders.join(" / ");
 }
 
+// ============================================================
+// DÉTECTER UNE DESCRIPTION EXPLICITE D'ÂGES VARIÉS
+// ============================================================
+
+function hasExplicitAgeDescription(offer) {
+    const text = [
+        offer.title || "",
+        offer.detail_text || "",
+        offer.raw_text || ""
+    ]
+        .join(" ")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase();
+
+    const patterns = [
+        /\bgemischtes\s+alter\b/,
+        /\bgemischte[nr]?\s+altersgruppen\b/,
+        /\baltersgemischt\b/,
+        /\bverschiedene\s+altersgruppen\b/,
+        /\balle\s+altersgruppen\b/,
+        /\bmenschen\s+jeden\s+alters\b/,
+        /\bjeden\s+alters\b/,
+        /\baltersgruppen\s+gemischt\b/
+    ];
+
+    return patterns.some(pattern => pattern.test(text));
+}
 
 // ============================================================
 // FORMATER L'ÂGE
 // ============================================================
 
 function formatAge(offer) {
-
     const min = offer.age_min;
-
     const max = offer.age_max;
 
-    if (min === null && max === null) {
-        return "Non précisé";
+    if (min == null && max == null) {
+        return hasExplicitAgeDescription(offer)
+            ? "Âges variés"
+            : "Non précisé";
     }
 
-    if (
-        min !== null &&
-        min !== undefined &&
-        max !== null &&
-        max !== undefined
-    ) {
-
+    if (min != null && max != null) {
         if (Number(min) === Number(max)) {
             return String(min);
         }
@@ -154,20 +146,18 @@ function formatAge(offer) {
         return `${min}–${max}`;
     }
 
-    if (min !== null && min !== undefined) {
+    if (min != null) {
         return `${min}+`;
     }
 
     return `jusqu'à ${max}`;
 }
 
-
 // ============================================================
 // DÉTERMINER LE STATUT DU PARSER
 // ============================================================
 
 function getParserStatus(offer) {
-
     if (offer.parser_needs_review) {
         return "À vérifier";
     }
@@ -186,17 +176,17 @@ function getParserStatus(offer) {
         missing.push("date");
     }
 
+    // Un âge numérique n'est pas obligatoire si l'annonce
+    // précise explicitement que les âges sont variés.
     if (
-        offer.age_min === null ||
-        offer.age_max === null
+        offer.age_min == null &&
+        offer.age_max == null &&
+        !hasExplicitAgeDescription(offer)
     ) {
         missing.push("âge");
     }
 
-    if (
-        !offer.gender_male &&
-        !offer.gender_female
-    ) {
+    if (!offer.gender_male && !offer.gender_female) {
         missing.push("sexe");
     }
 
@@ -207,13 +197,11 @@ function getParserStatus(offer) {
     return "OK";
 }
 
-
 // ============================================================
-// ÉCHARGER LES COMPTEURS
+// CHARGER LES COMPTEURS
 // ============================================================
 
 async function loadCounters() {
-
     const offersResult = await supabaseClient
         .from("offers")
         .select("id", {
@@ -224,7 +212,6 @@ async function loadCounters() {
     if (offersResult.error) {
         throw offersResult.error;
     }
-
 
     const matchesResult = await supabaseClient
         .from("matches")
@@ -237,66 +224,50 @@ async function loadCounters() {
         throw matchesResult.error;
     }
 
-
     const notificationsResult = await supabaseClient
         .from("matches")
         .select("id", {
             count: "exact",
             head: true
         })
-        .not(
-            "notified_at",
-            "is",
-            null
-        );
+        .not("notified_at", "is", null);
 
     if (notificationsResult.error) {
         throw notificationsResult.error;
     }
 
-
-    offersCount.textContent =
-        offersResult.count ?? 0;
-
-    matchesCount.textContent =
-        matchesResult.count ?? 0;
-
-    notificationsCount.textContent =
-        notificationsResult.count ?? 0;
+    offersCount.textContent = offersResult.count ?? 0;
+    matchesCount.textContent = matchesResult.count ?? 0;
+    notificationsCount.textContent = notificationsResult.count ?? 0;
 }
-
 
 // ============================================================
 // CHARGER LES OFFRES
 // ============================================================
 
 async function loadOffers() {
-
     const result = await supabaseClient
         .from("offers")
-        .select(
-            [
-                "id",
-                "komparse_id",
-                "title",
-                "location_text",
-                "shoot_date",
-                "age_min",
-                "age_max",
-                "gender_male",
-                "gender_female",
-                "published_at",
-                "parser_needs_review",
-                "admin_review_required"
-            ].join(",")
-        )
-        .order(
+        .select([
+            "id",
+            "komparse_id",
+            "title",
+            "raw_text",
+            "detail_text",
+            "location_text",
+            "shoot_date",
+            "age_min",
+            "age_max",
+            "gender_male",
+            "gender_female",
             "published_at",
-            {
-                ascending: false,
-                nullsFirst: false
-            }
-        )
+            "parser_needs_review",
+            "admin_review_required"
+        ].join(","))
+        .order("published_at", {
+            ascending: false,
+            nullsFirst: false
+        })
         .limit(50);
 
     if (result.error) {
@@ -305,352 +276,217 @@ async function loadOffers() {
 
     const offers = result.data || [];
 
-
     if (offers.length === 0) {
-
         offersBody.innerHTML = `
             <tr>
-                <td colspan="8">
-                    Aucune annonce importée.
-                </td>
+                <td colspan="8">Aucune annonce importée.</td>
             </tr>
         `;
-
     } else {
+        offersBody.innerHTML = offers.map(offer => {
+            const parserStatus = getParserStatus(offer);
 
-        offersBody.innerHTML = offers
-            .map(offer => {
+            const adminStatus = offer.admin_review_required
+                ? "À vérifier"
+                : "—";
 
-                const parserStatus =
-                    getParserStatus(offer);
+            return `
+                <tr>
+                    <td>${escapeHtml(offer.komparse_id)}</td>
 
-                const adminStatus =
-                    offer.admin_review_required
-                        ? "À vérifier"
-                        : "—";
+                    <td>${formatDate(offer.published_at)}</td>
 
-                return `
-                    <tr>
+                    <td>
+                        ${escapeHtml(offer.location_text) || "—"}
+                    </td>
 
-                        <td>
-                            ${escapeHtml(
-                                offer.komparse_id
-                            )}
-                        </td>
+                    <td>
+                        ${
+                            offer.shoot_date
+                                ? escapeHtml(offer.shoot_date)
+                                : "—"
+                        }
+                    </td>
 
-                        <td>
-                            ${formatDate(
-                                offer.published_at
-                            )}
-                        </td>
+                    <td>${escapeHtml(formatAge(offer))}</td>
 
-                        <td>
-                            ${escapeHtml(
-                                offer.location_text
-                            ) || "—"}
-                        </td>
+                    <td>${escapeHtml(formatGender(offer))}</td>
 
-                        <td>
-                            ${
-                                offer.shoot_date
-                                    ? escapeHtml(
-                                        offer.shoot_date
-                                    )
-                                    : "—"
-                            }
-                        </td>
+                    <td class="${parserStatus !== "OK" ? "review" : ""}">
+                        ${escapeHtml(parserStatus)}
+                    </td>
 
-                        <td>
-                            ${escapeHtml(
-                                formatAge(offer)
-                            )}
-                        </td>
-
-                        <td>
-                            ${escapeHtml(
-                                formatGender(offer)
-                            )}
-                        </td>
-
-                        <td class="${
-                            parserStatus !== "OK"
-                                ? "review"
-                                : ""
-                        }">
-                            ${escapeHtml(
-                                parserStatus
-                            )}
-                        </td>
-
-                        <td class="${
-                            offer.admin_review_required
-                                ? "review"
-                                : ""
-                        }">
-                            ${escapeHtml(
-                                adminStatus
-                            )}
-                        </td>
-
-                    </tr>
-                `;
-            })
-            .join("");
+                    <td class="${offer.admin_review_required ? "review" : ""}">
+                        ${escapeHtml(adminStatus)}
+                    </td>
+                </tr>
+            `;
+        }).join("");
     }
 
-
-    const reviewOffers = offers.filter(
-        offer =>
-            offer.parser_needs_review === true
-            ||
-            offer.admin_review_required === true
-            ||
-            getParserStatus(offer) !== "OK"
+    const reviewOffers = offers.filter(offer =>
+        offer.parser_needs_review === true ||
+        offer.admin_review_required === true ||
+        getParserStatus(offer) !== "OK"
     );
 
-
     if (reviewOffers.length === 0) {
-
         reviewOffersBody.innerHTML = `
             <tr>
-                <td colspan="8">
-                    Aucune annonce à vérifier.
-                </td>
+                <td colspan="8">Aucune annonce à vérifier.</td>
             </tr>
         `;
 
         return;
     }
 
+    reviewOffersBody.innerHTML = reviewOffers.map(offer => {
+        const parserStatus = getParserStatus(offer);
+        const isAdminReview = offer.admin_review_required === true;
 
-    reviewOffersBody.innerHTML = reviewOffers
-        .map(offer => {
+        return `
+            <tr>
+                <td>${escapeHtml(offer.komparse_id)}</td>
 
-            const parserStatus =
-                getParserStatus(offer);
+                <td>${formatDate(offer.published_at)}</td>
 
-            const isAdminReview =
-                offer.admin_review_required === true;
+                <td>
+                    ${escapeHtml(offer.location_text) || "—"}
+                </td>
 
-            return `
-                <tr>
+                <td>
+                    ${
+                        offer.shoot_date
+                            ? escapeHtml(offer.shoot_date)
+                            : "—"
+                    }
+                </td>
 
-                    <td>
-                        ${escapeHtml(
-                            offer.komparse_id
-                        )}
-                    </td>
+                <td>${escapeHtml(formatAge(offer))}</td>
 
-                    <td>
-                        ${formatDate(
-                            offer.published_at
-                        )}
-                    </td>
+                <td>${escapeHtml(formatGender(offer))}</td>
 
-                    <td>
-                        ${escapeHtml(
-                            offer.location_text
-                        ) || "—"}
-                    </td>
+                <td class="review">
+                    ${escapeHtml(parserStatus)}
+                </td>
 
-                    <td>
-                        ${
-                            offer.shoot_date
-                                ? escapeHtml(
-                                    offer.shoot_date
-                                )
-                                : "—"
-                        }
-                    </td>
-
-                    <td>
-                        ${escapeHtml(
-                            formatAge(offer)
-                        )}
-                    </td>
-
-                    <td>
-                        ${escapeHtml(
-                            formatGender(offer)
-                        )}
-                    </td>
-
-                    <td class="review">
-                        ${escapeHtml(
-                            parserStatus
-                        )}
-                    </td>
-
-                    <td>
-
-                        ${
-                            isAdminReview
-                                ? `
-                                    <button
-                                        class="admin-button"
-                                        data-offer-id="${offer.id}"
-                                        data-action="unreview"
-                                    >
-                                        ✓ Vérifié
-                                    </button>
-                                  `
-                                : `
-                                    <button
-                                        class="admin-button"
-                                        data-offer-id="${offer.id}"
-                                        data-action="review"
-                                    >
-                                        Marquer à vérifier
-                                    </button>
-                                  `
-                        }
-
-                    </td>
-
-                </tr>
-            `;
-        })
-        .join("");
+                <td>
+                    ${
+                        isAdminReview
+                            ? `
+                                <button
+                                    class="admin-button"
+                                    data-offer-id="${offer.id}"
+                                    data-action="unreview"
+                                >
+                                    ✓ Vérifié
+                                </button>
+                              `
+                            : `
+                                <button
+                                    class="admin-button"
+                                    data-offer-id="${offer.id}"
+                                    data-action="review"
+                                >
+                                    Marquer à vérifier
+                                </button>
+                              `
+                    }
+                </td>
+            </tr>
+        `;
+    }).join("");
 }
-
 
 // ============================================================
 // MODIFIER LE STATUT DE VÉRIFICATION
 // ============================================================
 
-async function setReviewStatus(
-    offerId,
-    required
-) {
-
+async function setReviewStatus(offerId, required) {
     const result = await supabaseClient
         .from("offers")
         .update({
             admin_review_required: required
         })
-        .eq(
-            "id",
-            offerId
-        );
+        .eq("id", offerId);
 
     if (result.error) {
         throw result.error;
     }
 }
 
-
 // ============================================================
 // GESTION DES BOUTONS
 // ============================================================
 
-document.addEventListener(
-    "click",
-    async event => {
+document.addEventListener("click", async event => {
+    const button = event.target.closest("[data-action]");
 
-        const button =
-            event.target.closest(
-                "[data-action]"
-            );
-
-        if (!button) {
-            return;
-        }
-
-        const offerId =
-            Number(
-                button.dataset.offerId
-            );
-
-        const action =
-            button.dataset.action;
-
-        if (!offerId) {
-            return;
-        }
-
-        button.disabled = true;
-
-        try {
-
-            await setReviewStatus(
-                offerId,
-                action === "review"
-            );
-
-            await loadOffers();
-
-        } catch (error) {
-
-            console.error(error);
-
-            showError(
-                "Impossible de modifier le statut "
-                + "de l'annonce."
-            );
-
-            button.disabled = false;
-        }
+    if (!button) {
+        return;
     }
-);
 
+    const offerId = Number(button.dataset.offerId);
+    const action = button.dataset.action;
+
+    if (!offerId) {
+        return;
+    }
+
+    button.disabled = true;
+
+    try {
+        await setReviewStatus(
+            offerId,
+            action === "review"
+        );
+
+        await loadOffers();
+    } catch (error) {
+        console.error(error);
+
+        showError(
+            "Impossible de modifier le statut de l'annonce."
+        );
+
+        button.disabled = false;
+    }
+});
 
 // ============================================================
 // CHARGER LE DASHBOARD
 // ============================================================
 
-async function loadAdminDashboard(
-    session
-) {
-
+async function loadAdminDashboard(session) {
     adminUserEmail.textContent =
-        session.user.email ||
-        "Administrateur";
+        session.user.email || "Administrateur";
 
-
-    const adminResult =
-        await supabaseClient.rpc(
-            "is_admin"
-        );
+    const adminResult = await supabaseClient.rpc("is_admin");
 
     if (adminResult.error) {
         throw adminResult.error;
     }
 
-
     if (adminResult.data !== true) {
-
         showError(
-            "Accès refusé : ce compte "
-            + "n'est pas administrateur."
+            "Accès refusé : ce compte n'est pas administrateur."
         );
 
         return;
     }
 
-
-    adminApp.classList.remove(
-        "admin-hidden"
-    );
-
+    adminApp.classList.remove("admin-hidden");
 
     await loadCounters();
-
     await loadOffers();
 }
-
 
 // ============================================================
 // INITIALISATION
 // ============================================================
 
 async function initializeAdmin() {
-
     try {
-
-        // ----------------------------------------------------
-        // Récupérer la session existante
-        // ----------------------------------------------------
-
         const sessionResult =
             await supabaseClient.auth.getSession();
 
@@ -658,28 +494,12 @@ async function initializeAdmin() {
             throw sessionResult.error;
         }
 
-        let session =
-            sessionResult.data.session;
+        let session = sessionResult.data.session;
 
-
-        // ----------------------------------------------------
         // Attendre brièvement le rétablissement de session
-        // ----------------------------------------------------
-        //
-        // Utile lorsqu'on arrive sur admin.html juste après
-        // une connexion ou un changement de page.
-        // ----------------------------------------------------
-
+        // après une connexion ou un changement de page.
         if (!session) {
-
-            await new Promise(
-                resolve =>
-                    setTimeout(
-                        resolve,
-                        800
-                    )
-            );
-
+            await new Promise(resolve => setTimeout(resolve, 800));
 
             const retryResult =
                 await supabaseClient.auth.getSession();
@@ -688,52 +508,28 @@ async function initializeAdmin() {
                 throw retryResult.error;
             }
 
-            session =
-                retryResult.data.session;
+            session = retryResult.data.session;
         }
 
-
-        // ----------------------------------------------------
-        // Ne plus rediriger automatiquement.
-        // ----------------------------------------------------
-
         if (!session) {
-
-            adminUserEmail.textContent =
-                "Non connecté";
+            adminUserEmail.textContent = "Non connecté";
 
             showError(
-                "Vous devez être connecté "
-                + "pour accéder au tableau de bord "
-                + "administrateur."
+                "Vous devez être connecté pour accéder au tableau de bord administrateur."
             );
 
             return;
         }
 
-
-        await loadAdminDashboard(
-            session
-        );
-
-
+        await loadAdminDashboard(session);
     } catch (error) {
-
-        console.error(
-            "Erreur dashboard admin :",
-            error
-        );
+        console.error("Erreur dashboard admin :", error);
 
         showError(
-            "Erreur lors du chargement du "
-            + "tableau de bord : "
-            + (
-                error.message ||
-                "erreur inconnue"
-            )
+            "Erreur lors du chargement du tableau de bord : " +
+            (error.message || "erreur inconnue")
         );
     }
 }
-
 
 initializeAdmin();
