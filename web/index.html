@@ -80,6 +80,21 @@
         }
 
 
+        .text-button {
+            background: transparent;
+            border: 0;
+            color: #1459a8;
+            text-decoration: underline;
+            padding: 8px 0;
+            margin-top: 8px;
+            text-align: left;
+        }
+
+        .text-button:hover {
+            background: transparent;
+        }
+
+
         .hidden {
             display: none !important;
         }
@@ -296,6 +311,49 @@
             Se connecter
         </button>
 
+        <button
+            id="forgot-password-button"
+            class="text-button"
+            type="button"
+        >
+            Mot de passe oublié ?
+        </button>
+
+    </section>
+
+
+    <!-- ========================================= -->
+    <!-- RÉINITIALISATION DU MOT DE PASSE -->
+    <!-- ========================================= -->
+
+    <section id="password-reset-section" class="hidden">
+        <h2>Choisir un nouveau mot de passe</h2>
+
+        <p class="auth-hint">
+            Saisissez votre nouveau mot de passe, puis confirmez-le.
+        </p>
+
+        <label for="new-password">Nouveau mot de passe</label>
+        <input
+            type="password"
+            id="new-password"
+            autocomplete="new-password"
+            placeholder="Au moins 6 caractères"
+            minlength="6"
+        >
+
+        <label for="confirm-new-password">Confirmer le nouveau mot de passe</label>
+        <input
+            type="password"
+            id="confirm-new-password"
+            autocomplete="new-password"
+            placeholder="Répétez le mot de passe"
+            minlength="6"
+        >
+
+        <button id="reset-password-button" type="button">
+            Enregistrer le nouveau mot de passe
+        </button>
     </section>
 
 
@@ -806,7 +864,7 @@
 
     <!-- Application -->
 
-    <script src="app.js?v=4"></script>
+    <script src="app.js?v=5"></script>
 
 </body>
 

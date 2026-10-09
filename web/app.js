@@ -62,6 +62,41 @@ const loginButton =
     );
 
 
+const forgotPasswordButton =
+    document.getElementById(
+        "forgot-password-button"
+    );
+
+
+const passwordResetSection =
+    document.getElementById(
+        "password-reset-section"
+    );
+
+
+const newPasswordInput =
+    document.getElementById(
+        "new-password"
+    );
+
+
+const confirmNewPasswordInput =
+    document.getElementById(
+        "confirm-new-password"
+    );
+
+
+const resetPasswordButton =
+    document.getElementById(
+        "reset-password-button"
+    );
+
+
+// Le paramètre est ajouté à l'URL de retour par le lien de récupération.
+let passwordRecoveryMode =
+    new URLSearchParams(window.location.search).get("mode") === "recovery";
+
+
 const logoutButton =
     document.getElementById(
         "logout-button"
@@ -207,6 +242,29 @@ function clearMessage() {
 
 
 // ============================================================
+// RÉINITIALISATION DU MOT DE PASSE
+// ============================================================
+
+function showPasswordResetForm() {
+    passwordRecoveryMode = true;
+
+    authSection.classList.add("hidden");
+    profileSection.classList.add("hidden");
+
+    if (passwordResetSection) {
+        passwordResetSection.classList.remove("hidden");
+    }
+}
+
+
+function hidePasswordResetForm() {
+    if (passwordResetSection) {
+        passwordResetSection.classList.add("hidden");
+    }
+}
+
+
+// ============================================================
 // MESSAGE PROFIL
 // ============================================================
 
@@ -300,6 +358,8 @@ function clearPushStatus() {
 
 function showLoggedOut() {
 
+    hidePasswordResetForm();
+
     authSection.classList.remove(
         "hidden"
     );
@@ -344,6 +404,13 @@ function showLoggedOut() {
 // ============================================================
 
 function showLoggedIn(user) {
+
+    if (passwordRecoveryMode) {
+        showPasswordResetForm();
+        return;
+    }
+
+    hidePasswordResetForm();
 
     authSection.classList.add(
         "hidden"
@@ -1860,6 +1927,137 @@ signupButton.addEventListener(
 
 
 // ============================================================
+// MOT DE PASSE OUBLIÉ
+// ============================================================
+
+if (forgotPasswordButton) {
+    forgotPasswordButton.addEventListener("click", async function () {
+        const email = emailInput.value.trim();
+
+        if (!email) {
+            showMessage("Saisissez d'abord l'adresse e-mail associée à votre compte.");
+            emailInput.focus();
+            return;
+        }
+
+        if (!emailInput.checkValidity()) {
+            showMessage("Veuillez saisir une adresse e-mail valide.");
+            emailInput.focus();
+            return;
+        }
+
+        forgotPasswordButton.disabled = true;
+        showMessage("Envoi de la demande de récupération...");
+
+        try {
+            const redirectTo =
+                `${window.location.origin}${window.location.pathname}?mode=recovery`;
+
+            const { error } = await supabaseClient.auth.resetPasswordForEmail(
+                email,
+                { redirectTo }
+            );
+
+            if (error) {
+                console.error("Erreur récupération du mot de passe :", error);
+                showMessage(
+                    "Impossible d'envoyer la demande pour le moment. " +
+                    "Vérifiez l'adresse et réessayez plus tard."
+                );
+                return;
+            }
+
+            // Message volontairement générique pour ne pas révéler
+            // si cette adresse correspond à un compte enregistré.
+            showMessage(
+                "Si un compte utilise cette adresse, un lien de récupération " +
+                "vient d'être envoyé. Vérifiez votre boîte de réception et vos indésirables."
+            );
+        } catch (error) {
+            console.error("Erreur inattendue lors de la récupération :", error);
+            showMessage(
+                "Impossible d'envoyer la demande pour le moment. Réessayez plus tard."
+            );
+        } finally {
+            forgotPasswordButton.disabled = false;
+        }
+    });
+}
+
+
+// ============================================================
+// ENREGISTRER LE NOUVEAU MOT DE PASSE
+// ============================================================
+
+if (resetPasswordButton) {
+    resetPasswordButton.addEventListener("click", async function () {
+        const newPassword = newPasswordInput.value;
+        const confirmPassword = confirmNewPasswordInput.value;
+
+        if (!newPassword || !confirmPassword) {
+            showMessage("Saisissez puis confirmez votre nouveau mot de passe.");
+            return;
+        }
+
+        if (newPassword.length < 6) {
+            showMessage("Le mot de passe doit contenir au moins 6 caractères.");
+            return;
+        }
+
+        if (newPassword !== confirmPassword) {
+            showMessage("Les deux mots de passe ne correspondent pas.");
+            confirmNewPasswordInput.focus();
+            return;
+        }
+
+        resetPasswordButton.disabled = true;
+        showMessage("Mise à jour du mot de passe...");
+
+        try {
+            const { data, error } = await supabaseClient.auth.updateUser({
+                password: newPassword
+            });
+
+            if (error) {
+                console.error("Erreur mise à jour du mot de passe :", error);
+                showMessage(
+                    "Le lien de récupération a peut-être expiré. " +
+                    "Demandez un nouveau lien et réessayez."
+                );
+                return;
+            }
+
+            passwordRecoveryMode = false;
+            hidePasswordResetForm();
+
+            // Retire les paramètres de retour de l'URL après utilisation.
+            window.history.replaceState(
+                {},
+                document.title,
+                window.location.pathname
+            );
+
+            newPasswordInput.value = "";
+            confirmNewPasswordInput.value = "";
+
+            showLoggedIn(data.user);
+            await loadProfile();
+            await loadProfilePhotos();
+            await updatePushUI();
+            await updateAdminUI();
+
+            showMessage("Votre mot de passe a été mis à jour. Vous êtes connecté(e).");
+        } catch (error) {
+            console.error("Erreur inattendue lors du changement de mot de passe :", error);
+            showMessage("Une erreur inattendue s'est produite. Réessayez.");
+        } finally {
+            resetPasswordButton.disabled = false;
+        }
+    });
+}
+
+
+// ============================================================
 // CONNEXION
 // ============================================================
 
@@ -2621,6 +2819,17 @@ async function checkCurrentSession() {
         }
 
 
+        if (passwordRecoveryMode) {
+
+            showPasswordResetForm();
+            showMessage(
+                "Choisissez un nouveau mot de passe, puis confirmez-le."
+            );
+            return;
+
+        }
+
+
         if (data.session) {
 
             showLoggedIn(
@@ -2678,6 +2887,22 @@ supabaseClient.auth.onAuthStateChange(
             "Auth event :",
             event
         );
+
+
+        if (event === "PASSWORD_RECOVERY") {
+            passwordRecoveryMode = true;
+            showPasswordResetForm();
+            showMessage(
+                "Lien de récupération validé. Choisissez votre nouveau mot de passe."
+            );
+            return;
+        }
+
+
+        if (passwordRecoveryMode) {
+            showPasswordResetForm();
+            return;
+        }
 
 
         if (session) {
