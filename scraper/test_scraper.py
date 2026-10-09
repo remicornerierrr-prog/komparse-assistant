@@ -2,104 +2,111 @@ import requests
 from bs4 import BeautifulSoup
 from html import unescape
 
-URL = "https://komparse.de/hauptframe.htm"
 
-headers = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
-}
+def main():
 
-# ------------------------------------------------------------
-# 1. Télécharger la page Komparse
-# ------------------------------------------------------------
+    URL = "https://komparse.de/hauptframe.htm"
 
-response = requests.get(URL, headers=headers, timeout=20)
-response.raise_for_status()
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+    }
 
-print("Statut HTTP :", response.status_code)
-print("Encodage détecté par requests :", response.encoding)
-print("Encodage apparent :", response.apparent_encoding)
+    # ------------------------------------------------------------
+    # 1. Télécharger la page Komparse
+    # ------------------------------------------------------------
 
-# ------------------------------------------------------------
-# 2. Décoder correctement le contenu
-# ------------------------------------------------------------
-#
-# Komparse utilise un ancien encodage de page.
-# On décode donc les octets bruts en Windows-1252.
-#
+    response = requests.get(URL, headers=headers, timeout=20)
+    response.raise_for_status()
 
-html_source = response.content.decode("cp1252", errors="replace")
+    print("Statut HTTP :", response.status_code)
+    print("Encodage détecté par requests :", response.encoding)
+    print("Encodage apparent :", response.apparent_encoding)
 
-print("Taille HTML :", len(html_source), "caractères")
+    # ------------------------------------------------------------
+    # 2. Décoder correctement le contenu
+    # ------------------------------------------------------------
+    #
+    # Komparse utilise un ancien encodage de page.
+    # On décode donc les octets bruts en Windows-1252.
+    #
 
-# ------------------------------------------------------------
-# 3. Analyser le HTML avec BeautifulSoup
-# ------------------------------------------------------------
+    html_source = response.content.decode("cp1252", errors="replace")
 
-soup = BeautifulSoup(html_source, "html.parser")
+    print("Taille HTML :", len(html_source), "caractères")
 
-# ------------------------------------------------------------
-# 4. Récupérer le texte de la page
-# ------------------------------------------------------------
+    # ------------------------------------------------------------
+    # 3. Analyser le HTML avec BeautifulSoup
+    # ------------------------------------------------------------
 
-text = soup.get_text("\n", strip=True)
+    soup = BeautifulSoup(html_source, "html.parser")
 
-# Convertir les entités HTML éventuelles :
-# &#xA0; -> espace
-# &#xA;  -> retour à la ligne
-text = unescape(text)
+    # ------------------------------------------------------------
+    # 4. Récupérer le texte de la page
+    # ------------------------------------------------------------
 
-# ------------------------------------------------------------
-# 5. Afficher un extrait dans le terminal
-# ------------------------------------------------------------
+    text = soup.get_text("\n", strip=True)
 
-print("\n--- EXTRAIT DE LA PAGE ---\n")
-print(text[:5000])
+    # Convertir les entités HTML éventuelles :
+    # &#xA0; -> espace
+    # &#xA;  -> retour à la ligne
+    text = unescape(text)
 
-# ------------------------------------------------------------
-# 6. Créer notre propre fichier HTML UTF-8
-# ------------------------------------------------------------
+    # ------------------------------------------------------------
+    # 5. Afficher un extrait dans le terminal
+    # ------------------------------------------------------------
 
-html_output = f"""<!DOCTYPE html>
-<html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Test Komparse</title>
-    <style>
-        body {{
-            font-family: Arial, sans-serif;
-            max-width: 1200px;
-            margin: 40px auto;
-            padding: 0 20px;
-            line-height: 1.5;
-        }}
+    print("\n--- EXTRAIT DE LA PAGE ---\n")
+    print(text[:5000])
 
-        pre {{
-            white-space: pre-wrap;
-            font-family: Arial, sans-serif;
-        }}
-    </style>
-</head>
+    # ------------------------------------------------------------
+    # 6. Créer notre propre fichier HTML UTF-8
+    # ------------------------------------------------------------
 
-<body>
+    html_output = f"""<!DOCTYPE html>
+    <html lang="de">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Test Komparse</title>
+        <style>
+            body {{
+                font-family: Arial, sans-serif;
+                max-width: 1200px;
+                margin: 40px auto;
+                padding: 0 20px;
+                line-height: 1.5;
+            }}
 
-<h1>Test du scraper Komparse</h1>
+            pre {{
+                white-space: pre-wrap;
+                font-family: Arial, sans-serif;
+            }}
+        </style>
+    </head>
 
-<pre>{text}</pre>
+    <body>
 
-</body>
-</html>
-"""
+    <h1>Test du scraper Komparse</h1>
 
-# ------------------------------------------------------------
-# 7. Enregistrer le fichier en UTF-8
-# ------------------------------------------------------------
+    <pre>{text}</pre>
 
-output_file = "komparse_test.html"
+    </body>
+    </html>
+    """
 
-with open(output_file, "w", encoding="utf-8") as f:
-    f.write(html_output)
+    # ------------------------------------------------------------
+    # 7. Enregistrer le fichier en UTF-8
+    # ------------------------------------------------------------
 
-print("\n----------------------------------------")
-print("Fichier créé :", output_file)
-print("----------------------------------------")
+    output_file = "komparse_test.html"
+
+    with open(output_file, "w", encoding="utf-8") as f:
+        f.write(html_output)
+
+    print("\n----------------------------------------")
+    print("Fichier créé :", output_file)
+    print("----------------------------------------")
+
+
+if __name__ == "__main__":
+    main()

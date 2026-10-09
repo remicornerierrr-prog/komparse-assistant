@@ -766,6 +766,12 @@ class MatchingV1Tests(unittest.TestCase):
 
             "Raum Köln",
 
+            "Köln",
+
+            "Bonn",
+
+            "Düsseldorf",
+
             "Köln & Umgebung",
 
             "Köln und Umgebung",
@@ -1080,6 +1086,81 @@ class MatchingV1Tests(unittest.TestCase):
             self.assertTrue(
                 result["matched"]
             )
+
+
+class MatchingParserEdgeCaseTests(unittest.TestCase):
+    def setUp(self):
+        self.profile_male_35 = {
+            "id": "male35",
+            "birth_date": "1990-10-21",
+            "gender": "male",
+        }
+        self.profile_female_35 = {
+            "id": "female35",
+            "birth_date": "1991-01-15",
+            "gender": "female",
+        }
+
+    def test_open_lower_age_bound_matches_older_profile(self):
+        offer = {
+            "offer_id": "open-age",
+            "location": "Berlin",
+            "shoot_date": "2026-10-20",
+            "age_min": 30,
+            "age_max": None,
+            "genders": ["female"],
+        }
+        # Berlin remains outside V1, so use the Köln region for this matching assertion.
+        offer["location"] = "Raum Köln"
+        result = match_offer_to_profile(offer, self.profile_female_35)
+        self.assertTrue(result["matched"])
+
+    def test_unspecified_generic_gender_goes_to_manual_review(self):
+        offer = {
+            "offer_id": "generic-komparsen",
+            "location": "Raum Köln",
+            "shoot_date": "2026-10-20",
+            "age_min": 19,
+            "age_max": 70,
+            "genders": [],
+        }
+        result = match_offer_to_profile(offer, self.profile_female_35)
+        self.assertFalse(result["matched"])
+        self.assertTrue(result["manual_review"])
+        self.assertEqual(result["manual_review_reason"], "sexe_annonce_non_precise")
+
+    def test_varied_age_offer_can_match_without_invented_numeric_bounds(self):
+        offer = {
+            "offer_id": "mixed-age",
+            "location": "Raum Köln",
+            "shoot_date": "2026-10-20",
+            "age_min": None,
+            "age_max": None,
+            "age_description": "gemischtes Alter",
+            "genders": ["male", "female"],
+        }
+        result = match_offer_to_profile(offer, self.profile_female_35)
+        self.assertTrue(result["matched"])
+
+    def test_multiple_shoot_dates_crossing_birthday_goes_to_review(self):
+        offer = {
+            "offer_id": "alt-dates",
+            "location": "Raum Köln",
+            "shoot_dates": ["2026-10-20", "2026-10-22"],
+            "shoot_date": None,
+            "age_min": 35,
+            "age_max": 35,
+            "genders": ["male"],
+        }
+        profile = {
+            "id": "birthday",
+            "birth_date": "1990-10-21",
+            "gender": "male",
+        }
+        result = match_offer_to_profile(offer, profile)
+        self.assertFalse(result["matched"])
+        self.assertTrue(result["manual_review"])
+        self.assertEqual(result["manual_review_reason"], "date_ambigue_et_anniversaire")
 
 
 if __name__ == "__main__":

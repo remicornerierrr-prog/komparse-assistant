@@ -182,6 +182,15 @@ def extract_title(segment):
             title,
         ).strip()
 
+        # Legacy page heading is sometimes included in the first
+        # offer's bold elements, concatenated directly with its city.
+        title = re.sub(
+            r"^\s*Aktuelle\s*Gesuche(?:\s*[:|,–-]\s*|\s*)",
+            "",
+            title,
+            flags=re.IGNORECASE,
+        ).strip()
+
         if title:
             return title
 
@@ -194,6 +203,12 @@ def extract_title(segment):
         r"\s+",
         " ",
         text,
+    ).strip()
+    text = re.sub(
+        r"^\s*Aktuelle\s*Gesuche(?:\s*[:|,–-]\s*|\s*)",
+        "",
+        text,
+        flags=re.IGNORECASE,
     ).strip()
 
     return text

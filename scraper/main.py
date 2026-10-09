@@ -49,6 +49,18 @@ VAPID_PRIVATE_KEY = os.environ.get("VAPID_PRIVATE_KEY")
 VAPID_SUBJECT = os.environ.get("VAPID_SUBJECT")
 
 
+# Diagnostic counters printed at the end of each GitHub Actions run.
+NOTIFICATION_STATS = {
+    "attempted": 0,
+    "provider_accepted": 0,
+    "failed": 0,
+    "missing_subscription": 0,
+    "invalid_subscription": 0,
+    "already_marked_notified": 0,
+    "manual_review": 0,
+}
+
+
 # ============================================================
 # VALIDATION DE LA CONFIGURATION
 # ============================================================
@@ -336,12 +348,31 @@ def normalize_offer(
         default="",
     )
 
+    shoot_date_text = as_optional_string(
+        first_value(parsed, "shoot_date_text", default=None)
+    )
+    shoot_duration_text = as_optional_string(
+        first_value(parsed, "shoot_duration_text", default=None)
+    )
+    age_description = as_optional_string(
+        first_value(parsed, "age_description", default=None)
+    )
+    parser_review_reason = as_optional_string(
+        first_value(parsed, "parser_review_reason", default=None)
+    )
+    parser_needs_review = as_bool(
+        first_value(parsed, "needs_review", "parser_needs_review", default=False)
+    )
+
     location = first_value(
         parsed,
         "location",
         "location_text",
         "mvp_location",
         default="",
+    )
+    location_status = as_optional_string(
+        first_value(parsed, "location_status", default=None)
     )
 
     shoot_date = first_value(
@@ -436,8 +467,14 @@ def normalize_offer(
 
         # Nouveau champ transmis à Supabase.
         "detail_text": str(detail_text or ""),
+        "shoot_date_text": shoot_date_text,
+        "shoot_duration_text": shoot_duration_text,
+        "age_description": age_description,
+        "parser_needs_review": parser_needs_review,
+        "parser_review_reason": parser_review_reason,
 
         "location_text": str(location or ""),
+        "location_status": location_status,
         "shoot_date": shoot_date,
         "age_min": age_min,
         "age_max": age_max,
@@ -533,10 +570,17 @@ def save_offer(
         "title": offer["title"],
         "raw_text": offer["raw_text"],
 
-        # Nouveau : stocker le texte détaillé dans Supabase.
+        # Textes qui préservent les informations non normalisables
+        # sans fabriquer une date exacte ou une tranche d'âge.
         "detail_text": offer["detail_text"],
+        "shoot_date_text": offer["shoot_date_text"],
+        "shoot_duration_text": offer["shoot_duration_text"],
+        "age_description": offer["age_description"],
+        "parser_needs_review": offer["parser_needs_review"],
+        "parser_review_reason": offer["parser_review_reason"],
 
         "location_text": offer["location_text"],
+        "location_status": offer["location_status"],
         "shoot_date": offer["shoot_date"],
         "age_min": offer["age_min"],
         "age_max": offer["age_max"],
@@ -644,8 +688,12 @@ def build_matching_offer(
         "location": offer["location_text"],
         "location_text": offer["location_text"],
         "shoot_date": offer["shoot_date"],
+        "shoot_dates": offer.get("parsed", {}).get("shoot_dates") or [],
+        "shoot_date_text": offer["shoot_date_text"],
+        "shoot_duration_text": offer["shoot_duration_text"],
         "age_min": offer["age_min"],
         "age_max": offer["age_max"],
+        "age_description": offer["age_description"],
         "genders": genders,
         "email": offer["email"],
         "subject_keyword": offer["subject_keyword"],
@@ -675,6 +723,12 @@ def build_matching_offer(
                 continue
 
             role_copy = dict(role)
+            if (
+                role_copy.get("age_min") is None
+                and role_copy.get("age_max") is None
+                and offer.get("age_description")
+            ):
+                role_copy["age_description"] = offer["age_description"]
 
             # Le parser fournit actuellement `gender`.
             # Le matching accepte également `genders`.
@@ -834,8 +888,10 @@ def send_push_notification(
         "url": offer["source_url"] or "/",
     }
 
+    NOTIFICATION_STATS["attempted"] += 1
+
     try:
-        webpush(
+        response = webpush(
             subscription_info=subscription,
             data=json.dumps(
                 payload,
@@ -846,15 +902,27 @@ def send_push_notification(
                 "sub": VAPID_SUBJECT,
             },
         )
-
+        NOTIFICATION_STATS["provider_accepted"] += 1
+        status_code = getattr(response, "status_code", None)
+        print(
+            "    Passerelle push acceptée" +
+            (f" (HTTP {status_code})" if status_code is not None else ".")
+        )
         return True
 
     except WebPushException as error:
+        NOTIFICATION_STATS["failed"] += 1
+        response = getattr(error, "response", None)
+        status_code = getattr(response, "status_code", None)
         print(
-            "    Erreur Web Push :",
-            error,
+            "    Erreur Web Push : "
+            + (f"HTTP {status_code} — " if status_code is not None else "")
+            + str(error)
         )
-
+        return False
+    except Exception as error:
+        NOTIFICATION_STATS["failed"] += 1
+        print(f"    Erreur inattendue pendant l'envoi push : {error}")
         return False
 
 
@@ -874,6 +942,7 @@ def notify_match_user(
     )
 
     if not subscription_row:
+        NOTIFICATION_STATS["missing_subscription"] += 1
         print(
             f"    Aucun abonnement push pour {user_id}"
         )
@@ -885,6 +954,7 @@ def notify_match_user(
     )
 
     if not isinstance(subscription, dict):
+        NOTIFICATION_STATS["invalid_subscription"] += 1
         print(
             f"    subscription_json invalide pour {user_id}"
         )
@@ -996,10 +1066,16 @@ def process_offer(
                 profile,
             )
 
-            if (
-                result is False
-                or result.get("matched") is not True
-            ):
+            if result is False:
+                continue
+
+            if result.get("matched") is not True:
+                if result.get("manual_review"):
+                    NOTIFICATION_STATS["manual_review"] += 1
+                    print(
+                        "    Revue manuelle requise pour ce profil : "
+                        + str(result.get("manual_review_reason", "raison inconnue"))
+                    )
                 continue
 
             user_id = profile.get("id")
@@ -1048,8 +1124,15 @@ def process_offer(
                         "être relu."
                     )
 
-            # Ne pas renvoyer de notification déjà envoyée.
+            # `notified_at` signifie que la passerelle push avait accepté
+            # l'envoi auparavant; cela ne garantit pas que le système
+            # d'exploitation l'a effectivement affiché.
             if match_row.get("notified_at") is not None:
+                NOTIFICATION_STATS["already_marked_notified"] += 1
+                print(
+                    f"    Notification ignorée : notified_at déjà renseigné "
+                    f"({match_row.get('notified_at')})."
+                )
                 continue
 
             notified = notify_match_user(
@@ -1136,6 +1219,14 @@ def main() -> None:
     print("==========================================")
     print(f"Offres traitées : {success_count}")
     print(f"Offres en erreur : {error_count}")
+    print("\nNotifications push — bilan :")
+    print(f"  Tentatives d'envoi         : {NOTIFICATION_STATS['attempted']}")
+    print(f"  Acceptées par la passerelle: {NOTIFICATION_STATS['provider_accepted']}")
+    print(f"  Échecs d'envoi             : {NOTIFICATION_STATS['failed']}")
+    print(f"  Sans abonnement enregistré: {NOTIFICATION_STATS['missing_subscription']}")
+    print(f"  Abonnement invalide        : {NOTIFICATION_STATS['invalid_subscription']}")
+    print(f"  Déjà marquées notifiées    : {NOTIFICATION_STATS['already_marked_notified']}")
+    print(f"  Cas en revue manuelle      : {NOTIFICATION_STATS['manual_review']}")
     print("Pipeline terminé.")
     print("==========================================")
 

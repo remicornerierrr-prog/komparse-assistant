@@ -103,7 +103,8 @@ function hasExplicitAgeDescription(offer) {
     const text = [
         offer.title || "",
         offer.detail_text || "",
-        offer.raw_text || ""
+        offer.raw_text || "",
+        offer.age_description || ""
     ]
         .join(" ")
         .normalize("NFD")
@@ -121,7 +122,8 @@ function hasExplicitAgeDescription(offer) {
         /\baltersgruppen\s+gemischt\b/
     ];
 
-    return patterns.some(pattern => pattern.test(text));
+    return patterns.some(pattern => pattern.test(text)) ||
+        Boolean(String(offer.age_description || "").trim());
 }
 
 // ============================================================
@@ -133,9 +135,17 @@ function formatAge(offer) {
     const max = offer.age_max;
 
     if (min == null && max == null) {
-        return hasExplicitAgeDescription(offer)
-            ? "Âges variés"
-            : "Non précisé";
+        const hasVariedAge = hasExplicitAgeDescription({
+            ...offer,
+            age_description: ""
+        });
+        if (hasVariedAge) {
+            return "Âges variés";
+        }
+        if (offer.age_description) {
+            return String(offer.age_description);
+        }
+        return "Non précisé";
     }
 
     if (min != null && max != null) {
@@ -154,30 +164,41 @@ function formatAge(offer) {
 }
 
 // ============================================================
+// AFFICHER DATE/PÉRIODE ET DURÉE
+// ============================================================
+
+function formatShooting(offer) {
+    const mainValue = offer.shoot_date || offer.shoot_date_text || "À préciser";
+    const duration = offer.shoot_duration_text || "";
+
+    return `
+        <span>${escapeHtml(mainValue)}</span>
+        ${duration ? `<br><small class="schedule-note">${escapeHtml(duration)}</small>` : ""}
+    `;
+}
+
+// ============================================================
 // DÉTERMINER LE STATUT DU PARSER
 // ============================================================
 
 function getParserStatus(offer) {
-    if (offer.parser_needs_review) {
-        return "À vérifier";
-    }
-
     const missing = [];
 
     if (!offer.location_text) {
         missing.push("localisation");
+    } else if (offer.location_status === "manual_review") {
+        missing.push("localisation à confirmer");
     }
 
-    if (
-        offer.shoot_date === null ||
-        offer.shoot_date === undefined ||
-        offer.shoot_date === ""
-    ) {
-        missing.push("date");
+    const hasExactDate = Boolean(offer.shoot_date);
+    const hasDateText = Boolean(offer.shoot_date_text);
+
+    if (!hasExactDate) {
+        missing.push(hasDateText ? "date exacte à confirmer" : "date");
     }
 
-    // Un âge numérique n'est pas obligatoire si l'annonce
-    // précise explicitement que les âges sont variés.
+    // Une annonce qui demande explicitement des âges variés ne doit pas
+    // être faussement signalée comme dépourvue d'âge.
     if (
         offer.age_min == null &&
         offer.age_max == null &&
@@ -191,7 +212,24 @@ function getParserStatus(offer) {
     }
 
     if (missing.length > 0) {
-        return "À vérifier : " + missing.join(", ");
+        return "À vérifier : " + [...new Set(missing)].join(", ");
+    }
+
+    if (offer.parser_needs_review) {
+        const labels = {
+            localisation_ambigue: "localisation à confirmer",
+            date_exacte_absente: "date exacte à confirmer",
+            sexe_annonce_non_precise: "sexe à vérifier",
+            age_non_numerique: "âge à préciser"
+        };
+        const reason = String(offer.parser_review_reason || "")
+            .split(",")
+            .map(value => value.trim())
+            .filter(Boolean)
+            .map(value => labels[value] || value);
+        return reason.length
+            ? `À vérifier : ${[...new Set(reason)].join(", ")}`
+            : "À vérifier";
     }
 
     return "OK";
@@ -255,13 +293,18 @@ async function loadOffers() {
             "raw_text",
             "detail_text",
             "location_text",
+            "location_status",
             "shoot_date",
+            "shoot_date_text",
+            "shoot_duration_text",
             "age_min",
             "age_max",
+            "age_description",
             "gender_male",
             "gender_female",
             "published_at",
             "parser_needs_review",
+            "parser_review_reason",
             "admin_review_required"
         ].join(","))
         .order("published_at", {
@@ -300,13 +343,7 @@ async function loadOffers() {
                         ${escapeHtml(offer.location_text) || "—"}
                     </td>
 
-                    <td>
-                        ${
-                            offer.shoot_date
-                                ? escapeHtml(offer.shoot_date)
-                                : "—"
-                        }
-                    </td>
+                    <td>${formatShooting(offer)}</td>
 
                     <td>${escapeHtml(formatAge(offer))}</td>
 
@@ -354,13 +391,7 @@ async function loadOffers() {
                     ${escapeHtml(offer.location_text) || "—"}
                 </td>
 
-                <td>
-                    ${
-                        offer.shoot_date
-                            ? escapeHtml(offer.shoot_date)
-                            : "—"
-                    }
-                </td>
+                <td>${formatShooting(offer)}</td>
 
                 <td>${escapeHtml(formatAge(offer))}</td>
 

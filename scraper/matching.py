@@ -32,6 +32,11 @@ import re
 import unicodedata
 from typing import Any
 
+try:
+    from .location_rules import classify_location
+except ImportError:  # pragma: no cover - script execution path
+    from location_rules import classify_location
+
 
 # ============================================================
 # NORMALISATION
@@ -85,114 +90,8 @@ def _normalize_text(value: Any) -> str:
 # GÉOGRAPHIE
 # ============================================================
 
-def classify_location(location: Any) -> str:
-    """
-    Classe une localisation :
-
-    - v1
-        Localisation explicitement compatible avec le MVP.
-
-    - manual_review
-        Localisation potentiellement pertinente mais trop large
-        ou ambiguë pour une notification automatique.
-
-    - outside
-        Localisation hors bassin V1 ou non reconnue.
-    """
-
-    text = _normalize_text(
-        location
-    )
-
-    if not text:
-        return "manual_review"
-
-
-    # --------------------------------------------------------
-    # Localisations ambiguës
-    # --------------------------------------------------------
-
-    manual_patterns = [
-
-        r"^nrw\b",
-
-        r"^nordrhein[- ]westfalen\b",
-
-        r"^deutschlandweit\b",
-
-        r"^bundesweit\b",
-
-        r"^ganz deutschland\b",
-
-        r"^deutschland$",
-
-        r"^germany\b",
-
-        r"^europaweit\b",
-
-    ]
-
-
-    for pattern in manual_patterns:
-
-        if re.search(
-            pattern,
-            text
-        ):
-
-            return "manual_review"
-
-
-    # --------------------------------------------------------
-    # Localisations explicitement autorisées pour V1
-    # --------------------------------------------------------
-
-    allowed_patterns = [
-
-        r"^grossraum koln$",
-
-        r"^grossraum bonn$",
-
-        r"^grossraum dusseldorf$",
-
-        r"^grossraum koln/bonn/dusseldorf$",
-
-        r"^grossraum koln/dusseldorf$",
-
-        r"^grossraum bonn/dusseldorf$",
-
-        r"^raum koln$",
-
-        r"^koln\s*&\s*umgebung$",
-
-        r"^koln\s+und\s+umgebung$",
-
-        r"^koln\s*\+\s*100\s*km$",
-
-        r"^koln\s*\+\s*150\s*km$",
-
-        r"^koln/bonn$",
-
-        r"^bonn/koln$",
-
-    ]
-
-
-    for pattern in allowed_patterns:
-
-        if re.fullmatch(
-            pattern,
-            text
-        ):
-
-            return "v1"
-
-
-    # --------------------------------------------------------
-    # Tout le reste est considéré hors V1
-    # --------------------------------------------------------
-
-    return "outside"
+# Shared location classification lives in location_rules.py.
+# Keeping the imported function name here preserves the public API used by tests.
 
 
 # ============================================================
@@ -839,6 +738,28 @@ def _get_shoot_date(
 # MATCH PRINCIPAL
 # ============================================================
 
+def _is_varied_age_role(role: dict[str, Any], offer: dict[str, Any]) -> bool:
+    text = " ".join(
+        str(value or "")
+        for value in (
+            role.get("age_description"),
+            role.get("title"),
+            role.get("role"),
+            role.get("context"),
+            offer.get("age_description"),
+            offer.get("title"),
+            offer.get("detail_text"),
+            offer.get("raw_text"),
+        )
+    )
+    text = _normalize_text(text)
+    return bool(re.search(
+        r"\b(?:gemischtes alter|altersgemischt|verschiedene altersgruppen|"
+        r"alle altersgruppen|menschen jeden alters)\b",
+        text,
+    ))
+
+
 def match_offer_to_profile(
     offer: dict[str, Any],
     profile: dict[str, Any]
@@ -920,44 +841,37 @@ def match_offer_to_profile(
     # 2. ÂGE À LA DATE DU TOURNAGE
     # ========================================================
 
-    shoot_date = _get_shoot_date(
-        offer
-    )
+    # Plusieurs dates possibles (ex. « 7. oder 8. November ») sont
+    # conservées comme alternatives. Aucune date n'est inventée.
+    raw_shoot_dates = offer.get("shoot_dates")
+    if isinstance(raw_shoot_dates, list) and raw_shoot_dates:
+        shoot_dates = raw_shoot_dates
+    else:
+        single_date = _get_shoot_date(offer)
+        shoot_dates = [single_date] if single_date is not None else []
 
+    birth_date = profile.get("birth_date")
+    ages = [calculate_age_at_date(birth_date, value) for value in shoot_dates]
 
-    birth_date = profile.get(
-        "birth_date"
-    )
-
-
-    age = calculate_age_at_date(
-        birth_date,
-        shoot_date
-    )
-
-
-    if age is None:
-
+    if not ages or any(value is None for value in ages):
         return {
-
             "matched": False,
-
             "manual_review": True,
-
             "reason": {
-
                 "location": True,
-
                 "age": False,
-
                 "gender": False,
-
             },
-
-            "manual_review_reason":
-                "age_ou_date_absente"
-
+            "manual_review_reason": "age_ou_date_absente",
         }
+
+    # Si les dates alternatives chevauchent l'anniversaire du profil,
+    # les âges diffèrent. Le choix automatique serait incertain.
+    if len(set(ages)) > 1:
+        age_values = ages
+    else:
+        age_values = [ages[0]]
+    age = ages[0]
 
 
     # ========================================================
@@ -1006,89 +920,70 @@ def match_offer_to_profile(
     # 5. TESTER CHAQUE RÔLE
     # ========================================================
 
-    for role_index, role in enumerate(
-        roles
-    ):
+    review_reasons: list[str] = []
 
-        age_min, age_max = _extract_age_range(
-            role
-        )
+    for role_index, role in enumerate(roles):
+        age_min, age_max = _extract_age_range(role)
+        offer_genders = _extract_offer_genders(role)
 
+        # Une mention explicite de "gemischtes Alter" signifie que
+        # l'offre cherche délibérément des âges variés. Elle peut donc
+        # correspondre à différents âges sans inventer une tranche.
+        varied_age = _is_varied_age_role(role, offer)
+        if age_min is None and age_max is None:
+            if varied_age:
+                age_match = True
+            else:
+                review_reasons.append("age_annonce_non_precis")
+                continue
+        else:
+            # Bornes ouvertes autorisées, par ex. "ab 35 Jahren".
+            age_match_values = [
+                (age_min is None or candidate_age >= age_min)
+                and (age_max is None or candidate_age <= age_max)
+                for candidate_age in age_values
+            ]
+            if any(age_match_values) and not all(age_match_values):
+                review_reasons.append("date_ambigue_et_anniversaire")
+                continue
+            age_match = all(age_match_values)
+            if not age_match:
+                continue
 
-        offer_genders = _extract_offer_genders(
-            role
-        )
-
-
-        # ----------------------------------------------------
-        # Impossible de valider automatiquement ce rôle
-        # ----------------------------------------------------
-
-        if (
-            age_min is None
-            or age_max is None
-            or not offer_genders
-        ):
-
+        # Une désignation générique comme "Komparsen" ne suffit pas
+        # à conclure que l'offre est réservée aux hommes ou aux femmes.
+        # On signale le cas pour revue au lieu d'exclure silencieusement.
+        if not offer_genders:
+            review_reasons.append("sexe_annonce_non_precise")
             continue
 
-
-        # ----------------------------------------------------
-        # Âge
-        # ----------------------------------------------------
-
-        age_match = (
-            age_min
-            <= age
-            <= age_max
-        )
-
-
-        # ----------------------------------------------------
-        # Sexe
-        # ----------------------------------------------------
-
-        gender_match = (
-            profile_gender
-            in offer_genders
-        )
-
-
-        # ----------------------------------------------------
-        # Match complet
-        # ----------------------------------------------------
-
-        if (
-            age_match
-            and gender_match
-        ):
-
+        if profile_gender in offer_genders:
             return {
-
                 "matched": True,
-
                 "manual_review": False,
-
                 "reason": {
-
                     "location": True,
-
                     "age": True,
-
                     "gender": True,
-
                 },
-
-                "profile_index":
-                    role_index,
-
-                "matched_age":
-                    age,
-
+                "profile_index": role_index,
+                "matched_age": age,
             }
 
+    if review_reasons:
+        unique_reasons = sorted(set(review_reasons))
+        return {
+            "matched": False,
+            "manual_review": True,
+            "reason": {
+                "location": True,
+                "age": "age_annonce_non_precis" not in unique_reasons,
+                "gender": "sexe_annonce_non_precise" not in unique_reasons,
+            },
+            "manual_review_reason": ",".join(unique_reasons),
+        }
 
-    # Aucun rôle compatible
+    # Aucun rôle compatible.
     return False
 
 

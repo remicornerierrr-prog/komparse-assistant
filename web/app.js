@@ -1359,103 +1359,97 @@ async function updatePushUI() {
         return;
     }
 
-
-    if (
-        !isPushSupported()
-    ) {
-
-        enablePushButton.disabled =
-            true;
-
-
-        enablePushButton.textContent =
-            "Notifications non disponibles";
-
-
+    if (!isPushSupported()) {
+        enablePushButton.disabled = true;
+        enablePushButton.textContent = "Notifications non disponibles";
         showPushStatus(
             "Les notifications push ne sont pas prises en charge par ce navigateur.",
             "error"
         );
-
-
         return;
     }
 
+    const permission = getNotificationPermission();
 
-    const permission =
-        getNotificationPermission();
-
-
-    if (
-        permission === "denied"
-    ) {
-
-        enablePushButton.textContent =
-            "Notifications bloquées";
-
-
+    if (permission === "denied") {
+        enablePushButton.textContent = "Notifications bloquées";
         showPushStatus(
             "Les notifications sont bloquées dans les paramètres du navigateur.",
             "error"
         );
-
-
         return;
     }
 
-
     try {
+        const registration = await getPushRegistration();
+        const browserSubscription = await getExistingPushSubscription(registration);
 
-        const registration =
-            await getPushRegistration();
+        if (browserSubscription) {
+            const user = await getCurrentUser();
 
+            if (!user) {
+                enablePushButton.textContent = "Vérifier les notifications";
+                showPushStatus(
+                    "Un abonnement existe dans ce navigateur, mais connectez-vous pour le synchroniser avec votre compte.",
+                    "info"
+                );
+                return;
+            }
 
-        const subscription =
-            await getExistingPushSubscription(
-                registration
-            );
+            // Vérifier aussi la base : un abonnement local au navigateur
+            // ne garantit pas qu'une ligne correspondante existe encore
+            // dans push_subscriptions pour ce compte.
+            const savedResult = await supabaseClient
+                .from("push_subscriptions")
+                .select("id,subscription_json")
+                .eq("user_id", user.id)
+                .limit(1);
 
+            if (savedResult.error) {
+                throw new Error(
+                    "Impossible de vérifier l'abonnement dans Supabase : " +
+                    savedResult.error.message
+                );
+            }
 
-        if (
-            subscription
-        ) {
+            const savedRow = (savedResult.data || [])[0];
+            const savedEndpoint = savedRow?.subscription_json?.endpoint;
 
-            enablePushButton.textContent =
-                "✓ Notifications activées";
+            if (!savedRow || savedEndpoint !== browserSubscription.endpoint) {
+                // Réparer automatiquement un abonnement manquant ou périmé.
+                await savePushSubscription(browserSubscription);
 
+                enablePushButton.textContent = "✓ Notifications synchronisées";
+                showPushStatus(
+                    "L'abonnement de ce navigateur a été synchronisé avec votre compte. Les prochaines correspondances pourront déclencher des notifications.",
+                    "success"
+                );
+                return;
+            }
 
+            enablePushButton.textContent = "✓ Notifications activées";
             showPushStatus(
-                "Votre navigateur est déjà abonné aux notifications push.",
+                "Votre navigateur est abonné et l'abonnement est bien enregistré dans votre compte.",
                 "success"
             );
-
-
             return;
         }
-
-
-    }
-
-
-    catch (error) {
-
-        console.error(
-            "Erreur vérification abonnement push :",
-            error
+    } catch (error) {
+        console.error("Erreur vérification/synchronisation abonnement push :", error);
+        enablePushButton.textContent = "Réparer les notifications";
+        showPushStatus(
+            "L'abonnement push n'a pas pu être vérifié. Cliquez sur le bouton pour réenregistrer les notifications. " +
+            (error.message || "Erreur inconnue."),
+            "error"
         );
-
+        return;
     }
 
-
-    enablePushButton.textContent =
-        "🔔 Activer les notifications";
-
-
+    enablePushButton.textContent = "🔔 Activer les notifications";
     showPushStatus(
         "Les notifications ne sont pas encore activées.",
         "info"
     );
-
 }
 
 

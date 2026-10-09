@@ -1,0 +1,1 @@
+"""Komparse Assistant scraper package."""

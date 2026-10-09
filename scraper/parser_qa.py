@@ -105,6 +105,13 @@ def main() -> None:
         "location_text": lambda o: o.get("location_text"),
         "shoot_date": lambda o: o.get("shoot_date"),
         "shoot_dates": lambda o: o.get("shoot_dates"),
+        "shoot_date_text": lambda o: o.get("shoot_date_text"),
+        "shoot_duration_text": lambda o: o.get("shoot_duration_text"),
+        "age_description": lambda o: o.get("age_description"),
+        "location_status": lambda o: o.get("location_status"),
+        "application_method": lambda o: o.get("application_method"),
+        "application_url": lambda o: o.get("application_url"),
+        "parser_review_reason": lambda o: o.get("parser_review_reason"),
         "age_min": lambda o: o.get("age_min"),
         "age_max": lambda o: o.get("age_max"),
         "gender": lambda o: o.get("gender"),
@@ -165,25 +172,29 @@ def main() -> None:
     print()
 
     # --------------------------------------------------------
-    # OFFRES SANS DATE DE TOURNAGE
+    # DATES / PÉRIODES / DURÉES DE TOURNAGE
     # --------------------------------------------------------
 
-    missing_shoot_date = [
-        offer
-        for offer in offers
-        if not is_present(
-            offer.get("shoot_date")
-        )
+    missing_exact_date = [
+        offer for offer in offers if not is_present(offer.get("shoot_date"))
+    ]
+    with_schedule_text = [
+        offer for offer in missing_exact_date
+        if is_present(offer.get("shoot_date_text"))
+    ]
+    no_schedule_information = [
+        offer for offer in missing_exact_date
+        if not is_present(offer.get("shoot_date_text"))
     ]
 
-    print("OFFRES SANS DATE DE TOURNAGE")
+    print("DATES ET MODALITÉS DE TOURNAGE")
     print("-" * 80)
+    print(f"Sans date exacte : {len(missing_exact_date)}")
+    print(f"  Période/modalité capturée : {len(with_schedule_text)}")
+    print(f"  Aucune information de date : {len(no_schedule_information)}")
+    print()
 
-    print(
-        f"Nombre : {len(missing_shoot_date)}"
-    )
-
-    for offer in missing_shoot_date:
+    for offer in no_schedule_information:
         print(
             f"- {offer.get('komparse_id')} | "
             f"{offer.get('title', '')}"
@@ -192,25 +203,21 @@ def main() -> None:
     print()
 
     # --------------------------------------------------------
-    # OFFRES SANS ÂGE
+    # OFFRES SANS ÂGE NUMÉRIQUE NI DESCRIPTION D'ÂGE
     # --------------------------------------------------------
 
     missing_age = [
-        offer
-        for offer in offers
+        offer for offer in offers
         if (
             not is_present(offer.get("age_min"))
-            or
-            not is_present(offer.get("age_max"))
+            and not is_present(offer.get("age_max"))
+            and not is_present(offer.get("age_description"))
         )
     ]
 
-    print("OFFRES SANS ÂGE COMPLET")
+    print("OFFRES SANS ÂGE NI DESCRIPTION D'ÂGE")
     print("-" * 80)
-
-    print(
-        f"Nombre : {len(missing_age)}"
-    )
+    print(f"Nombre : {len(missing_age)}")
 
     for offer in missing_age:
         print(
