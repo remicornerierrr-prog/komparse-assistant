@@ -134,6 +134,14 @@ class TestScheduleParsing(unittest.TestCase):
             "2x 0,5 Drehtage + Videotagebuch",
         )
 
+    def test_publication_timestamp_is_not_mistaken_for_shoot_month(self):
+        title = "Berlin | Frau ab 30 Jahren | 1 Drehtag bei dir zu Hause nach Absprache | 100 Euro"
+        detail = "91.330 8. Oktober 2026 21:48 Uhr Berlin | Frau ab 30 Jahren. Der Drehtag findet nach Absprache statt."
+        self.assertEqual(
+            extract_shoot_date_text(title, detail, default_year=2026),
+            "Nach Absprache",
+        )
+
     def test_seasonal_period_is_preserved_without_exact_date(self):
         title = "Deutschlandweit | Singlemütter 35-50 Jahre | Drehzeitraum im Sommer 2027, Anzahl Drehtage noch unbestimmt"
         self.assertEqual(
@@ -236,6 +244,37 @@ class TestRealAnnouncementExamples(unittest.TestCase):
         self.assertEqual(detail["subject_keyword"], "Initiativbewerbung")
         self.assertEqual(detail["application_url"], "https://www.mavies.de/bewerben")
         self.assertTrue(detail["needs_review"])  # Bundesweit and gender are intentionally reviewed.
+
+    def test_91_338_mixed_age_from_detail_is_preserved(self):
+        title = (
+            "Raum KÖLN | 7 verschiedene sportliche Komparsen w/m im Park "
+            "(Fahrradfahrer, Jogger, Yoga usw.), später dann Finanzbeamte "
+            "bei Ecki | 14. Oktober | Gage je € 112"
+        )
+        result = parse_offer({
+            "offer_id": "91.338",
+            "publication_date": "2026-10-09 13:36",
+            "title": title,
+            "raw_text": "",
+        })
+        enriched = enrich_offer_from_detail(result, {
+            "detail_text": (
+                "9. Oktober 2026 13:36 Uhr Für die neuen Folgen suchen wir "
+                "sieben sportliche Komparsen für den 14. Oktober, gemischtes Alter."
+            ),
+            "shoot_dates": [],
+            "shoot_date_text": None,
+            "shoot_duration_text": None,
+            "age_description": "gemischtes Alter",
+            "email": "casting@example.com",
+            "subject_keyword": None,
+            "application_url": None,
+            "application_method": "email",
+        })
+        self.assertEqual(enriched["shoot_date"], "2026-10-14")
+        self.assertEqual(enriched["age_description"], "gemischtes Alter")
+        self.assertEqual(enriched["gender"], ["female", "male"])
+        self.assertFalse(enriched["needs_review"])
 
     def test_91_330_open_age_and_home_shooting(self):
         result = parse_offer({

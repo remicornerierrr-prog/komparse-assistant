@@ -26,7 +26,12 @@ from typing import Any
 from pywebpush import WebPushException, webpush
 from supabase import Client, create_client
 
-from matching import match_offer_to_profile
+try:
+    from .matching import match_offer_to_profile
+    from .gender_flags import gender_flags_from_value
+except ImportError:  # Support `python scraper/main.py` execution.
+    from matching import match_offer_to_profile
+    from gender_flags import gender_flags_from_value
 
 
 # ============================================================
@@ -253,18 +258,12 @@ def as_optional_string(value: Any) -> str | None:
 def extract_top_level_gender_flags(
     parsed: dict[str, Any],
 ) -> tuple[bool, bool]:
-
+    """Read canonical labels accurately (especially female != male)."""
     gender_male = parsed.get("gender_male")
     gender_female = parsed.get("gender_female")
 
-    if (
-        gender_male is not None
-        or gender_female is not None
-    ):
-        return (
-            as_bool(gender_male),
-            as_bool(gender_female),
-        )
+    if gender_male is not None or gender_female is not None:
+        return as_bool(gender_male), as_bool(gender_female)
 
     gender_value = first_value(
         parsed,
@@ -273,41 +272,7 @@ def extract_top_level_gender_flags(
         "sex",
         "sexes",
     )
-
-    if gender_value is None:
-        return False, False
-
-    if isinstance(gender_value, list):
-        gender_text = " ".join(
-            str(item)
-            for item in gender_value
-        ).lower()
-    else:
-        gender_text = str(gender_value).lower()
-
-    male = (
-        "m/w/d" in gender_text
-        or "w/m/d" in gender_text
-        or "m/w" in gender_text
-        or "w/m" in gender_text
-        or "männ" in gender_text
-        or "mann" in gender_text
-        or "male" in gender_text
-        or gender_text.strip() == "m"
-    )
-
-    female = (
-        "m/w/d" in gender_text
-        or "w/m/d" in gender_text
-        or "m/w" in gender_text
-        or "w/m" in gender_text
-        or "weib" in gender_text
-        or "frau" in gender_text
-        or "female" in gender_text
-        or gender_text.strip() == "w"
-    )
-
-    return male, female
+    return gender_flags_from_value(gender_value)
 
 
 # ============================================================
@@ -357,6 +322,19 @@ def normalize_offer(
     age_description = as_optional_string(
         first_value(parsed, "age_description", default=None)
     )
+    if not age_description:
+        # Fail-safe in case the parser omitted a descriptive age label while
+        # the source text still contains one, e.g. "gemischtes Alter".
+        try:
+            from .parser import extract_age_description
+        except ImportError:
+            from parser import extract_age_description
+        age_source = " ".join((
+            str(title or ""),
+            str(raw_text or ""),
+            str(detail_text or ""),
+        ))
+        age_description = as_optional_string(extract_age_description(age_source))
     parser_review_reason = as_optional_string(
         first_value(parsed, "parser_review_reason", default=None)
     )
@@ -399,6 +377,20 @@ def normalize_offer(
             "age_to",
         )
     )
+
+    # Fail safe: if neither numerical bounds nor an age description were
+    # extracted, keep the offer visible for review instead of silently
+    # treating it as complete.
+    if age_min is None and age_max is None and not age_description:
+        parser_needs_review = True
+        reasons = [
+            part.strip()
+            for part in (parser_review_reason or "").split(",")
+            if part.strip()
+        ]
+        if "age_non_numerique" not in reasons:
+            reasons.append("age_non_numerique")
+        parser_review_reason = ", ".join(reasons)
 
     (
         gender_male,
@@ -685,6 +677,7 @@ def build_matching_offer(
         "offer_id": offer["komparse_id"],
         "title": offer["title"],
         "raw_text": offer["raw_text"],
+        "detail_text": offer["detail_text"],
         "location": offer["location_text"],
         "location_text": offer["location_text"],
         "shoot_date": offer["shoot_date"],
