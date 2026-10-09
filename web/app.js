@@ -92,9 +92,31 @@ const resetPasswordButton =
     );
 
 
-// Le paramètre est ajouté à l'URL de retour par le lien de récupération.
-let passwordRecoveryMode =
-    new URLSearchParams(window.location.search).get("mode") === "recovery";
+// Le lien doit contenir un code/token de callback Supabase pour
+// autoriser la réinitialisation. Le simple paramètre ?mode=recovery
+// ne prouve pas que le lien est valide.
+const authQueryParams = new URLSearchParams(window.location.search);
+const authHashText = window.location.hash.startsWith("#")
+    ? window.location.hash.slice(1)
+    : window.location.hash;
+const authHashParams = new URLSearchParams(authHashText);
+
+const recoveryModeRequested =
+    authQueryParams.get("mode") === "recovery";
+
+const recoveryCallbackHasCredentials =
+    authQueryParams.has("code") ||
+    authHashParams.has("access_token") ||
+    authHashParams.get("type") === "recovery";
+
+const recoveryCallbackHasError =
+    authQueryParams.has("error") ||
+    authQueryParams.has("error_code") ||
+    authHashParams.has("error") ||
+    authHashParams.has("error_code");
+
+let passwordRecoveryMode = false;
+let recoverySessionReady = false;
 
 
 const logoutButton =
@@ -209,35 +231,59 @@ const PHOTO_CONFIG = {
 // MESSAGE GÉNÉRAL
 // ============================================================
 
-function showMessage(message) {
-
+function showMessage(message, type = "") {
     if (!messageElement) {
         return;
     }
 
+    messageElement.textContent = message;
+    messageElement.style.display = "block";
+    messageElement.classList.remove(
+        "message-error",
+        "message-info",
+        "message-success"
+    );
 
-    messageElement.textContent =
-        message;
+    if (type === "error" || type === "info" || type === "success") {
+        messageElement.classList.add(`message-${type}`);
+    }
 
-
-    messageElement.style.display =
-        "block";
+    messageElement.setAttribute(
+        "role",
+        type === "error" ? "alert" : "status"
+    );
 }
 
-
 function clearMessage() {
-
     if (!messageElement) {
         return;
     }
 
+    messageElement.textContent = "";
+    messageElement.style.display = "none";
+    messageElement.classList.remove(
+        "message-error",
+        "message-info",
+        "message-success"
+    );
+    messageElement.setAttribute("role", "status");
+}
 
-    messageElement.textContent =
-        "";
+function cleanAuthCallbackUrl() {
+    window.history.replaceState(
+        {},
+        document.title,
+        window.location.pathname
+    );
+}
 
-
-    messageElement.style.display =
-        "none";
+function showInvalidRecoveryLink(message = "Le lien de récupération est invalide ou a expiré. Demandez un nouveau lien puis ouvrez le dernier e-mail reçu.") {
+    recoverySessionReady = false;
+    passwordRecoveryMode = false;
+    hidePasswordResetForm();
+    cleanAuthCallbackUrl();
+    showLoggedOut();
+    showMessage(message, "error");
 }
 
 
@@ -1995,47 +2041,96 @@ if (resetPasswordButton) {
         const confirmPassword = confirmNewPasswordInput.value;
 
         if (!newPassword || !confirmPassword) {
-            showMessage("Saisissez puis confirmez votre nouveau mot de passe.");
+            showMessage("Saisissez puis confirmez votre nouveau mot de passe.", "error");
             return;
         }
 
         if (newPassword.length < 6) {
-            showMessage("Le mot de passe doit contenir au moins 6 caractères.");
+            showMessage("Le mot de passe doit contenir au moins 6 caractères.", "error");
+            newPasswordInput.focus();
             return;
         }
 
         if (newPassword !== confirmPassword) {
-            showMessage("Les deux mots de passe ne correspondent pas.");
+            showMessage("Les deux mots de passe ne correspondent pas.", "error");
             confirmNewPasswordInput.focus();
             return;
         }
 
         resetPasswordButton.disabled = true;
-        showMessage("Mise à jour du mot de passe...");
+        showMessage("Vérification du lien et mise à jour du mot de passe...", "info");
 
         try {
+            // updateUser() exige une session authentifiée créée par le
+            // lien de récupération. Ne pas présenter le formulaire comme
+            // valide uniquement parce que l'URL contient mode=recovery.
+            const { data: sessionData, error: sessionError } =
+                await supabaseClient.auth.getSession();
+
+            if (sessionError) {
+                console.error("Erreur de session de récupération :", sessionError);
+                showMessage(
+                    "Impossible de vérifier la session de récupération. Demandez un nouveau lien et réessayez.",
+                    "error"
+                );
+                return;
+            }
+
+            if (!recoverySessionReady || !sessionData.session) {
+                showInvalidRecoveryLink();
+                return;
+            }
+
             const { data, error } = await supabaseClient.auth.updateUser({
                 password: newPassword
             });
 
             if (error) {
                 console.error("Erreur mise à jour du mot de passe :", error);
-                showMessage(
-                    "Le lien de récupération a peut-être expiré. " +
-                    "Demandez un nouveau lien et réessayez."
-                );
+                const errorText = `${error.code || ""} ${error.message || ""}`.toLowerCase();
+
+                if (
+                    errorText.includes("session missing") ||
+                    errorText.includes("invalid token") ||
+                    errorText.includes("expired") ||
+                    errorText.includes("otp_expired") ||
+                    errorText.includes("refresh token") ||
+                    error.status === 401
+                ) {
+                    showInvalidRecoveryLink();
+                } else if (
+                    errorText.includes("different from the old password") ||
+                    errorText.includes("should be different")
+                ) {
+                    showMessage(
+                        "Choisissez un mot de passe différent de votre ancien mot de passe.",
+                        "error"
+                    );
+                } else if (
+                    errorText.includes("weak password") ||
+                    errorText.includes("password should") ||
+                    errorText.includes("password must") ||
+                    errorText.includes("minimum password")
+                ) {
+                    showMessage(
+                        "Ce mot de passe ne respecte pas les exigences de sécurité. Choisissez-en un autre, plus robuste.",
+                        "error"
+                    );
+                } else {
+                    // Afficher une erreur informative au lieu de supposer
+                    // que tous les échecs signifient que le lien a expiré.
+                    showMessage(
+                        `Impossible de mettre à jour le mot de passe : ${error.message || "erreur inconnue"}`,
+                        "error"
+                    );
+                }
                 return;
             }
 
             passwordRecoveryMode = false;
+            recoverySessionReady = false;
             hidePasswordResetForm();
-
-            // Retire les paramètres de retour de l'URL après utilisation.
-            window.history.replaceState(
-                {},
-                document.title,
-                window.location.pathname
-            );
+            cleanAuthCallbackUrl();
 
             newPasswordInput.value = "";
             confirmNewPasswordInput.value = "";
@@ -2046,16 +2141,18 @@ if (resetPasswordButton) {
             await updatePushUI();
             await updateAdminUI();
 
-            showMessage("Votre mot de passe a été mis à jour. Vous êtes connecté(e).");
+            showMessage("Votre mot de passe a été mis à jour. Vous êtes connecté(e).", "success");
         } catch (error) {
             console.error("Erreur inattendue lors du changement de mot de passe :", error);
-            showMessage("Une erreur inattendue s'est produite. Réessayez.");
+            showMessage(
+                "Une erreur inattendue s'est produite pendant la mise à jour. Réessayez.",
+                "error"
+            );
         } finally {
             resetPasswordButton.disabled = false;
         }
     });
 }
-
 
 // ============================================================
 // CONNEXION
@@ -2792,149 +2889,135 @@ logoutButton.addEventListener(
 // ============================================================
 
 async function checkCurrentSession() {
-
     try {
-
-        const {
-            data,
-            error
-        } =
-            await supabaseClient
-                .auth
-                .getSession();
-
+        let { data, error } = await supabaseClient.auth.getSession();
 
         if (error) {
-
-            console.error(
-                "Erreur récupération session :",
-                error
-            );
-
-
-            showLoggedOut();
-
-
+            console.error("Erreur récupération session :", error);
+            if (recoveryModeRequested) {
+                showInvalidRecoveryLink(
+                    "Impossible de valider le lien de récupération. Demandez un nouveau lien puis réessayez."
+                );
+            } else {
+                showLoggedOut();
+            }
             return;
         }
 
+        if (recoveryModeRequested) {
+            if (recoveryCallbackHasError) {
+                showInvalidRecoveryLink();
+                return;
+            }
 
-        if (passwordRecoveryMode) {
+            if (!recoveryCallbackHasCredentials) {
+                showInvalidRecoveryLink(
+                    "Aucun jeton de récupération n'a été trouvé. Demandez un nouveau lien depuis « Mot de passe oublié ? » puis ouvrez le dernier e-mail reçu."
+                );
+                return;
+            }
 
-            showPasswordResetForm();
-            showMessage(
-                "Choisissez un nouveau mot de passe, puis confirmez-le."
-            );
+            // L'échange du code PKCE peut finir juste après le chargement.
+            if (!data.session) {
+                await new Promise(resolve => setTimeout(resolve, 500));
+                const retry = await supabaseClient.auth.getSession();
+                if (!retry.error) {
+                    data = retry.data;
+                }
+            }
+
+            if (data.session) {
+                recoverySessionReady = true;
+                passwordRecoveryMode = true;
+                showPasswordResetForm();
+                showMessage(
+                    "Lien de récupération validé. Choisissez votre nouveau mot de passe.",
+                    "success"
+                );
+            } else {
+                showInvalidRecoveryLink();
+            }
+
             return;
-
         }
-
 
         if (data.session) {
-
-            showLoggedIn(
-                data.session.user
-            );
-
-
+            showLoggedIn(data.session.user);
             await loadProfile();
-
-
             await loadProfilePhotos();
-
-
             await updatePushUI();
-
-
             await updateAdminUI();
-
-        }
-        else {
-
+        } else {
             showLoggedOut();
-
         }
-
+    } catch (error) {
+        console.error("Erreur inattendue :", error);
+        if (recoveryModeRequested) {
+            showInvalidRecoveryLink(
+                "Impossible de valider le lien de récupération. Demandez un nouveau lien puis réessayez."
+            );
+        } else {
+            showLoggedOut();
+        }
     }
-
-
-    catch (error) {
-
-        console.error(
-            "Erreur inattendue :",
-            error
-        );
-
-
-        showLoggedOut();
-
-    }
-
 }
-
 
 // ============================================================
 // CHANGEMENTS AUTH
 // ============================================================
 
 supabaseClient.auth.onAuthStateChange(
-    async function (
-        event,
-        session
-    ) {
-
-        console.log(
-            "Auth event :",
-            event
-        );
-
+    async function (event, session) {
+        console.log("Auth event :", event);
 
         if (event === "PASSWORD_RECOVERY") {
+            if (!session) {
+                showInvalidRecoveryLink();
+                return;
+            }
+
+            recoverySessionReady = true;
             passwordRecoveryMode = true;
             showPasswordResetForm();
             showMessage(
-                "Lien de récupération validé. Choisissez votre nouveau mot de passe."
+                "Lien de récupération validé. Choisissez votre nouveau mot de passe.",
+                "success"
             );
             return;
         }
 
-
-        if (passwordRecoveryMode) {
+        // Pour le flux PKCE, l'échange peut être signalé comme INITIAL_SESSION
+        // ou SIGNED_IN. On n'accepte cette session que si le navigateur vient
+        // réellement du callback de récupération (code/token présent à l'arrivée).
+        if (
+            recoveryModeRequested &&
+            recoveryCallbackHasCredentials &&
+            session
+        ) {
+            recoverySessionReady = true;
+            passwordRecoveryMode = true;
             showPasswordResetForm();
             return;
         }
 
+        if (passwordRecoveryMode) {
+            if (recoverySessionReady) {
+                showPasswordResetForm();
+            }
+            return;
+        }
 
         if (session) {
-
-            showLoggedIn(
-                session.user
-            );
-
-
+            showLoggedIn(session.user);
             await loadProfile();
-
-
             await loadProfilePhotos();
-
-
             await updatePushUI();
-
-
             await updateAdminUI();
-
-        }
-        else if (
-            event === "SIGNED_OUT"
-        ) {
-
+        } else if (event === "SIGNED_OUT") {
             showLoggedOut();
-
         }
-
     }
 );
-
 
 // ============================================================
 // DÉMARRAGE
