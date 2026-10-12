@@ -333,3 +333,5 @@ class TestRealAnnouncementExamples(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# CI trigger: ensure the pull-request test workflow runs for this branch.
