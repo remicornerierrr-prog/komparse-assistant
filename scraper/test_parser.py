@@ -110,6 +110,13 @@ class TestGenderParsing(unittest.TestCase):
 
 
 class TestScheduleParsing(unittest.TestCase):
+    def test_explicit_date_range_takes_precedence_over_broad_month(self):
+        title = "Köln +100km | Double, 16 - 35 J. | 12 Drehtage im Zeitraum 09.11. bis 17.12. | Oktober 2026"
+        self.assertEqual(
+            extract_shoot_date_text(title, default_year=2026),
+            "9. November bis 17. Dezember 2026",
+        )
+
     def test_end_of_month_is_text_period_not_fake_date(self):
         title = "Bundesweit | US-Native-Speaker (9-17 J.) | 1 Drehtag, Ende November | VB"
         dates = extract_shoot_dates(title, default_year=2026)
@@ -157,6 +164,15 @@ class TestScheduleParsing(unittest.TestCase):
         self.assertEqual(
             extract_shoot_duration_text(title),
             "Anzahl Drehtage noch unbestimmt",
+        )
+
+    def test_date_range_is_preserved_as_a_period_not_month_from_metadata(self):
+        title = "Köln +100km | Double, 16 - 35 J. | 12 Drehtage im Zeitraum 09.11. bis 17.12. | Gage 200€"
+        dates = extract_shoot_dates(title, default_year=2026)
+        self.assertEqual(dates, [])
+        self.assertEqual(
+            extract_shoot_date_text(title, default_year=2026, shoot_dates=dates),
+            "9. November bis 17. Dezember 2026",
         )
 
     def test_numeric_and_multiple_dates_are_removed_from_duration(self):
@@ -317,3 +333,5 @@ class TestRealAnnouncementExamples(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# CI trigger: ensure the pull-request test workflow runs for this branch.

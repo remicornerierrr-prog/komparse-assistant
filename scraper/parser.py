@@ -298,6 +298,11 @@ def extract_shoot_dates(
     dates: list[str] = []
     covered: list[tuple[int, int]] = []
 
+    # Date-range endpoints describe one shooting window, not exact dates.
+    range_pattern = r"\b(?:im\s+)?(?:dreh)?zeitraum\s+(?:vom\s+)?\d{1,2}\.\d{1,2}\.?\s*(?:bis|[-–])\s*\d{1,2}\.\d{1,2}\.?"
+    for match in re.finditer(range_pattern, t, re.IGNORECASE):
+        covered.append((match.start(), match.end()))
+
     # Alternative exact days: 7. o. 8. November / 7. oder 8. November.
     alternative_pattern = (
         rf"\b(\d{{1,2}})\.\s*(?:o\.|oder|/)\s*(\d{{1,2}})\.\s*"
@@ -367,6 +372,29 @@ def extract_shoot_date_text(
     title = normalize_text(title)
     detail_text = normalize_text(detail_text)
     combined = f"{title} {detail_text}".strip()
+
+    # Explicit date ranges such as "im Zeitraum 09.11. bis 17.12."
+    # are approximate multi-day windows, not one exact shooting date.
+    date_range = re.search(
+        r"(\d{1,2})\.(\d{1,2})\.?\s*(?:bis|[-–])\s*"
+        r"(\d{1,2})\.(\d{1,2})\.?(?:\s*(\d{4}))?",
+        combined,
+        re.IGNORECASE,
+    )
+    if date_range:
+        start_day, start_month, end_day, end_month, year_text = date_range.groups()
+        start_month_number, end_month_number = int(start_month), int(end_month)
+        if 1 <= start_month_number <= 12 and 1 <= end_month_number <= 12:
+            year = int(year_text) if year_text else default_year
+            month_names = {
+                1: "Januar", 2: "Februar", 3: "März", 4: "April",
+                5: "Mai", 6: "Juni", 7: "Juli", 8: "August",
+                9: "September", 10: "Oktober", 11: "November", 12: "Dezember",
+            }
+            return (
+                f"{int(start_day)}. {month_names[start_month_number]} bis "
+                f"{int(end_day)}. {month_names[end_month_number]} {year}"
+            )
 
     # Exact alternatives: 7. o. 8. November / 7. oder 8. November.
     alternative_pattern = (
