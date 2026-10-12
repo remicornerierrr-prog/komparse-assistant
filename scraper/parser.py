@@ -757,12 +757,29 @@ def parse_detail_page(html: str | None, base_url: str | None = None) -> dict:
 
     shoot_dates: list[str] = []
     lines = soup.get_text("\n", strip=True).splitlines()
+    # Prefer an explicit schedule field, but don't assume that the page
+    # always labels it exactly "Termin:". Some detail pages state the date in
+    # a sentence about the shoot itself.
+    schedule_labels = re.compile(
+        r"^(?:Termin|Drehtermin|Drehdatum|Drehzeitraum|Drehtag|Drehtage)\s*:",
+        re.IGNORECASE,
+    )
     for line in lines:
         clean_line = normalize_text(line)
-        if re.match(r"^Termin\s*:", clean_line, re.IGNORECASE):
-            date_text = re.sub(r"^Termin\s*:\s*", "", clean_line, flags=re.IGNORECASE)
+        if schedule_labels.search(clean_line):
+            date_text = re.sub(r"^[^:]{1,30}:\s*", "", clean_line, flags=re.IGNORECASE)
             shoot_dates = extract_shoot_dates(date_text)
-            break
+            if shoot_dates:
+                break
+
+    if not shoot_dates:
+        for line in lines:
+            clean_line = normalize_text(line)
+            if re.search(r"\b(?:Dreharbeiten|Drehtermin|Drehdatum|Drehzeitraum|Drehtag|Drehtage|Filmaufnahmen)\b", clean_line, re.IGNORECASE):
+                candidates = extract_shoot_dates(clean_line)
+                if candidates:
+                    shoot_dates = candidates
+                    break
 
     return {
         "detail_text": detail_text,
