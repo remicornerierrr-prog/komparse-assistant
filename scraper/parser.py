@@ -305,7 +305,7 @@ def extract_shoot_dates(
         # "vom 3. bis 5. November", "3.–5. November".
         rf"\b(?:zwischen\s+|vom\s+)?\d{{1,2}}\.\s*(?:bis|und|[-–])\s*\d{{1,2}}\.\s*(?:{MONTH_PATTERN})",
         # Abbreviated month range, e.g. "Woche 12. -16. Okt.".
-        r"\b\d{1,2}\.\s*[-–]\s*\d{1,2}\.\s*(?:Jan|Feb|Mär|Mrz|Apr|Jun|Jul|Aug|Sep|Sept|Okt|Nov|Dez)\.?(?:\s+\d{4})?\b",
+        r"\b\d{1,2}\.\s*[-–]\s*\d{1,2}\.\s*(?:Jan|Feb|Mär|Mrz|Apr|Mai|Jun|Jul|Aug|Sep|Sept|Okt|Nov|Dez)\.?(?:\s+\d{4})?\b",
         # Alternative dates are choices, not a continuous window, but neither
         # endpoint should be mistaken for a single mandatory shoot date.
         rf"\b\d{{1,2}}\.\s*(?:o\.|oder|/)\s*\d{{1,2}}\.\s*(?:{MONTH_PATTERN})",
@@ -409,14 +409,14 @@ def extract_shoot_date_text(
 
     # Abbreviated month ranges such as "12. -16. Okt.".
     abbreviated_month_range = re.search(
-        r"\b(\d{1,2})\.\s*[-–]\s*(\d{1,2})\.\s*(Jan|Feb|Mär|Mrz|Apr|Jun|Jul|Aug|Sep|Sept|Okt|Nov|Dez)\.?(?:\s+(\d{4}))?\b",
+        r"\b(\d{1,2})\.\s*[-–]\s*(\d{1,2})\.\s*(Jan|Feb|Mär|Mrz|Apr|Mai|Jun|Jul|Aug|Sep|Sept|Okt|Nov|Dez)\.?(?:\s+(\d{4}))?\b",
         combined,
         re.IGNORECASE,
     )
     if abbreviated_month_range:
         month_aliases = {
             "jan": "Januar", "feb": "Februar", "mär": "März", "mrz": "März",
-            "apr": "April", "jun": "Juni", "jul": "Juli", "aug": "August",
+            "apr": "April", "mai": "Mai", "jun": "Juni", "jul": "Juli", "aug": "August",
             "sep": "September", "sept": "September", "okt": "Oktober",
             "nov": "November", "dez": "Dezember",
         }
