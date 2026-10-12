@@ -1,0 +1,43 @@
+KOMPARSE ASSISTANT — PATCH PARSER / MATCHING / NOTIFICATIONS
+
+INSTALLATION
+1. Extract this ZIP into the root of your existing project folder, e.g.
+   C:\Projects\komparse-assistant
+2. Allow the files to overwrite existing files when prompted.
+3. This patch intentionally excludes .git, .venv, komparse_offers.json and
+   komparse_parsed_offers.json so it does not overwrite Git history, the
+   virtual environment, or generated local data.
+
+SUPABASE
+Run the SQL in:
+  supabase/migrations/20261009_parser_quality_fields.sql
+in Supabase SQL Editor once. The migration uses IF NOT EXISTS for its added
+columns, so it can also be rerun safely if some already exist.
+
+VALIDATION (from PowerShell at the project root, with .venv active)
+  python -m unittest discover -v
+  node --check web\admin.js
+  node --check web\app.js
+  python -m py_compile scraper\main.py scraper\parser.py scraper\matching.py scraper\extract_offers.py scraper\location_rules.py
+
+The working copy was validated with 71 unit tests, both JavaScript syntax
+checks, and Python compilation checks.
+
+BEHAVIOUR
+- Generic gender labels such as "Komparsen" without explicit evidence are
+  routed to manual review rather than treated as male-only or broadcast to
+  every user.
+- Explicit mixed/inclusive language (e.g. "Damen und Herren",
+  "Darsteller*innen", "m/w") maps to both genders.
+- Open age bounds ("ab 35") remain open; no artificial maximum is created.
+- Vague time periods and scheduling conditions remain readable text, not
+  fabricated ISO dates. Alternative dates are not collapsed to one date.
+- Nationwide/ambiguous locations remain manual review.
+- Notification logs distinguish provider acceptance, failed sends, missing
+  or invalid subscriptions, and matches already marked notified.
+
+NOTE ABOUT PUSH NOTIFICATIONS
+A provider accepting a push is not proof that the operating system displayed
+it. After deploying/running the updated workflow, inspect its
+"Notifications push — bilan" summary. If a match is already marked notified,
+the workflow will not send a duplicate by default.

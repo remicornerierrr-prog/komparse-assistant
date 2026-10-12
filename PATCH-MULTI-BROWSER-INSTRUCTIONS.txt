@@ -1,0 +1,33 @@
+KOMPARSE ASSISTANT — PATCH NOTIFICATIONS MULTI-NAVIGATEURS
+
+Objectif
+- Enregistrer plusieurs abonnements push pour un même utilisateur (un par navigateur/profil d'appareil).
+- Ne jamais effacer les abonnements des autres navigateurs lorsqu'un nouveau navigateur s'active.
+- Envoyer chaque nouvelle notification à tous les abonnements actifs.
+- Si un navigateur échoue, réessayer plus tard uniquement sur cet abonnement, sans redoubler les notifications déjà envoyées.
+- Nettoyer les abonnements expirés (HTTP 404/410).
+
+Fichiers du patch
+- web/app.js
+- web/index.html (incrémente le cache-busting app.js?v=4)
+- scraper/main.py
+- scraper/test_push_delivery.py
+- supabase/migrations/20261009_multi_browser_push.sql
+
+Installation dans C:\Projects\komparse-assistant
+1. D'abord, dans Supabase > SQL Editor, exécuter le contenu complet de :
+   supabase/migrations/20261009_multi_browser_push.sql
+2. Copier ensuite les fichiers du patch dans le projet, en conservant les dossiers et en remplaçant les fichiers existants.
+3. Depuis la racine du projet, exécuter :
+   python -m unittest discover -v
+   node --check web\app.js
+   python -m py_compile scraper\main.py
+4. Si tout passe, committer puis pousser sur main.
+5. Attendre le déploiement GitHub Pages; les nouvelles versions chargent app.js?v=4.
+6. Ouvrir l'application dans chaque navigateur désiré, se connecter au même compte et cliquer une fois sur « Activer sur ce navigateur » dans chacun. Chaque navigateur doit autoriser ses propres notifications.
+
+Notes
+- Ne pas remplacer/supprimer .git, .venv ou les JSON locaux.
+- Le scraper n'a pas besoin d'être lancé pour enregistrer un second navigateur. Le pipeline mis à jour distribuera les futures notifications à tous les abonnements.
+- La table match_push_deliveries garde l'état par combinaison match/appareil. Les appareils déjà servis ne reçoivent pas un doublon si un autre appareil échoue.
+- Si un match a déjà notified_at renseigné avant ce patch, il ne sera pas renvoyé rétroactivement aux nouveaux navigateurs. La distribution multi-appareils concerne les matches non encore marqués notifiés.

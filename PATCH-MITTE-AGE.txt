@@ -1,0 +1,14 @@
+PATCH — interprétation des âges « Mitte X »
+
+Contenu :
+- scraper/parser.py : « Mitte 20 » à « Mitte 90 » devient une tranche de décennie [X, X+9].
+- scraper/test_parser.py : tests pour les huit décennies et la propagation de « Mitte 40 » dans le profil.
+
+Installation :
+1. Décompressez ce ZIP dans un dossier temporaire.
+2. Copiez le dossier scraper dans C:\Projects\komparse-assistant en fusionnant les dossiers et en remplaçant les fichiers.
+3. Depuis PowerShell à la racine du projet, exécutez :
+   python -m unittest discover -s scraper -t .
+4. Si les tests passent, faites git add, commit et push.
+
+Cette modification ne lance aucun scraping et n'envoie aucune notification. Elle modifie l'interprétation des annonces lors du prochain parsing.

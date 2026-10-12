@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import patch
 
 from scraper.main import prepare_offer_status
 
@@ -77,6 +78,61 @@ class OfferRunStatusTests(unittest.TestCase):
         self.assertEqual(prepare_offer_status(offer), "manual_review")
         self.assertEqual(offer["location_status"], "v1")
         self.assertNotIn("localisation_ambigue", offer["parser_review_reason"])
+
+
+    def test_open_age_and_unspecified_gender_are_eligible_when_date_is_exact(self):
+        offer = self.make_offer(
+            age_min=None,
+            age_max=None,
+            gender_male=False,
+            gender_female=False,
+            parser_needs_review=True,
+            parser_review_reason="age_non_numerique, sexe_annonce_non_precise",
+        )
+        with patch("scraper.main.NOTIFY_WHEN_AGE_UNSPECIFIED", True):
+            self.assertEqual(prepare_offer_status(offer), "v1")
+        self.assertFalse(offer["parser_needs_review"])
+        self.assertIsNone(offer["parser_review_reason"])
+
+    def test_open_age_policy_does_not_override_missing_exact_date_review(self):
+        offer = self.make_offer(
+            shoot_date=None,
+            age_min=None,
+            age_max=None,
+            gender_male=False,
+            gender_female=False,
+            parser_needs_review=True,
+            parser_review_reason="age_non_numerique, sexe_annonce_non_precise",
+        )
+        with patch("scraper.main.NOTIFY_WHEN_AGE_UNSPECIFIED", True):
+            self.assertEqual(prepare_offer_status(offer), "manual_review")
+        self.assertIn("date_exacte_absente", offer["parser_review_reason"])
+
+    def test_open_age_policy_can_be_disabled(self):
+        offer = self.make_offer(
+            age_min=None,
+            age_max=None,
+            gender_male=False,
+            gender_female=False,
+            parser_needs_review=True,
+            parser_review_reason="age_non_numerique, sexe_annonce_non_precise",
+        )
+        with patch("scraper.main.NOTIFY_WHEN_AGE_UNSPECIFIED", False):
+            self.assertEqual(prepare_offer_status(offer), "manual_review")
+        self.assertTrue(offer["parser_needs_review"])
+
+
+    def test_descriptive_non_numeric_age_is_not_treated_as_open_age(self):
+        offer = self.make_offer(
+            age_min=None,
+            age_max=None,
+            age_description="Mitte 40",
+            parser_needs_review=True,
+            parser_review_reason=None,
+        )
+        with patch("scraper.main.NOTIFY_WHEN_AGE_UNSPECIFIED", True):
+            self.assertEqual(prepare_offer_status(offer), "manual_review")
+        self.assertTrue(offer["parser_needs_review"])
 
 
 if __name__ == "__main__":

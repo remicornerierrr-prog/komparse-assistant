@@ -1,0 +1,30 @@
+PATCH HYGIÈNE DU DÉPÔT — INSTALLATION
+
+1. Décompressez ce ZIP à la racine de C:\Projects\komparse-assistant en conservant les dossiers.
+2. Vérifiez que les fichiers modifiés et les dossiers scraper/fixtures et docs/patch-archive sont en place.
+3. Supprimez de la racine les fichiers déplacés ci-dessous (leurs copies sont conservées dans le patch) :
+   - komparse_page.html
+   - komparse_test.html
+   - komparse_offers.json
+   - komparse_parsed_offers.json
+   - AUTH-PASSWORD-RECOVERY-INSTRUCTIONS.txt
+   - AUTH-SIGNUP-PATCH-INSTRUCTIONS.txt
+   - PATCH-CI-TEST-GUARD.txt
+   - PATCH-INSTRUCTIONS.txt
+   - PATCH-LOCATION-RULES.txt
+   - PATCH-MATCHING-RULES.txt
+   - PATCH-MITTE-AGE.txt
+   - PATCH-MULTI-BROWSER-INSTRUCTIONS.txt
+   - PATCH-NEVER-DROP-OFFERS.txt
+   - PATCH-PUSH-TTL-INSTRUCTIONS.txt
+   - PATCH-V2-INSTRUCTIONS.txt
+   - README-PATCH.txt
+4. Les fichiers komparse_offers.json et komparse_parsed_offers.json seront recréés à la racine lors d'une exécution normale du scraper/parser ; ils sont désormais ignorés par Git. Les instantanés de référence utilisés par les tests sont dans scraper/fixtures/.
+5. Lancez :
+   python -m unittest discover -s scraper -t .
+6. Puis vérifiez :
+   python -m scraper.parser_qa
+
+Tests vérifiés dans l'environnement de préparation : 107 tests OK ; le rapport parser_qa s'exécute maintenant correctement.
+
+Important : ce patch ne refactorise pas encore scraper/main.py ni web/app.js. Cette opération est séparée pour réduire les risques de régression. Il ne contient pas de changement du workflow GitHub Actions ; gardez le comportement non bloquant actuel des tests.

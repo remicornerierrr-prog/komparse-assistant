@@ -1,0 +1,47 @@
+Komparse Assistant — patch « Ne jamais écarter une offre en silence »
+
+Fichiers à remplacer depuis la racine du projet :
+- scraper/main.py
+- web/admin.js
+- web/admin.html
+
+Nouveau test à ajouter :
+- scraper/test_run_status.py
+
+Ce patch ne nécessite pas de nouvelle migration SQL. Il réutilise les champs
+Supabase déjà ajoutés : location_status, shoot_date_text, parser_needs_review,
+parser_review_reason et admin_review_required.
+
+Changements
+-----------
+1. Chaque offre traitée est classée une seule fois :
+   - notifiée (au moins une livraison acceptée ou notification déjà enregistrée),
+   - manual_review (localisation ambigüe, date exacte absente, ou parsing incertain),
+   - outside (hors zone),
+   - match trouvé sans livraison confirmée,
+   - aucun profil compatible.
+2. Le log final du workflow affiche les compteurs par statut ainsi que les
+   compteurs d'envoi par appareil.
+3. Les offres hors zone sont explicitement consignées puis arrêtées avant le
+   matching et les notifications.
+4. Les offres en manual_review sont sauvegardées dans Supabase avant retour,
+   avec une raison consultable dans le tableau de bord.
+5. La liste « Annonces à vérifier » est chargée séparément des 50 dernières
+   annonces. Elle est paginée et remonte les zones ambiguës, les dates exactes
+   absentes, les drapeaux du parser et les demandes de vérification admin.
+6. Un indicateur visible affiche le nombre d'annonces à vérifier. Les annonces
+   explicitement hors zone n'encombrent pas cette liste, sauf signalement admin.
+
+Vérifications à lancer dans PowerShell depuis la racine du projet :
+
+python -m unittest discover -v
+node --check web\admin.js
+python -m py_compile scraper\main.py
+
+Le test test_matching.Test...current_parsed_offers utilise le fichier local
+komparse_parsed_offers.json. Ne supprimez pas les deux JSON générés déjà présents
+dans le projet : ce patch ZIP ne les contient volontairement pas.
+
+Après validation, committer puis pousser sur main. Ensuite lancer manuellement
+le workflow « Komparse scraper » pour appliquer le nouveau classement aux offres
+présentes sur la liste active de Komparse.

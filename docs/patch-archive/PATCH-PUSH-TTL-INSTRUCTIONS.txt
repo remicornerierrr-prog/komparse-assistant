@@ -1,0 +1,18 @@
+KOMPARSE ASSISTANT — PATCH PUSH TTL
+
+Objectif
+- Corriger une cause de perte possible des notifications quand un appareil est hors ligne.
+- pywebpush utilise par défaut TTL=0. Le patch configure le TTL à 72 heures (259200 secondes), afin que le service push puisse conserver le message lorsque l'appareil est temporairement indisponible.
+- Les statuts `sent`/`notified_at` signifient que la passerelle push a accepté le message, pas que le système d'exploitation l'a effectivement affiché.
+
+Fichiers à remplacer dans le projet
+- scraper/main.py
+- scraper/test_push_delivery.py
+
+Pas de migration SQL requise pour ce patch.
+
+Vérifications depuis la racine du dépôt
+    python -m unittest discover -v
+    python -m py_compile scraper/main.py
+
+Puis commit/push sur main. Le TTL n'est pas rétroactif pour les messages déjà envoyés.

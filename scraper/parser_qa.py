@@ -16,7 +16,7 @@ from typing import Any
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
-INPUT_FILE = PROJECT_ROOT / "komparse_parsed_offers.json"
+INPUT_FILE = PROJECT_ROOT / "scraper" / "fixtures" / "komparse_parsed_offers.json"
 
 
 def load_offers() -> list[dict[str, Any]]:
@@ -327,7 +327,7 @@ def main() -> None:
 
     print(
         f"Sans date de tournage : "
-        f"{len(missing_shoot_date)}"
+        f"{len(missing_exact_date)}"
     )
 
     print(

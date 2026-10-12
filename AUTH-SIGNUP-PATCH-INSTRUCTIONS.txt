@@ -1,0 +1,15 @@
+Komparse Assistant — correction du parcours inscription/connexion
+
+Remplacer web/app.js et web/index.html dans le projet.
+
+Changements :
+- Confirmation explicite avant de lancer une inscription, pour réduire les clics accidentels sur mobile.
+- Si Supabase ne renvoie pas de session, l'interface ne prétend plus qu'un compte a été créé. Elle explique comment se connecter ou vérifier son e-mail.
+- Les erreurs d'inscription du type compte déjà enregistré ne divulguent pas publiquement si l'adresse existe.
+- Texte d'aide plus clair sous le titre de connexion/inscription.
+
+Vérification : node --check web\app.js
+Puis commit et push :
+ git add web/app.js web/index.html
+ git commit -m "Clarify signup and existing-account flow"
+ git push origin main

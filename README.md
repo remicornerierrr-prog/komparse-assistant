@@ -40,3 +40,10 @@ Komparse.de
 - Une date exacte est stockée dans `shoot_date`. Les périodes (`Ende November 2026`) et modalités (`Nach Absprache`) sont conservées dans `shoot_date_text`; la durée/logistique reste dans `shoot_duration_text`. Aucune journée exacte n'est inventée pour une période.
 - Avant de déployer, exécuter une fois le SQL `supabase/migrations/20261009_parser_quality_fields.sql` dans Supabase si ces colonnes n'existent pas encore.
 - Chaque exécution du workflow imprime un bilan des Push : tentatives, acceptations par la passerelle, échecs, abonnements absents/invalides et matches déjà marqués notifiés. Une réponse positive de la passerelle ne garantit pas que le système d'exploitation affiche visuellement la notification.
+
+
+## Données de référence et fixtures
+
+Les captures HTML et les instantanés JSON utilisés pour les tests sont rangés dans `scraper/fixtures/`. Les tests et scripts de régression lisent ces fichiers statiques et ne contactent pas le site en direct. Les fichiers `komparse_offers.json` et `komparse_parsed_offers.json` générés pendant une exécution normale restent à la racine du projet et sont ignorés par Git.
+
+Les anciennes notes d’installation et de patch sont archivées dans `docs/patch-archive/` pour conserver l’historique sans encombrer la racine.

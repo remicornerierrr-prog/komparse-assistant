@@ -27,13 +27,15 @@ from pywebpush import WebPushException, webpush
 from supabase import Client, create_client
 
 try:
-    from .matching import match_offer_to_profile
+    from .matching import match_offer_to_profile, NOTIFY_WHEN_AGE_UNSPECIFIED
     from .gender_flags import gender_flags_from_value
     from .location_rules import classify_location
+    from .parser import is_varied_age_description
 except ImportError:  # Support `python scraper/main.py` execution.
-    from matching import match_offer_to_profile
+    from matching import match_offer_to_profile, NOTIFY_WHEN_AGE_UNSPECIFIED
     from gender_flags import gender_flags_from_value
     from location_rules import classify_location
+    from parser import is_varied_age_description
 
 
 # ============================================================
@@ -300,24 +302,60 @@ def prepare_offer_status(offer: dict[str, Any]) -> str:
         reasons.discard("localisation_ambigue")
 
     has_exact_date = offer.get("shoot_date") not in (None, "")
+
+    # The top-level age bounds can be empty for multi-role offers even when
+    # the individual roles have numerical ranges. In that case, the offer is
+    # not age-unspecified as a whole.
+    top_level_has_age = (
+        offer.get("age_min") is not None
+        or offer.get("age_max") is not None
+    )
+    parsed_roles = (offer.get("parsed") or {}).get("profiles") or []
+    role_has_age = any(
+        isinstance(role, dict)
+        and (
+            role.get("age_min") is not None
+            or role.get("age_max") is not None
+            or role.get("min_age") is not None
+            or role.get("max_age") is not None
+        )
+        for role in parsed_roles
+    )
+    age_unbounded = not top_level_has_age and not role_has_age
+    age_description = offer.get("age_description")
+    explicit_varied_age = is_varied_age_description(age_description)
+    open_age_policy = age_unbounded and (
+        explicit_varied_age
+        or (
+            NOTIFY_WHEN_AGE_UNSPECIFIED
+            and not age_description
+        )
+    )
+
+    # Under the explicit open-age policy, absence of a numeric age is not
+    # itself a reason to block matching. If gender is also unspecified, the
+    # matcher may consider every profile gender. The absence of an exact
+    # shooting date remains a manual-review reason, per the project's safety
+    # rule; it is not silently waived by this setting.
+    if open_age_policy:
+        reasons.discard("age_non_numerique")
+        if not offer.get("gender_male") and not offer.get("gender_female"):
+            reasons.discard("sexe_annonce_non_precise")
+
     if not has_exact_date:
         reasons.add("date_exacte_absente")
     else:
         reasons.discard("date_exacte_absente")
 
-    if as_bool(offer.get("parser_needs_review")) and not reasons:
+    if as_bool(offer.get("parser_needs_review")) and not reasons and not open_age_policy:
         if not offer.get("gender_male") and not offer.get("gender_female"):
             reasons.add("sexe_annonce_non_precise")
-        elif (
-            offer.get("age_min") is None
-            and offer.get("age_max") is None
-            and not offer.get("age_description")
-        ):
+        elif age_unbounded and not offer.get("age_description"):
             reasons.add("age_non_numerique")
         else:
             reasons.add("verification_parser")
 
-    requires_review = bool(reasons) or as_bool(offer.get("parser_needs_review"))
+    requires_review = bool(reasons) or (as_bool(offer.get("parser_needs_review")) and not open_age_policy)
     offer["parser_needs_review"] = requires_review
     offer["parser_review_reason"] = ", ".join(sorted(reasons)) or None
 

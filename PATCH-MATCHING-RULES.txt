@@ -1,0 +1,24 @@
+KOMPARSE ASSISTANT — PATCH DE RÈGLES MATCHING
+
+Fichiers à copier dans C:\Projects\komparse-assistant en conservant l'arborescence :
+- scraper\matching.py
+- scraper\main.py
+- scraper\test_matching.py
+- scraper\test_run_status.py
+- scraper\matching_regression.py (nouveau script de dry-run)
+- MATCHING-REGRESSION.md (résultats documentés)
+
+Aucune migration Supabase n'est nécessaire.
+
+Après copie, depuis la racine du projet :
+  python -m unittest discover -s scraper -t .
+  python -m scraper.matching_regression
+
+Les tests ne contactent pas Supabase et n'envoient pas de notifications. Le script de régression lit komparse_parsed_offers.json et simule un profil femme née le 15/06/1996 ; il n'écrit rien et ne fait aucun push.
+
+Politique : NOTIFY_WHEN_AGE_UNSPECIFIED vaut true par défaut. L'absence d'âge numérique avec absence de description d'âge est traitée comme une plage ouverte ; si le sexe est lui aussi absent, tous les genres sont compatibles dans la zone V1. Une description précise mais non chiffrée (ex. « Mitte 40 ») reste en manual_review. Une date de tournage exacte absente reste également en manual_review. La localisation V1 reste obligatoire.
+
+Résultats sur le snapshot local fourni (71 offres) : 6 matches potentiels avant, 7 après pour le profil type. Il s'agit d'offres potentiellement matchées, pas de push réellement livrés ; l'état de Supabase, les abonnements des appareils et notified_at ne sont pas interrogés.
+
+Pour activer une variable de configuration GitHub, ajouter sous env de l'étape Run scraper :
+  NOTIFY_WHEN_AGE_UNSPECIFIED: ${{ vars.NOTIFY_WHEN_AGE_UNSPECIFIED || 'true' }}

@@ -1,5 +1,6 @@
 import json
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 from scraper.matching import (
@@ -903,7 +904,7 @@ class MatchingV1Tests(unittest.TestCase):
 
         parsed_file = (
             project_root
-            / "komparse_parsed_offers.json"
+            / "scraper" / "fixtures" / "komparse_parsed_offers.json"
         )
 
 
@@ -1029,7 +1030,7 @@ class MatchingV1Tests(unittest.TestCase):
 
         parsed_file = (
             project_root
-            / "komparse_parsed_offers.json"
+            / "scraper" / "fixtures" / "komparse_parsed_offers.json"
         )
 
 
@@ -1211,6 +1212,119 @@ class MatchingParserEdgeCaseTests(unittest.TestCase):
         self.assertFalse(result["matched"])
         self.assertTrue(result["manual_review"])
         self.assertEqual(result["manual_review_reason"], "date_ambigue_et_anniversaire")
+
+
+class MatchingUnspecifiedCriteriaTests(unittest.TestCase):
+    def setUp(self):
+        self.female_30 = {
+            "id": "sample-female-30",
+            "birth_date": "1996-06-15",
+            "gender": "female",
+        }
+        self.male_35 = {
+            "id": "sample-male-35",
+            "birth_date": "1990-10-21",
+            "gender": "male",
+        }
+
+    def test_offer_without_age_or_gender_notifies_all_profile_genders(self):
+        offer = {
+            "offer_id": "no-age-no-gender",
+            "location": "Raum Köln",
+            "shoot_date": "2026-10-20",
+            "age_min": None,
+            "age_max": None,
+            "genders": [],
+        }
+        with patch("scraper.matching.NOTIFY_WHEN_AGE_UNSPECIFIED", True):
+            female_result = match_offer_to_profile(offer, self.female_30)
+            male_result = match_offer_to_profile(offer, self.male_35)
+
+        self.assertTrue(female_result["matched"])
+        self.assertTrue(male_result["matched"])
+
+    def test_open_age_without_upper_bound_matches_only_above_minimum(self):
+        offer = {
+            "offer_id": "age-range-25-plus",
+            "location": "Raum Köln",
+            "shoot_date": "2026-10-20",
+            "age_range": "25 +",
+            "genders": ["female"],
+        }
+        young_profile = {
+            "id": "female-20",
+            "birth_date": "2006-03-01",
+            "gender": "female",
+        }
+        older_profile = {
+            "id": "female-35",
+            "birth_date": "1991-03-01",
+            "gender": "female",
+        }
+
+        self.assertIs(match_offer_to_profile(offer, young_profile), False)
+        self.assertTrue(match_offer_to_profile(offer, older_profile)["matched"])
+
+    def test_age_unbounded_but_gender_explicit_keeps_gender_filter(self):
+        offer = {
+            "offer_id": "age-open-female-only",
+            "location": "Raum Köln",
+            "shoot_date": "2026-10-20",
+            "age_min": None,
+            "age_max": None,
+            "genders": ["female"],
+        }
+        with patch("scraper.matching.NOTIFY_WHEN_AGE_UNSPECIFIED", True):
+            self.assertTrue(match_offer_to_profile(offer, self.female_30)["matched"])
+            self.assertIs(match_offer_to_profile(offer, self.male_35), False)
+
+    def test_unspecified_age_policy_can_be_disabled(self):
+        offer = {
+            "offer_id": "no-age-no-gender-review",
+            "location": "Raum Köln",
+            "shoot_date": "2026-10-20",
+            "age_min": None,
+            "age_max": None,
+            "genders": [],
+        }
+        with patch("scraper.matching.NOTIFY_WHEN_AGE_UNSPECIFIED", False):
+            result = match_offer_to_profile(offer, self.female_30)
+
+        self.assertFalse(result["matched"])
+        self.assertTrue(result["manual_review"])
+        self.assertIn("age_annonce_non_precis", result["manual_review_reason"])
+
+    def test_age_specified_but_gender_unspecified_still_requires_review(self):
+        offer = {
+            "offer_id": "age-but-no-gender",
+            "location": "Raum Köln",
+            "shoot_date": "2026-10-20",
+            "age_min": 25,
+            "age_max": 55,
+            "genders": [],
+        }
+        result = match_offer_to_profile(offer, self.female_30)
+        self.assertFalse(result["matched"])
+        self.assertTrue(result["manual_review"])
+        self.assertEqual(result["manual_review_reason"], "sexe_annonce_non_precise")
+
+
+    def test_non_numeric_but_descriptive_age_stays_in_manual_review(self):
+        offer = {
+            "offer_id": "age-mid-forties",
+            "location": "Raum Köln",
+            "shoot_date": "2026-11-07",
+            "age_min": None,
+            "age_max": None,
+            "age_description": "Mitte 40",
+            "genders": ["female"],
+        }
+        with patch("scraper.matching.NOTIFY_WHEN_AGE_UNSPECIFIED", True):
+            result = match_offer_to_profile(offer, self.female_30)
+
+        self.assertFalse(result["matched"])
+        self.assertTrue(result["manual_review"])
+        self.assertEqual(result["manual_review_reason"], "age_annonce_non_precis")
 
 
 if __name__ == "__main__":

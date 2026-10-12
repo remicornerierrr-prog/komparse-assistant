@@ -28,6 +28,7 @@ Règles V1 :
 from __future__ import annotations
 
 from datetime import date, datetime
+import os
 import re
 import unicodedata
 from typing import Any
@@ -36,6 +37,25 @@ try:
     from .location_rules import classify_location
 except ImportError:  # pragma: no cover - script execution path
     from location_rules import classify_location
+
+
+def _env_bool(name: str, default: bool) -> bool:
+    """Read a boolean environment variable without surprising truthiness."""
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    return raw.strip().casefold() in {"1", "true", "yes", "on", "oui"}
+
+
+# If an offer specifies no numeric age bounds, its age range is open by
+# default. When gender is also unspecified, eligible-area profiles of any
+# gender can match. Set NOTIFY_WHEN_AGE_UNSPECIFIED=false to restore manual
+# review for offers with no numeric age information. Location eligibility
+# and the pipeline's missing-exact-date review policy remain in force.
+NOTIFY_WHEN_AGE_UNSPECIFIED = _env_bool(
+    "NOTIFY_WHEN_AGE_UNSPECIFIED",
+    True,
+)
 
 
 # ============================================================
@@ -260,6 +280,37 @@ def _as_int(
     return None
 
 
+def _parse_age_spec(value: Any) -> tuple[int | None, int | None]:
+    """Parse bounded, open-ended, or exact age text without closing open bounds.
+
+    Examples: ``25+`` and ``ab 25`` -> (25, None); ``bis 55`` -> (None, 55);
+    ``25-55`` -> (25, 55); a bare ``35 Jahre`` -> (35, 35).
+    """
+    if value is None:
+        return None, None
+
+    text = _normalize_text(value)
+    numbers = re.findall(r"\d{1,3}", text)
+    if not numbers:
+        return None, None
+
+    if len(numbers) >= 2:
+        return int(numbers[0]), int(numbers[1])
+
+    number = int(numbers[0])
+
+    if (
+        "+" in text
+        or re.search(r"\b(?:ab|mindestens|minimal|minimum|at least|from)\b", text)
+    ):
+        return number, None
+
+    if re.search(r"\b(?:bis|maximal|hoechstens|maximal|maximum|at most|up to)\b", text):
+        return None, number
+
+    return number, number
+
+
 def _extract_age_range(
     role_or_offer: dict[str, Any]
 ) -> tuple[int | None, int | None]:
@@ -339,90 +390,20 @@ def _extract_age_range(
 
 
     # --------------------------------------------------------
-    # Champ age_range éventuel
+    # Textual age fields, including open bounds such as "25+"
     # --------------------------------------------------------
+
+    if age_min is None and age_max is None:
+        raw_range = role_or_offer.get("age_range")
+        if raw_range not in (None, ""):
+            age_min, age_max = _parse_age_spec(raw_range)
 
     if (
         age_min is None
         and age_max is None
+        and role_or_offer.get("age") not in (None, "")
     ):
-
-        raw_range = role_or_offer.get(
-            "age_range"
-        )
-
-
-        if raw_range:
-
-            numbers = re.findall(
-                r"\d{1,3}",
-                str(raw_range)
-            )
-
-
-            if len(numbers) >= 2:
-
-                age_min = int(
-                    numbers[0]
-                )
-
-                age_max = int(
-                    numbers[1]
-                )
-
-
-            elif len(numbers) == 1:
-
-                age_min = int(
-                    numbers[0]
-                )
-
-                age_max = int(
-                    numbers[0]
-                )
-
-
-    # --------------------------------------------------------
-    # Champ age simple éventuel
-    # --------------------------------------------------------
-
-    if (
-        age_min is None
-        and age_max is None
-        and role_or_offer.get("age")
-    ):
-
-        raw_age = role_or_offer.get(
-            "age"
-        )
-
-
-        numbers = re.findall(
-            r"\d{1,3}",
-            str(raw_age)
-        )
-
-
-        if len(numbers) >= 2:
-
-            age_min = int(
-                numbers[0]
-            )
-
-            age_max = int(
-                numbers[1]
-            )
-
-        elif len(numbers) == 1:
-
-            age_min = int(
-                numbers[0]
-            )
-
-            age_max = int(
-                numbers[0]
-            )
-
+        age_min, age_max = _parse_age_spec(role_or_offer.get("age"))
 
     return (
         age_min,
@@ -838,11 +819,13 @@ def match_offer_to_profile(
 
 
     # ========================================================
-    # 2. ÂGE À LA DATE DU TOURNAGE
+    # 2. DONNÉES D'ÂGE : CALCULER UNIQUEMENT SI NÉCESSAIRE
     # ========================================================
 
-    # Plusieurs dates possibles (ex. « 7. oder 8. November ») sont
-    # conservées comme alternatives. Aucune date n'est inventée.
+    # Plusieurs dates possibles (ex. « 7. oder 8. November ») restent des
+    # alternatives. Une date n'est requise que pour un rôle avec une borne
+    # numérique d'âge ; une annonce sans restriction d'âge n'a pas besoin
+    # d'un âge calculé pour comparer le profil.
     raw_shoot_dates = offer.get("shoot_dates")
     if isinstance(raw_shoot_dates, list) and raw_shoot_dates:
         shoot_dates = raw_shoot_dates
@@ -852,69 +835,20 @@ def match_offer_to_profile(
 
     birth_date = profile.get("birth_date")
     ages = [calculate_age_at_date(birth_date, value) for value in shoot_dates]
-
-    if not ages or any(value is None for value in ages):
-        return {
-            "matched": False,
-            "manual_review": True,
-            "reason": {
-                "location": True,
-                "age": False,
-                "gender": False,
-            },
-            "manual_review_reason": "age_ou_date_absente",
-        }
-
-    # Si les dates alternatives chevauchent l'anniversaire du profil,
-    # les âges diffèrent. Le choix automatique serait incertain.
-    if len(set(ages)) > 1:
-        age_values = ages
-    else:
-        age_values = [ages[0]]
-    age = ages[0]
-
+    age_values = ages if ages and all(value is not None for value in ages) else []
+    age_for_result = age_values[0] if age_values else None
 
     # ========================================================
     # 3. SEXE DU PROFIL
     # ========================================================
 
-    profile_gender = _profile_gender(
-        profile
-    )
-
-
-    if not profile_gender:
-
-        return {
-
-            "matched": False,
-
-            "manual_review": True,
-
-            "reason": {
-
-                "location": True,
-
-                "age": False,
-
-                "gender": False,
-
-            },
-
-            "manual_review_reason":
-                "sexe_profil_absent"
-
-        }
-
+    profile_gender = _profile_gender(profile)
 
     # ========================================================
     # 4. RÔLES DE L'ANNONCE
     # ========================================================
 
-    roles = _extract_offer_roles(
-        offer
-    )
-
+    roles = _extract_offer_roles(offer)
 
     # ========================================================
     # 5. TESTER CHAQUE RÔLE
@@ -926,18 +860,36 @@ def match_offer_to_profile(
         age_min, age_max = _extract_age_range(role)
         offer_genders = _extract_offer_genders(role)
 
-        # Une mention explicite de "gemischtes Alter" signifie que
-        # l'offre cherche délibérément des âges variés. Elle peut donc
-        # correspondre à différents âges sans inventer une tranche.
+        # Aucune borne numérique signifie une plage d'âge ouverte quand
+        # NOTIFY_WHEN_AGE_UNSPECIFIED est activé. Une mention explicite
+        # comme "gemischtes Alter" reste également une plage ouverte.
         varied_age = _is_varied_age_role(role, offer)
-        if age_min is None and age_max is None:
-            if varied_age:
+        age_unspecified = age_min is None and age_max is None
+
+        if age_unspecified:
+            age_description = str(
+                role.get("age_description")
+                or offer.get("age_description")
+                or ""
+            ).strip()
+            if varied_age or (
+                NOTIFY_WHEN_AGE_UNSPECIFIED
+                and not age_description
+            ):
                 age_match = True
             else:
+                # A descriptive but non-numeric label such as "Mitte 40"
+                # is not the same as no age requirement at all. Keep it in
+                # manual review rather than treating every age as eligible.
                 review_reasons.append("age_annonce_non_precis")
                 continue
         else:
-            # Bornes ouvertes autorisées, par ex. "ab 35 Jahren".
+            # Toute borne numérique nécessite de connaître l'âge du profil
+            # à la date du tournage. Une borne manquante reste ouverte.
+            if not age_values:
+                review_reasons.append("age_ou_date_absente")
+                continue
+
             age_match_values = [
                 (age_min is None or candidate_age >= age_min)
                 and (age_max is None or candidate_age <= age_max)
@@ -946,18 +898,31 @@ def match_offer_to_profile(
             if any(age_match_values) and not all(age_match_values):
                 review_reasons.append("date_ambigue_et_anniversaire")
                 continue
+
             age_match = all(age_match_values)
             if not age_match:
                 continue
 
-        # Une désignation générique comme "Komparsen" ne suffit pas
-        # à conclure que l'offre est réservée aux hommes ou aux femmes.
-        # On signale le cas pour revue au lieu d'exclure silencieusement.
+        # Une offre sans âge numérique ni sexe renseigné est ouverte à tous
+        # les profils quand le réglage demandé est actif. En revanche, si
+        # une tranche d'âge est spécifiée mais que le sexe de l'offre ne
+        # l'est pas, on garde le contrôle manuel plutôt que de notifier à
+        # tort des profils.
         if not offer_genders:
-            review_reasons.append("sexe_annonce_non_precise")
-            continue
+            if age_unspecified and NOTIFY_WHEN_AGE_UNSPECIFIED:
+                gender_match = True
+            else:
+                review_reasons.append("sexe_annonce_non_precise")
+                continue
+        else:
+            if not profile_gender:
+                review_reasons.append("sexe_profil_absent")
+                continue
+            gender_match = profile_gender in offer_genders
+            if not gender_match:
+                continue
 
-        if profile_gender in offer_genders:
+        if age_match and gender_match:
             return {
                 "matched": True,
                 "manual_review": False,
@@ -967,7 +932,7 @@ def match_offer_to_profile(
                     "gender": True,
                 },
                 "profile_index": role_index,
-                "matched_age": age,
+                "matched_age": age_for_result,
             }
 
     if review_reasons:

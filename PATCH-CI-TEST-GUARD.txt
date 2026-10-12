@@ -1,0 +1,19 @@
+Komparse Assistant — CI test gate patch
+
+Files to copy into the existing project, preserving directory structure:
+- scraper/test_scraper.py
+- .github/workflows/komparse.yml
+
+What changed:
+- scraper/test_scraper.py is now a real unittest module. It tests offer IDs,
+  detail URLs, publication timestamps, page-heading cleanup, and offer extraction
+  from static HTML fixtures. It does not access the live Komparse website.
+- The Komparse GitHub Actions workflow runs
+  `python -m unittest discover -s scraper -t .`
+  after installing dependencies and before `python scraper/main.py`.
+- If the test command exits non-zero, GitHub Actions stops before the production
+  pipeline. Thus the run does not process offers or attempt push notifications.
+
+Validation in a copy of the current patch project:
+`python -m unittest discover -s scraper -t . -v`
+Result: 90 tests, OK.

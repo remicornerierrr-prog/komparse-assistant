@@ -15,3 +15,7 @@ desktop.ini
 
 .vscode/
 
+
+# Generated scraper outputs (reference snapshots live in scraper/fixtures/)
+/komparse_offers.json
+/komparse_parsed_offers.json
