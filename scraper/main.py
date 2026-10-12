@@ -359,7 +359,11 @@ def prepare_offer_status(offer: dict[str, Any]) -> str:
         else:
             reasons.add("verification_parser")
 
-    requires_review = bool(reasons) or (as_bool(offer.get("parser_needs_review")) and not open_age_policy)
+    requires_review = bool(reasons) or (
+        as_bool(offer.get("parser_needs_review"))
+        and not open_age_policy
+        and has_exact_date
+    )
     offer["parser_needs_review"] = requires_review
     offer["parser_review_reason"] = ", ".join(sorted(reasons)) or None
 
