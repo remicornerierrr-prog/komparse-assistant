@@ -423,7 +423,7 @@ def extract_shoot_date_text(
 
     # Month-only or month-to-month windows, e.g. "Oktober-November".
     month_range = re.search(
-        rf"\b({MONTH_PATTERN})\s*[-–bis]+\s*({MONTH_PATTERN})(?:\s+(\d{{4}}))?\b",
+        rf"\b({MONTH_PATTERN})\s*(?:bis|[-–])\s*({MONTH_PATTERN})(?:\s+(\d{{4}}))?\b",
         combined,
         re.IGNORECASE,
     )
