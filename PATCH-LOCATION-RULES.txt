@@ -1,0 +1,17 @@
+Komparse Assistant — patch des règles de localisation
+
+Fichiers à remplacer à la racine de votre projet :
+- scraper/location_rules.py
+- scraper/test_matching.py
+
+Correction :
+- Accepte les labels explicites Köln/Bonn/Düsseldorf, avec préfixe optionnel Großraum/Raum/Region, variantes slash, + Umgebung, + N km et + N km Umkreis pour toute valeur N.
+- Tout label non standard qui mentionne Köln, Bonn ou Düsseldorf va en manual_review au lieu d'être silencieusement classé outside.
+- Les régions sans lien avec les trois villes restent outside, et NRW/Bundesweit/Deutschlandweit restent manual_review.
+
+Tests vérifiés dans l'archive de travail :
+python -m unittest discover -v
+Résultat : 66 tests OK.
+
+Après copie des deux fichiers, exécuter depuis la racine du projet :
+python -m unittest discover -v

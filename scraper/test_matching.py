@@ -784,6 +784,20 @@ class MatchingV1Tests(unittest.TestCase):
 
             "Köln +150km",
 
+            "Köln + 150 km Umkreis",
+
+            "Köln + Umgebung",
+
+            "Raum Köln + 200 km Umkreis",
+
+            "Region Bonn + 75 km",
+
+            "Region Düsseldorf + Umgebung",
+
+            "Großraum Köln/Bonn + 120 km Umkreis",
+
+            "Aktuelle GesucheKöln",
+
         ]
 
 
@@ -820,6 +834,16 @@ class MatchingV1Tests(unittest.TestCase):
 
             "Bundesweit",
 
+            "Köln und Ruhrgebiet",
+
+            "Raum Köln/Ruhrgebiet",
+
+            "Köln-Niehl",
+
+            "Bonn und Umgebung mit Ruhrgebiet",
+
+            "Düsseldorf/Oberhausen/Essen",
+
         ]
 
 
@@ -840,8 +864,34 @@ class MatchingV1Tests(unittest.TestCase):
                 )
 
 
+    def test_target_city_mentioned_in_nonstandard_label_requires_review(self):
+
+        locations = [
+            "Köln und Ruhrgebiet",
+            "Casting Raum Köln/Ruhrgebiet",
+            "Bonn / Ruhrgebiet",
+            "Düsseldorf und Umgebung NRW",
+        ]
+
+        for location in locations:
+            with self.subTest(location=location):
+                self.assertEqual(
+                    classify_location(location),
+                    "manual_review",
+                )
+
+    def test_unrelated_city_remains_outside(self):
+
+        for location in ("Berlin", "Berlin/Potsdam", "Großraum Grevenbroich"):
+            with self.subTest(location=location):
+                self.assertEqual(
+                    classify_location(location),
+                    "outside",
+                )
+
+
     # ========================================================
-    # 17. TEST SUR LES OFFRES PARSÉES ACTUELLES
+    # 19. TEST SUR LES OFFRES PARSÉES ACTUELLES
     # ========================================================
 
     def test_17_current_parsed_offers(self):
