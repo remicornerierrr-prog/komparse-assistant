@@ -383,11 +383,18 @@ def extract_shoot_date_text(
     )
     if date_range:
         start_day, start_month, end_day, end_month, year_text = date_range.groups()
-        year = int(year_text) if year_text else default_year
-        start_month_name = next((name.capitalize() for name, number in GERMAN_MONTHS.items() if number == int(start_month) and len(name) <= 7), None)
-        end_month_name = next((name.capitalize() for name, number in GERMAN_MONTHS.items() if number == int(end_month) and len(name) <= 7), None)
-        if start_month_name and end_month_name:
-            return f"{int(start_day)}. {start_month_name} bis {int(end_day)}. {end_month_name} {year}"
+        start_month_number, end_month_number = int(start_month), int(end_month)
+        if 1 <= start_month_number <= 12 and 1 <= end_month_number <= 12:
+            year = int(year_text) if year_text else default_year
+            month_names = {
+                1: "Januar", 2: "Februar", 3: "März", 4: "April",
+                5: "Mai", 6: "Juni", 7: "Juli", 8: "August",
+                9: "September", 10: "Oktober", 11: "November", 12: "Dezember",
+            }
+            return (
+                f"{int(start_day)}. {month_names[start_month_number]} bis "
+                f"{int(end_day)}. {month_names[end_month_number]} {year}"
+            )
 
     # Exact alternatives: 7. o. 8. November / 7. oder 8. November.
     alternative_pattern = (
