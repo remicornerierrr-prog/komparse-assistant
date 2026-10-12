@@ -11,6 +11,7 @@ from scraper.parser import (
     extract_shoot_dates,
     extract_shoot_duration_text,
     parse_offer,
+    parse_detail_page,
     enrich_offer_from_detail,
 )
 from scraper.extract_offers import extract_title
@@ -188,6 +189,18 @@ class TestScheduleParsing(unittest.TestCase):
 
 
 class TestShootDates(unittest.TestCase):
+    def test_detail_page_extracts_date_from_drehtermin_label(self):
+        result = parse_detail_page(
+            "<html><body><p>Drehtermin: 15. Oktober 2026</p></body></html>"
+        )
+        self.assertEqual(result["shoot_dates"], ["2026-10-15"])
+
+    def test_detail_page_extracts_date_from_shooting_sentence(self):
+        result = parse_detail_page(
+            "<html><body><p>Die Dreharbeiten finden am 15. Oktober 2026 statt.</p></body></html>"
+        )
+        self.assertEqual(result["shoot_dates"], ["2026-10-15"])
+
     def test_numeric_date_without_trailing_dot(self):
         self.assertEqual(extract_shoot_dates("Drehtag 03.11"), ["2026-11-03"])
 
