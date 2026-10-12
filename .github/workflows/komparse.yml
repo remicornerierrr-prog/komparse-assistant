@@ -1,4 +1,3 @@
-
 name: Komparse scraper
 
 on:
@@ -29,17 +28,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r scraper/requirements.txt
 
-      # Tests non bloquants : le scraping continue même si
-      # un test échoue. L'échec reste visible dans les logs.
-      - name: Run unit tests (non-blocking)
-        id: unit_tests
+      # Les tests doivent réussir avant toute modification des données en production.
+      - name: Run unit tests
         run: python -m unittest discover -s scraper -t .
-        continue-on-error: true
-
-      - name: Warn if unit tests failed
-        if: ${{ steps.unit_tests.outcome == 'failure' }}
-        run: |
-          echo "::warning::Unit tests failed, but the scraper will continue."
 
       - name: Run scraper
         env:
