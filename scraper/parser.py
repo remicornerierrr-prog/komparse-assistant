@@ -973,16 +973,9 @@ def enrich_offer_from_detail(parsed: dict, detail_data: dict) -> dict:
 
     detail_text = parsed["detail_text"]
     if detail_text:
-        # Recheck explicit gender wording on the full detail page. Avoid inferring
-        # gender from generic plural nouns by relying on detect_gender().
-        detail_gender = detect_gender(detail_text)
-        if detail_gender:
-            parsed["gender"] = sorted(detail_gender)
-            parsed["field_sources"]["gender"] = {
-                "source": "detail_page",
-                "url": parsed.get("detail_url"),
-                "evidence": "Explicit gender wording found in detail-page text",
-            }
+        # Do not infer the casting gender from the whole detail page: incidental
+        # references to men/women can describe the story rather than the requested
+        # profile. Keep the title-derived value until a labelled field is parsed.
 
         # Accept location only from explicitly labelled fields; incidental city
         # mentions are not reliable evidence of a filming location.
