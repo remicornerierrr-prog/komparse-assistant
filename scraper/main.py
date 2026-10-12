@@ -280,7 +280,7 @@ def prepare_offer_status(offer: dict[str, Any]) -> str:
     """Classify an offer once for this run and persist review reasons.
 
     Returns ``v1``, ``manual_review`` or ``outside``. Ambiguous locations
-    and offers without an exact shoot date are never silently skipped.
+    remain in manual review; a missing exact shoot date alone does not block V1.
     """
     location_status = classify_location(offer.get("location_text"))
     offer["location_status"] = location_status
@@ -340,9 +340,8 @@ def prepare_offer_status(offer: dict[str, Any]) -> str:
 
     # Under the explicit open-age policy, absence of a numeric age is not
     # itself a reason to block matching. If gender is also unspecified, the
-    # matcher may consider every profile gender. The absence of an exact
-    # shooting date remains a manual-review reason, per the project's safety
-    # rule; it is not silently waived by this setting.
+    # matcher may consider every profile gender. Missing exact dates are
+    # handled separately above and do not, by themselves, block V1 matching.
     if open_age_policy:
         reasons.discard("age_non_numerique")
         if not offer.get("gender_male") and not offer.get("gender_female"):
