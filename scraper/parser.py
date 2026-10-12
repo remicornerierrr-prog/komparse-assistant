@@ -299,9 +299,18 @@ def extract_shoot_dates(
     covered: list[tuple[int, int]] = []
 
     # Date-range endpoints describe one shooting window, not exact dates.
-    range_pattern = r"\b(?:im\s+)?(?:dreh)?zeitraum\s+(?:vom\s+)?\d{1,2}\.\d{1,2}\.?\s*(?:bis|[-–])\s*\d{1,2}\.\d{1,2}\.?"
-    for match in re.finditer(range_pattern, t, re.IGNORECASE):
-        covered.append((match.start(), match.end()))
+    range_patterns = (
+        r"\b(?:im\s+)?(?:dreh)?zeitraum\s+(?:vom\s+)?\d{1,2}\.\d{1,2}\.?\s*(?:bis|[-–])\s*\d{1,2}\.\d{1,2}\.?",
+        # Shared-month ranges: "zwischen 3. und 5. November",
+        # "vom 3. bis 5. November", "3.–5. November".
+        rf"\b(?:zwischen\s+|vom\s+)?\d{{1,2}}\.\s*(?:bis|und|[-–])\s*\d{{1,2}}\.\s*(?:{MONTH_PATTERN})",
+        # Alternative dates are choices, not a continuous window, but neither
+        # endpoint should be mistaken for a single mandatory shoot date.
+        rf"\b\d{{1,2}}\.\s*(?:o\.|oder|/)\s*\d{{1,2}}\.\s*(?:{MONTH_PATTERN})",
+    )
+    for pattern in range_patterns:
+        for match in re.finditer(pattern, t, re.IGNORECASE):
+            covered.append((match.start(), match.end()))
 
     # Alternative exact days: 7. o. 8. November / 7. oder 8. November.
     alternative_pattern = (
@@ -395,6 +404,32 @@ def extract_shoot_date_text(
                 f"{int(start_day)}. {month_names[start_month_number]} bis "
                 f"{int(end_day)}. {month_names[end_month_number]} {year}"
             )
+
+    # Shared-month ranges are common in German casting ads:
+    # "zwischen 3. und 5. November", "vom 3. bis 5. November".
+    shared_month_range = re.search(
+        rf"\b(?:(zwischen)\s+|vom\s+)?(\d{{1,2}})\.\s*"
+        rf"(?:bis|und|[-–])\s*(\d{{1,2}})\.\s*"
+        rf"({MONTH_PATTERN})(?:\s+(\d{{4}}))?\b",
+        combined,
+        re.IGNORECASE,
+    )
+    if shared_month_range:
+        start_day, end_day = int(shared_month_range.group(2)), int(shared_month_range.group(3))
+        month_name = shared_month_range.group(4)
+        year = shared_month_range.group(5) or str(default_year)
+        if 1 <= start_day <= 31 and 1 <= end_day <= 31:
+            return f"{start_day}. bis {end_day}. {month_name} {year}"
+
+    # Month-only or month-to-month windows, e.g. "Oktober-November".
+    month_range = re.search(
+        rf"\b({MONTH_PATTERN})\s*(?:bis|[-–])\s*({MONTH_PATTERN})(?:\s+(\d{{4}}))?\b",
+        combined,
+        re.IGNORECASE,
+    )
+    if month_range:
+        year = month_range.group(3) or str(default_year)
+        return f"{month_range.group(1)} bis {month_range.group(2)} {year}"
 
     # Exact alternatives: 7. o. 8. November / 7. oder 8. November.
     alternative_pattern = (
@@ -722,12 +757,29 @@ def parse_detail_page(html: str | None, base_url: str | None = None) -> dict:
 
     shoot_dates: list[str] = []
     lines = soup.get_text("\n", strip=True).splitlines()
+    # Prefer an explicit schedule field, but don't assume that the page
+    # always labels it exactly "Termin:". Some detail pages state the date in
+    # a sentence about the shoot itself.
+    schedule_labels = re.compile(
+        r"^(?:Termin|Drehtermin|Drehdatum|Drehzeitraum|Drehtag|Drehtage)\s*:",
+        re.IGNORECASE,
+    )
     for line in lines:
         clean_line = normalize_text(line)
-        if re.match(r"^Termin\s*:", clean_line, re.IGNORECASE):
-            date_text = re.sub(r"^Termin\s*:\s*", "", clean_line, flags=re.IGNORECASE)
+        if schedule_labels.search(clean_line):
+            date_text = re.sub(r"^[^:]{1,30}:\s*", "", clean_line, flags=re.IGNORECASE)
             shoot_dates = extract_shoot_dates(date_text)
-            break
+            if shoot_dates:
+                break
+
+    if not shoot_dates:
+        for line in lines:
+            clean_line = normalize_text(line)
+            if re.search(r"\b(?:Dreharbeiten|Drehtermin|Drehdatum|Drehzeitraum|Drehtag|Drehtage|Filmaufnahmen)\b", clean_line, re.IGNORECASE):
+                candidates = extract_shoot_dates(clean_line)
+                if candidates:
+                    shoot_dates = candidates
+                    break
 
     return {
         "detail_text": detail_text,

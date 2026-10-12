@@ -834,7 +834,13 @@ def match_offer_to_profile(
         shoot_dates = [single_date] if single_date is not None else []
 
     birth_date = profile.get("birth_date")
-    ages = [calculate_age_at_date(birth_date, value) for value in shoot_dates]
+    if shoot_dates:
+        ages = [calculate_age_at_date(birth_date, value) for value in shoot_dates]
+    else:
+        # Sans date de tournage publiée, comparer avec l'âge actuel du profil.
+        # C'est une approximation, mais la date manquante ne doit pas annuler
+        # un match dont le lieu, l'âge et le sexe sont compatibles.
+        ages = [calculate_age_at_date(birth_date, date.today())]
     age_values = ages if ages and all(value is not None for value in ages) else []
     age_for_result = age_values[0] if age_values else None
 
