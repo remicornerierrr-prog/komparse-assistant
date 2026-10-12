@@ -1,0 +1,67 @@
+name: Komparse development health check
+
+on:
+  schedule:
+    # Periodic verification while development is unattended.
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "scraper/**"
+      - ".github/workflows/komparse-healthcheck.yml"
+      - "scraper/requirements.txt"
+  push:
+    branches:
+      - "main"
+    paths:
+      - "scraper/**"
+      - ".github/workflows/komparse-healthcheck.yml"
+      - "scraper/requirements.txt"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: komparse-healthcheck-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    name: Run parser and scraper regression tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+          cache: "pip"
+          cache-dependency-path: scraper/requirements.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r scraper/requirements.txt
+
+      - name: Run regression tests and save report
+        id: tests
+        shell: bash
+        run: |
+          set +e
+          python -m unittest discover -s scraper -t . 2>&1 | tee test-report.txt
+          test_status=${PIPESTATUS[0]}
+          echo "exit_code=$test_status" >> "$GITHUB_OUTPUT"
+          exit "$test_status"
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: komparse-test-report-${{ github.run_id }}
+          path: test-report.txt
+          if-no-files-found: warn
+          retention-days: 7
