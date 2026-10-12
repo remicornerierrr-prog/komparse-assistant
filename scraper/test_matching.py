@@ -1214,6 +1214,31 @@ class MatchingParserEdgeCaseTests(unittest.TestCase):
         self.assertEqual(result["manual_review_reason"], "date_ambigue_et_anniversaire")
 
 
+    def test_missing_shoot_date_does_not_block_match_when_other_criteria_match(self):
+        offer = {
+            "offer_id": "offer-no-date",
+            "location": "Großraum Köln",
+            "shoot_date": None,
+            "shoot_dates": [],
+            "age_min": 30,
+            "age_max": 40,
+            "genders": ["male"],
+        }
+        profile = {
+            "id": "user-male-35",
+            "birth_date": "1990-10-21",
+            "gender": "male",
+        }
+
+        result = match_offer_to_profile(offer, profile)
+
+        self.assertTrue(result["matched"])
+        self.assertFalse(result["manual_review"])
+        self.assertTrue(result["reason"]["location"])
+        self.assertTrue(result["reason"]["age"])
+        self.assertTrue(result["reason"]["gender"])
+
+
 class MatchingUnspecifiedCriteriaTests(unittest.TestCase):
     def setUp(self):
         self.female_30 = {
