@@ -803,6 +803,18 @@ def parse_detail_page(html: str | None, base_url: str | None = None) -> dict:
 
     shoot_dates: list[str] = []
     lines = soup.get_text("\n", strip=True).splitlines()
+    # Extract explicit location labels before the page text is flattened.
+    detail_location_text = None
+    location_labels = re.compile(
+        r"^(?:Drehort|Spielort|Ort|Location|Einsatzort)\s*:\s*(.+)$",
+        re.IGNORECASE,
+    )
+    for line in lines:
+        location_match = location_labels.match(normalize_text(line))
+        if location_match:
+            detail_location_text = normalize_text(location_match.group(1))
+            break
+
     # Prefer an explicit schedule field, but don't assume that the page
     # always labels it exactly "Termin:". Some detail pages state the date in
     # a sentence about the shoot itself.
@@ -829,6 +841,7 @@ def parse_detail_page(html: str | None, base_url: str | None = None) -> dict:
 
     return {
         "detail_text": detail_text,
+        "location_text": detail_location_text,
         "email": email,
         "subject_keyword": subject_keyword,
         "shoot_dates": shoot_dates,
@@ -979,10 +992,9 @@ def enrich_offer_from_detail(parsed: dict, detail_data: dict) -> dict:
 
         # Accept location only from explicitly labelled fields; incidental city
         # mentions are not reliable evidence of a filming location.
-        location_label = re.search(r"(?i)(?:^|[|;]\s*|\s{2,})(Drehort|Spielort|Ort|Location|Einsatzort)\s*:\s*([^|;]{2,100}?)(?=\s{2,}|[|;]|$)", detail_text)
-        if location_label:
-            candidate = normalize_text(location_label.group(2))
-            candidate_info = detect_location(candidate)
+        detail_location = normalize_text(detail_data.get("location_text"))
+        if detail_location:
+            candidate_info = detect_location(detail_location)
             if candidate_info.get("location_status") != "manual_review":
                 parsed["location_text"] = candidate_info["location_text"]
                 parsed["location_status"] = candidate_info["location_status"]
@@ -990,7 +1002,7 @@ def enrich_offer_from_detail(parsed: dict, detail_data: dict) -> dict:
                 parsed["field_sources"]["location_text"] = {
                     "source": "detail_page",
                     "url": parsed.get("detail_url"),
-                    "evidence": location_label.group(0).strip(),
+                    "evidence": f"Explicit location label: {detail_location}",
                 }
 
     parsed["email"] = detail_data.get("email")
