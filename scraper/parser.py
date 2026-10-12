@@ -175,15 +175,20 @@ def extract_age_ranges(text: str) -> list[dict]:
         add(match, int(match.group(1)), int(match.group(2)))
 
     # A bare numeric range is ambiguous on its own (it may be a time,
-    # duration, or date). Accept it without a unit only when explicitly
-    # introduced by an age cue such as "Spielalter 30-40" or "Alter: 18-23".
+    # duration, or date). Accept it without a unit when explicitly introduced
+    # by an age cue or when enclosed in parentheses, a common casting format
+    # such as "unsportliche Paarungen (25-45)".
     explicit_age_range_pattern = (
         r"\b(?:spielalter|alter)\s*[:=]?\s*"
         r"(\d{1,2})\s*(?:bis|[-–])\s*(\d{1,2})"
         r"(?!\s*(?:Uhr|Std\.?|Stunden|Tage|Jahre|Jahren)\b)"
     )
-    for match in re.finditer(explicit_age_range_pattern, t, re.IGNORECASE):
-        add(match, int(match.group(1)), int(match.group(2)))
+    parenthesized_age_range_pattern = (
+        r"\(\s*(\d{1,2})\s*(?:bis|[-–])\s*(\d{1,2})\s*\)"
+    )
+    for pattern in (explicit_age_range_pattern, parenthesized_age_range_pattern):
+        for match in re.finditer(pattern, t, re.IGNORECASE):
+            add(match, int(match.group(1)), int(match.group(2)))
 
     # Lower bound: ab 30 Jahre(n), über 35, mindestens 18, 30+.
     lower_patterns = [
