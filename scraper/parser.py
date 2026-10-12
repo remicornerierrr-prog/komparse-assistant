@@ -803,6 +803,18 @@ def parse_detail_page(html: str | None, base_url: str | None = None) -> dict:
 
     shoot_dates: list[str] = []
     lines = soup.get_text("\n", strip=True).splitlines()
+    # Extract explicit location labels before the page text is flattened.
+    detail_location_text = None
+    location_labels = re.compile(
+        r"^(?:Drehort|Spielort|Ort|Location|Einsatzort)\s*:\s*(.+)$",
+        re.IGNORECASE,
+    )
+    for line in lines:
+        location_match = location_labels.match(normalize_text(line))
+        if location_match:
+            detail_location_text = normalize_text(location_match.group(1))
+            break
+
     # Prefer an explicit schedule field, but don't assume that the page
     # always labels it exactly "Termin:". Some detail pages state the date in
     # a sentence about the shoot itself.
@@ -829,6 +841,7 @@ def parse_detail_page(html: str | None, base_url: str | None = None) -> dict:
 
     return {
         "detail_text": detail_text,
+        "location_text": detail_location_text,
         "email": email,
         "subject_keyword": subject_keyword,
         "shoot_dates": shoot_dates,
@@ -965,6 +978,33 @@ def parse_offer(offer: dict) -> dict:
 def enrich_offer_from_detail(parsed: dict, detail_data: dict) -> dict:
     """Merge useful detail-page hints while keeping exact dates separate."""
     parsed["detail_text"] = detail_data.get("detail_text") or ""
+    # Record where extracted fields came from to make manual review auditable.
+    parsed["field_sources"] = parsed.get("field_sources") or {}
+    for field in ("location_text", "gender", "age_description", "shoot_date_text"):
+        if parsed.get(field) not in (None, "", []):
+            parsed["field_sources"].setdefault(field, {"source": "title"})
+
+    detail_text = parsed["detail_text"]
+    if detail_text:
+        # Do not infer the casting gender from the whole detail page: incidental
+        # references to men/women can describe the story rather than the requested
+        # profile. Keep the title-derived value until a labelled field is parsed.
+
+        # Accept location only from explicitly labelled fields; incidental city
+        # mentions are not reliable evidence of a filming location.
+        detail_location = normalize_text(detail_data.get("location_text"))
+        if detail_location:
+            candidate_info = detect_location(detail_location)
+            if candidate_info.get("location_status") != "manual_review":
+                parsed["location_text"] = candidate_info["location_text"]
+                parsed["location_status"] = candidate_info["location_status"]
+                parsed["matches_mvp_location"] = candidate_info["matches_mvp"]
+                parsed["field_sources"]["location_text"] = {
+                    "source": "detail_page",
+                    "url": parsed.get("detail_url"),
+                    "evidence": f"Explicit location label: {detail_location}",
+                }
+
     parsed["email"] = detail_data.get("email")
     parsed["subject_keyword"] = detail_data.get("subject_keyword")
     parsed["application_url"] = detail_data.get("application_url")
