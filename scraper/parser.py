@@ -157,6 +157,14 @@ def extract_age_ranges(text: str) -> list[dict]:
         })
         occupied.append((match.start(), match.end()))
 
+    # Decade expression: "Mitte 40" means the 40–49 age range.
+    # Casting language uses this as an approximate but meaningful age band.
+    mitte_pattern = r"\bMitte\s+(\d{2})\b"
+    for match in re.finditer(mitte_pattern, t, re.IGNORECASE):
+        decade = int(match.group(1))
+        if 20 <= decade <= 90 and decade % 10 == 0:
+            add(match, decade, decade + 9)
+
     # Closed ranges: 25 bis 55 Jahre, 9-17 J., 30–60 Jahren.
     closed_pattern = (
         r"\b(?:im\s+Alter\s+von\s+|zwischen\s+)?"
@@ -359,16 +367,6 @@ def extract_shoot_date_text(
     title = normalize_text(title)
     detail_text = normalize_text(detail_text)
     combined = f"{title} {detail_text}".strip()
-
-    # Remove Komparse publication headers such as "8. Oktober 2026 21:48 Uhr".
-    # Otherwise the month-only matcher mistakes the publication timestamp
-    # for a filming period and stores e.g. "Oktober 2026".
-    publication_stamp = (
-        rf"\b\d{{1,2}}\.\s*(?:{MONTH_PATTERN})\s+\d{{4}}"
-        rf"\s+\d{{1,2}}:\d{{2}}\s*Uhr\b"
-    )
-    combined = re.sub(publication_stamp, " ", combined, flags=re.IGNORECASE)
-    combined = normalize_text(combined)
 
     # Exact alternatives: 7. o. 8. November / 7. oder 8. November.
     alternative_pattern = (
@@ -877,16 +875,8 @@ def enrich_offer_from_detail(parsed: dict, detail_data: dict) -> dict:
         and parsed.get("age_max") is None
         and not _all_profiles_have_age_bounds(profiles)
     ):
-        # Search all locally available source text, not only the scraped
-        # detail body. This reliably catches "gemischtes Alter" when it is
-        # present in the headline, list snippet, or full detail text.
-        age_source = " ".join((
-            parsed.get("title", "") or "",
-            parsed.get("raw_text", "") or "",
-            parsed.get("detail_text", "") or "",
-        ))
         parsed["age_description"] = (
-            extract_age_description(age_source)
+            extract_age_description(parsed.get("detail_text", ""))
             or parsed.get("age_description")
         )
 
