@@ -17,6 +17,18 @@ from scraper.parser import (
 from scraper.extract_offers import extract_title
 
 
+class TestCompoundLocationRules(unittest.TestCase):
+    def test_ruhrgebiet_reinland_is_reviewed_not_silently_excluded(self):
+        result = detect_location("Raum Ruhrgebiet/Reinland | unsportliche Paarungen (25-45)")
+        self.assertEqual(result["location_status"], "manual_review")
+        self.assertFalse(result["matches_mvp"])
+
+    def test_unambiguous_outside_location_stays_outside(self):
+        result = detect_location("Raum München")
+        self.assertEqual(result["location_status"], "outside")
+        self.assertFalse(result["matches_mvp"])
+
+
 class TestAgeParsing(unittest.TestCase):
     def test_age_bis(self):
         result = extract_age_ranges("männl. Komparse (35 bis 60 Jahre)")
