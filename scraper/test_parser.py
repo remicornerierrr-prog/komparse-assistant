@@ -212,6 +212,14 @@ class TestShootDates(unittest.TestCase):
             "12. bis 16. Oktober 2026",
         )
 
+    def test_abbreviated_may_range_is_preserved_as_period(self):
+        title = "Raum Köln | Frau, 30-45 Jahre | Dreh in Woche 4. -8. Mai | 150 Euro"
+        self.assertEqual(extract_shoot_dates(title, default_year=2026), [])
+        self.assertEqual(
+            extract_shoot_date_text(title, default_year=2026),
+            "4. bis 8. Mai 2026",
+        )
+
     def test_shared_month_shooting_window_is_preserved_as_period(self):
         title = "Raum Köln | Darsteller, ca. 40-55 Jahre | 1-2 Drehtage zwischen 3. und 5. November"
         self.assertEqual(extract_shoot_dates(title, default_year=2026), [])
