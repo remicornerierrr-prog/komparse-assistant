@@ -304,6 +304,8 @@ def extract_shoot_dates(
         # Shared-month ranges: "zwischen 3. und 5. November",
         # "vom 3. bis 5. November", "3.–5. November".
         rf"\b(?:zwischen\s+|vom\s+)?\d{{1,2}}\.\s*(?:bis|und|[-–])\s*\d{{1,2}}\.\s*(?:{MONTH_PATTERN})",
+        # Abbreviated month range, e.g. "Woche 12. -16. Okt.".
+        r"\b\d{1,2}\.\s*[-–]\s*\d{1,2}\.\s*(?:Jan|Feb|Mär|Mrz|Apr|Mai|Jun|Jul|Aug|Sep|Sept|Okt|Nov|Dez)\.?(?:\s+\d{4})?\b",
         # Alternative dates are choices, not a continuous window, but neither
         # endpoint should be mistaken for a single mandatory shoot date.
         rf"\b\d{{1,2}}\.\s*(?:o\.|oder|/)\s*\d{{1,2}}\.\s*(?:{MONTH_PATTERN})",
@@ -404,6 +406,25 @@ def extract_shoot_date_text(
                 f"{int(start_day)}. {month_names[start_month_number]} bis "
                 f"{int(end_day)}. {month_names[end_month_number]} {year}"
             )
+
+    # Abbreviated month ranges such as "12. -16. Okt.".
+    abbreviated_month_range = re.search(
+        r"\b(\d{1,2})\.\s*[-–]\s*(\d{1,2})\.\s*(Jan|Feb|Mär|Mrz|Apr|Mai|Jun|Jul|Aug|Sep|Sept|Okt|Nov|Dez)\.?(?:\s+(\d{4}))?\b",
+        combined,
+        re.IGNORECASE,
+    )
+    if abbreviated_month_range:
+        month_aliases = {
+            "jan": "Januar", "feb": "Februar", "mär": "März", "mrz": "März",
+            "apr": "April", "mai": "Mai", "jun": "Juni", "jul": "Juli", "aug": "August",
+            "sep": "September", "sept": "September", "okt": "Oktober",
+            "nov": "November", "dez": "Dezember",
+        }
+        start_day, end_day = int(abbreviated_month_range.group(1)), int(abbreviated_month_range.group(2))
+        month_name = month_aliases[abbreviated_month_range.group(3).casefold()]
+        year = abbreviated_month_range.group(4) or str(default_year)
+        if 1 <= start_day <= 31 and 1 <= end_day <= 31:
+            return f"{start_day}. bis {end_day}. {month_name} {year}"
 
     # Shared-month ranges are common in German casting ads:
     # "zwischen 3. und 5. November", "vom 3. bis 5. November".
