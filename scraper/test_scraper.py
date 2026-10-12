@@ -1,112 +1,107 @@
-import requests
-from bs4 import BeautifulSoup
-from html import unescape
+"""Unit tests for Komparse listing extraction.
+
+These tests use static HTML fixtures only. They must never access the live
+Komparse website, so CI can safely run them before the production pipeline.
+"""
+
+import unittest
+
+from scraper.extract_offers import (
+    extract_offer_id,
+    extract_offer_id_from_href,
+    extract_offers,
+    extract_publication_date,
+    extract_source_href,
+    extract_title,
+)
 
 
-def main():
+class TestOfferIdentifiers(unittest.TestCase):
+    def test_extract_visible_offer_id(self):
+        self.assertEqual(
+            extract_offer_id("Annonce 91.339 publiée aujourd'hui"),
+            "91.339",
+        )
 
-    URL = "https://komparse.de/hauptframe.htm"
+    def test_extract_id_from_detail_href(self):
+        self.assertEqual(
+            extract_offer_id_from_href("Gesuch91339.htm"),
+            "91.339",
+        )
 
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
-    }
+    def test_invalid_detail_href_returns_none(self):
+        self.assertIsNone(
+            extract_offer_id_from_href("andere-seite.htm")
+        )
 
-    # ------------------------------------------------------------
-    # 1. Télécharger la page Komparse
-    # ------------------------------------------------------------
+    def test_source_href_is_normalized(self):
+        self.assertEqual(
+            extract_source_href("https://komparse.de/Gesuch91339.htm?x=1"),
+            "Gesuch91339.htm",
+        )
 
-    response = requests.get(URL, headers=headers, timeout=20)
-    response.raise_for_status()
 
-    print("Statut HTTP :", response.status_code)
-    print("Encodage détecté par requests :", response.encoding)
-    print("Encodage apparent :", response.apparent_encoding)
+class TestPublicationAndTitleExtraction(unittest.TestCase):
+    def test_extract_german_publication_timestamp(self):
+        self.assertEqual(
+            extract_publication_date(
+                "91.339 9. Oktober 2026 14:00 Uhr"
+            ),
+            "2026-10-09 14:00",
+        )
 
-    # ------------------------------------------------------------
-    # 2. Décoder correctement le contenu
-    # ------------------------------------------------------------
-    #
-    # Komparse utilise un ancien encodage de page.
-    # On décode donc les octets bruts en Windows-1252.
-    #
+    def test_extract_title_removes_concatenated_page_heading(self):
+        html = (
+            "<b>Aktuelle Gesuche</b>"
+            "<b>KÖLN | 3 Damen und Herren, 25 bis 55 Jahre</b>"
+        )
+        self.assertEqual(
+            extract_title(html),
+            "KÖLN | 3 Damen und Herren, 25 bis 55 Jahre",
+        )
 
-    html_source = response.content.decode("cp1252", errors="replace")
+    def test_extract_title_removes_heading_with_separator(self):
+        html = "<b>Aktuelle Gesuche | Raum Köln | Komparse gesucht</b>"
+        self.assertEqual(
+            extract_title(html),
+            "Raum Köln | Komparse gesucht",
+        )
 
-    print("Taille HTML :", len(html_source), "caractères")
 
-    # ------------------------------------------------------------
-    # 3. Analyser le HTML avec BeautifulSoup
-    # ------------------------------------------------------------
+class TestExtractOffersFromStaticHtml(unittest.TestCase):
+    def test_extract_offer_does_not_need_network(self):
+        html = """
+        <html><body>
+          <div>
+            91.339 9. Oktober 2026 14:00 Uhr
+            <b>Aktuelle Gesuche</b>
+            <b>KÖLN | 3 Damen und Herren, 25 bis 55 Jahre</b>
+            <a href="Gesuch91339.htm">Details</a>
+          </div>
+        </body></html>
+        """
 
-    soup = BeautifulSoup(html_source, "html.parser")
+        offers = extract_offers(html)
 
-    # ------------------------------------------------------------
-    # 4. Récupérer le texte de la page
-    # ------------------------------------------------------------
-
-    text = soup.get_text("\n", strip=True)
-
-    # Convertir les entités HTML éventuelles :
-    # &#xA0; -> espace
-    # &#xA;  -> retour à la ligne
-    text = unescape(text)
-
-    # ------------------------------------------------------------
-    # 5. Afficher un extrait dans le terminal
-    # ------------------------------------------------------------
-
-    print("\n--- EXTRAIT DE LA PAGE ---\n")
-    print(text[:5000])
-
-    # ------------------------------------------------------------
-    # 6. Créer notre propre fichier HTML UTF-8
-    # ------------------------------------------------------------
-
-    html_output = f"""<!DOCTYPE html>
-    <html lang="de">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Test Komparse</title>
-        <style>
-            body {{
-                font-family: Arial, sans-serif;
-                max-width: 1200px;
-                margin: 40px auto;
-                padding: 0 20px;
-                line-height: 1.5;
-            }}
-
-            pre {{
-                white-space: pre-wrap;
-                font-family: Arial, sans-serif;
-            }}
-        </style>
-    </head>
-
-    <body>
-
-    <h1>Test du scraper Komparse</h1>
-
-    <pre>{text}</pre>
-
-    </body>
-    </html>
-    """
-
-    # ------------------------------------------------------------
-    # 7. Enregistrer le fichier en UTF-8
-    # ------------------------------------------------------------
-
-    output_file = "komparse_test.html"
-
-    with open(output_file, "w", encoding="utf-8") as f:
-        f.write(html_output)
-
-    print("\n----------------------------------------")
-    print("Fichier créé :", output_file)
-    print("----------------------------------------")
+        self.assertEqual(len(offers), 1)
+        self.assertEqual(offers[0]["offer_id"], "91.339")
+        self.assertEqual(
+            offers[0]["publication_date"],
+            "2026-10-09 14:00",
+        )
+        self.assertEqual(
+            offers[0]["title"],
+            "KÖLN | 3 Damen und Herren, 25 bis 55 Jahre",
+        )
+        self.assertEqual(
+            offers[0]["source_href"],
+            "Gesuch91339.htm",
+        )
+        self.assertEqual(
+            offers[0]["detail_url"],
+            "https://komparse.de/Gesuch91339.htm",
+        )
 
 
 if __name__ == "__main__":
-    main()
+    unittest.main()
