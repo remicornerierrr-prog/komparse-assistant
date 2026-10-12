@@ -300,6 +300,9 @@ def extract_shoot_dates(
 
     # Date-range endpoints describe one shooting window, not exact dates.
     range_patterns = (
+        # Numeric ranges with or without the word "Zeitraum", including years
+        # on both endpoints, must not be treated as two exact shoot dates.
+        r"\b\d{1,2}\.\d{1,2}\.?(?:\d{2,4})?\s*(?:bis|[-–])\s*\d{1,2}\.\d{1,2}\.?(?:\d{2,4})?\b",
         r"\b(?:im\s+)?(?:dreh)?zeitraum\s+(?:vom\s+)?\d{1,2}\.\d{1,2}\.?(?:\d{2,4})?\s*(?:bis|[-–])\s*\d{1,2}\.\d{1,2}\.?(?:\d{2,4})?",
         # Shared-month ranges: "zwischen 3. und 5. November",
         # "vom 3. bis 5. November", "3.–5. November".
