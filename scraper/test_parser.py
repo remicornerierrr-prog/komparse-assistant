@@ -70,6 +70,17 @@ class TestAgeParsing(unittest.TestCase):
         self.assertEqual(result[0]["age_min"], 40)
         self.assertEqual(result[0]["age_max"], 49)
 
+    def test_explicit_spielalter_range_without_unit(self):
+        result = extract_age_ranges("Darsteller, Spielalter 30-40")
+        self.assertEqual((result[0]["min"], result[0]["max"]), (30, 40))
+
+    def test_explicit_alter_range_without_unit(self):
+        result = extract_age_ranges("Alter: 18–23")
+        self.assertEqual((result[0]["min"], result[0]["max"]), (18, 23))
+
+    def test_duration_range_without_age_cue_is_not_age(self):
+        self.assertEqual(extract_age_ranges("2-3 Drehtage im Zeitraum"), [])
+
 
 class TestGenderParsing(unittest.TestCase):
     def test_male_abbreviation(self):
