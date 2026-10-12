@@ -368,6 +368,22 @@ def extract_shoot_date_text(
     detail_text = normalize_text(detail_text)
     combined = f"{title} {detail_text}".strip()
 
+    # Explicit date ranges such as "im Zeitraum 09.11. bis 17.12."
+    # are approximate multi-day windows, not one exact shooting date.
+    date_range = re.search(
+        r"\b(?:im\s+)?(?:Dreh)?zeitraum\s+(?:vom\s+)?(\d{1,2})\.(\d{1,2})\.?"
+        r"\s*(?:bis|[-–])\s*(\d{1,2})\.(\d{1,2})\.?(?:\s*(\d{4}))?",
+        combined,
+        re.IGNORECASE,
+    )
+    if date_range:
+        start_day, start_month, end_day, end_month, year_text = date_range.groups()
+        year = int(year_text) if year_text else default_year
+        start_month_name = next((name.capitalize() for name, number in GERMAN_MONTHS.items() if number == int(start_month) and len(name) <= 7), None)
+        end_month_name = next((name.capitalize() for name, number in GERMAN_MONTHS.items() if number == int(end_month) and len(name) <= 7), None)
+        if start_month_name and end_month_name:
+            return f"{int(start_day)}. {start_month_name} bis {int(end_day)}. {end_month_name} {year}"
+
     # Exact alternatives: 7. o. 8. November / 7. oder 8. November.
     alternative_pattern = (
         rf"\b(\d{{1,2}})\.\s*(?:o\.|oder|/)\s*"
@@ -420,22 +436,6 @@ def extract_shoot_date_text(
     calendar_week = re.search(r"\b(KW\s*\d{1,2}(?:\s*/\s*\d{2,4})?)\b", combined, re.IGNORECASE)
     if calendar_week:
         return normalize_text(calendar_week.group(1))
-
-    # Explicit date ranges such as "im Zeitraum 09.11. bis 17.12."
-    # are approximate multi-day windows, not one exact shooting date.
-    date_range = re.search(
-        r"\b(?:im\s+)?(?:Dreh)?zeitraum\s+(?:vom\s+)?(\d{1,2})\.(\d{1,2})\.?"
-        r"\s*(?:bis|[-–])\s*(\d{1,2})\.(\d{1,2})\.?(?:\s*(\d{4}))?",
-        combined,
-        re.IGNORECASE,
-    )
-    if date_range:
-        start_day, start_month, end_day, end_month, year_text = date_range.groups()
-        year = int(year_text) if year_text else default_year
-        start_month_name = next((name.capitalize() for name, number in GERMAN_MONTHS.items() if number == int(start_month) and len(name) <= 7), None)
-        end_month_name = next((name.capitalize() for name, number in GERMAN_MONTHS.items() if number == int(end_month) and len(name) <= 7), None)
-        if start_month_name and end_month_name:
-            return f"{int(start_day)}. {start_month_name} bis {int(end_day)}. {end_month_name} {year}"
 
     # Month-only timing such as "im November 2026". Prefer wording with
     # "im" when present; keep the value approximate.
