@@ -424,8 +424,8 @@ def extract_shoot_date_text(
     # Explicit date ranges such as "im Zeitraum 09.11. bis 17.12."
     # are approximate multi-day windows, not one exact shooting date.
     date_range = re.search(
-        r"\\b(?:im\\s+)?(?:Dreh)?zeitraum\\s+(?:vom\\s+)?(\\d{1,2})\\.(\\d{1,2})\\.?"
-        r"\\s*(?:bis|[-–])\\s*(\\d{1,2})\\.(\\d{1,2})\\.?(?:\\s*(\\d{4}))?",
+        r"\b(?:im\s+)?(?:Dreh)?zeitraum\s+(?:vom\s+)?(\d{1,2})\.(\d{1,2})\.?"
+        r"\s*(?:bis|[-–])\s*(\d{1,2})\.(\d{1,2})\.?(?:\s*(\d{4}))?",
         combined,
         re.IGNORECASE,
     )
