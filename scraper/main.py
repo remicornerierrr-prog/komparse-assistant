@@ -303,6 +303,12 @@ def prepare_offer_status(offer: dict[str, Any]) -> str:
 
     has_exact_date = offer.get("shoot_date") not in (None, "")
 
+    # Une date de tournage absente ne bloque pas le matching V1 : le lieu,
+    # l'âge et le sexe restent les critères de correspondance. On conserve
+    # l'information dans les champs de date et le tableau de bord, mais on
+    # n'en fait pas à elle seule un motif de blocage des notifications.
+    reasons.discard("date_exacte_absente")
+
     # The top-level age bounds can be empty for multi-role offers even when
     # the individual roles have numerical ranges. In that case, the offer is
     # not age-unspecified as a whole.
@@ -342,12 +348,10 @@ def prepare_offer_status(offer: dict[str, Any]) -> str:
         if not offer.get("gender_male") and not offer.get("gender_female"):
             reasons.discard("sexe_annonce_non_precise")
 
-    if not has_exact_date:
-        reasons.add("date_exacte_absente")
-    else:
-        reasons.discard("date_exacte_absente")
-
-    if as_bool(offer.get("parser_needs_review")) and not reasons and not open_age_policy:
+    # Si la date est la seule information manquante, le drapeau général du
+    # parseur ne doit pas réintroduire un blocage artificiel. Les autres
+    # motifs de vérification restent bloquants.
+    if as_bool(offer.get("parser_needs_review")) and not reasons and not open_age_policy and has_exact_date:
         if not offer.get("gender_male") and not offer.get("gender_female"):
             reasons.add("sexe_annonce_non_precise")
         elif age_unbounded and not offer.get("age_description"):
