@@ -965,6 +965,41 @@ def parse_offer(offer: dict) -> dict:
 def enrich_offer_from_detail(parsed: dict, detail_data: dict) -> dict:
     """Merge useful detail-page hints while keeping exact dates separate."""
     parsed["detail_text"] = detail_data.get("detail_text") or ""
+    # Record where extracted fields came from to make manual review auditable.
+    parsed["field_sources"] = parsed.get("field_sources") or {}
+    for field in ("location_text", "gender", "age_description", "shoot_date_text"):
+        if parsed.get(field) not in (None, "", []):
+            parsed["field_sources"].setdefault(field, {"source": "title"})
+
+    detail_text = parsed["detail_text"]
+    if detail_text:
+        # Recheck explicit gender wording on the full detail page. Avoid inferring
+        # gender from generic plural nouns by relying on detect_gender().
+        detail_gender = detect_gender(detail_text)
+        if detail_gender:
+            parsed["gender"] = sorted(detail_gender)
+            parsed["field_sources"]["gender"] = {
+                "source": "detail_page",
+                "url": parsed.get("detail_url"),
+                "evidence": "Explicit gender wording found in detail-page text",
+            }
+
+        # Accept location only from explicitly labelled fields; incidental city
+        # mentions are not reliable evidence of a filming location.
+        location_label = re.search(r"(?im)^\\s*(?:Drehort|Spielort|Ort|Location|Einsatzort)\\s*:\\s*([^\\n|]{2,100})", detail_text)
+        if location_label:
+            candidate = normalize_text(location_label.group(1))
+            candidate_info = detect_location(candidate)
+            if candidate_info.get("location_status") != "manual_review":
+                parsed["location_text"] = candidate_info["location_text"]
+                parsed["location_status"] = candidate_info["location_status"]
+                parsed["matches_mvp_location"] = candidate_info["matches_mvp"]
+                parsed["field_sources"]["location_text"] = {
+                    "source": "detail_page",
+                    "url": parsed.get("detail_url"),
+                    "evidence": location_label.group(0).strip(),
+                }
+
     parsed["email"] = detail_data.get("email")
     parsed["subject_keyword"] = detail_data.get("subject_keyword")
     parsed["application_url"] = detail_data.get("application_url")
