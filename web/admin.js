@@ -416,7 +416,7 @@ async function loadOffers() {
                                     data-offer-id="${offer.id}"
                                     data-action="review"
                                 >
-                                    Marquer comme vérifiée
+                                    Signaler pour vérification admin
                                 </button>
                               `
                     }
