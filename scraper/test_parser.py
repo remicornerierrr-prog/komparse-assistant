@@ -191,6 +191,29 @@ class TestShootDates(unittest.TestCase):
     def test_numeric_date_without_trailing_dot(self):
         self.assertEqual(extract_shoot_dates("Drehtag 03.11"), ["2026-11-03"])
 
+    def test_shared_month_shooting_window_is_preserved_as_period(self):
+        title = "Raum Köln | Darsteller, ca. 40-55 Jahre | 1-2 Drehtage zwischen 3. und 5. November"
+        self.assertEqual(extract_shoot_dates(title, default_year=2026), [])
+        self.assertEqual(
+            extract_shoot_date_text(title, default_year=2026),
+            "3. bis 5. November 2026",
+        )
+
+    def test_from_to_shared_month_shooting_window_is_preserved(self):
+        title = "Köln | Komparse 25-40 Jahre | Dreharbeiten vom 12. bis 14. Oktober 2026"
+        self.assertEqual(extract_shoot_dates(title, default_year=2026), [])
+        self.assertEqual(
+            extract_shoot_date_text(title, default_year=2026),
+            "12. bis 14. Oktober 2026",
+        )
+
+    def test_month_to_month_shooting_window_is_preserved(self):
+        title = "Großraum Köln | m/w/d, 20-60 Jahre | 1 Drehtag im Zeitraum Oktober-November"
+        self.assertEqual(
+            extract_shoot_date_text(title, default_year=2026),
+            "Oktober bis November 2026",
+        )
+
     def test_numeric_date_with_comma(self):
         self.assertEqual(extract_shoot_dates("Drehtag, 05.11, ca. 10 Uhr"), ["2026-11-05"])
 
