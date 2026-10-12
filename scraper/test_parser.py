@@ -159,6 +159,15 @@ class TestScheduleParsing(unittest.TestCase):
             "Anzahl Drehtage noch unbestimmt",
         )
 
+    def test_date_range_is_preserved_as_a_period_not_month_from_metadata(self):
+        title = "Köln +100km | Double, 16 - 35 J. | 12 Drehtage im Zeitraum 09.11. bis 17.12. | Gage 200€"
+        dates = extract_shoot_dates(title, default_year=2026)
+        self.assertEqual(dates, [])
+        self.assertEqual(
+            extract_shoot_date_text(title, default_year=2026, shoot_dates=dates),
+            "9. November bis 17. Dezember 2026",
+        )
+
     def test_numeric_and_multiple_dates_are_removed_from_duration(self):
         title = "Köln | männlicher Patient 45-65 J. | ganzer Drehtag, 13.10. | 140 Euro"
         self.assertEqual(extract_shoot_duration_text(title), "ganzer Drehtag")
