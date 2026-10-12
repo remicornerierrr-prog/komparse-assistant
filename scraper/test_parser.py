@@ -242,6 +242,36 @@ class TestScheduleParsing(unittest.TestCase):
         self.assertTrue(result["matches_mvp"])
 
 
+class TestDetailLocationEnrichment(unittest.TestCase):
+    def test_detail_page_extracts_explicit_location_label(self):
+        result = parse_detail_page(
+            "<html><body><p>Drehort: Köln</p><p>Die Produktion wird in Berlin geplant.</p></body></html>"
+        )
+        self.assertEqual(result["location_text"], "Köln")
+
+    def test_enrichment_uses_explicit_detail_location_and_records_source(self):
+        parsed = parse_offer({
+            "offer_id": "test-location",
+            "publication_date": "2026-10-12",
+            "title": "Bundesweit | Komparse 25-40 Jahre",
+            "raw_text": "",
+            "detail_url": "https://komparse.de/Gesuch99999.htm",
+        })
+        detail = enrich_offer_from_detail(parsed, {
+            "detail_text": "Drehort: Köln Die Produktion wird auch in Berlin geplant.",
+            "location_text": "Köln",
+            "email": None,
+            "subject_keyword": None,
+            "shoot_dates": [],
+            "application_url": None,
+            "application_method": "unknown",
+        })
+        self.assertEqual(detail["location_text"], "Köln")
+        self.assertEqual(detail["location_status"], "v1")
+        self.assertEqual(detail["field_sources"]["location_text"]["source"], "detail_page")
+        self.assertEqual(detail["field_sources"]["location_text"]["url"], "https://komparse.de/Gesuch99999.htm")
+
+
 class TestShootDates(unittest.TestCase):
     def test_detail_page_extracts_date_from_drehtermin_label(self):
         result = parse_detail_page(
