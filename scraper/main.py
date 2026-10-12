@@ -55,6 +55,11 @@ VAPID_SUBJECT = os.environ.get("VAPID_SUBJECT")
 
 
 # Diagnostic counters printed at the end of each GitHub Actions run.
+# Keep push messages queued for up to 72 hours when a browser/device is offline.
+# pywebpush defaults to TTL=0, which discards messages immediately if the
+# recipient is unavailable at delivery time.
+PUSH_TTL_SECONDS = 72 * 60 * 60
+
 NOTIFICATION_STATS = {
     "attempted": 0,
     "provider_accepted": 0,
@@ -942,6 +947,7 @@ def send_push_notification(
             data=json.dumps(payload, ensure_ascii=False),
             vapid_private_key=VAPID_PRIVATE_KEY,
             vapid_claims={"sub": VAPID_SUBJECT},
+            ttl=PUSH_TTL_SECONDS,
         )
         NOTIFICATION_STATS["provider_accepted"] += 1
         status_code = getattr(response, "status_code", None)

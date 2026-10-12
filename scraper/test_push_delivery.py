@@ -207,5 +207,35 @@ class MultiBrowserPushTests(unittest.TestCase):
         )
 
 
+class PushTimeToLiveTests(unittest.TestCase):
+    def setUp(self):
+        for key in pipeline.NOTIFICATION_STATS:
+            pipeline.NOTIFICATION_STATS[key] = 0
+
+    def test_push_message_is_retained_for_72_hours(self):
+        subscription = {
+            "endpoint": "https://push.example.test/endpoint",
+            "keys": {"p256dh": "test", "auth": "test"},
+        }
+        offer = {
+            "title": "Test offer",
+            "source_url": "https://komparse.de/test",
+        }
+
+        with patch.object(
+            pipeline,
+            "webpush",
+            return_value=types.SimpleNamespace(status_code=201),
+        ) as mock_webpush:
+            result = pipeline.send_push_notification(subscription, offer)
+
+        self.assertTrue(result[0])
+        self.assertEqual(
+            mock_webpush.call_args.kwargs["ttl"],
+            72 * 60 * 60,
+        )
+
+
+
 if __name__ == "__main__":
     unittest.main()
