@@ -23,6 +23,7 @@ const adminUserEmail = document.getElementById("admin-user-email");
 const offersCount = document.getElementById("offers-count");
 const matchesCount = document.getElementById("matches-count");
 const notificationsCount = document.getElementById("notifications-count");
+const reviewCount = document.getElementById("review-count");
 const reviewOffersBody = document.getElementById("review-offers-body");
 const offersBody = document.getElementById("offers-body");
 
@@ -182,6 +183,12 @@ function formatShooting(offer) {
 // ============================================================
 
 function getParserStatus(offer) {
+    // Les offres hors bassin doivent rester visibles dans la liste générale,
+    // sans polluer la file de revue manuelle.
+    if (offer.location_status === "outside" && offer.admin_review_required !== true) {
+        return "Hors zone V1";
+    }
+
     const missing = [];
 
     if (!offer.location_text) {
@@ -349,7 +356,7 @@ async function loadOffers() {
 
                     <td>${escapeHtml(formatGender(offer))}</td>
 
-                    <td class="${parserStatus !== "OK" ? "review" : ""}">
+                    <td class="${parserStatus !== "OK" && parserStatus !== "Hors zone V1" ? "review" : ""}">
                         ${escapeHtml(parserStatus)}
                     </td>
 
@@ -361,19 +368,20 @@ async function loadOffers() {
         }).join("");
     }
 
-    const reviewOffers = offers.filter(offer =>
-        offer.parser_needs_review === true ||
-        offer.admin_review_required === true ||
-        getParserStatus(offer) !== "OK"
-    );
+    // Charger la file de revue indépendamment des 50 annonces récentes.
+    // La file est paginée pour qu'un ancien élément à vérifier ne soit pas
+    // invisible simplement parce qu'il est plus ancien que les dernières offres.
+    const reviewOffers = await loadAllReviewOffers();
+    if (reviewCount) {
+        reviewCount.textContent = String(reviewOffers.length);
+    }
 
     if (reviewOffers.length === 0) {
         reviewOffersBody.innerHTML = `
             <tr>
-                <td colspan="8">Aucune annonce à vérifier.</td>
+                <td colspan="8">Aucune annonce actuellement à vérifier.</td>
             </tr>
         `;
-
         return;
     }
 
@@ -384,23 +392,12 @@ async function loadOffers() {
         return `
             <tr>
                 <td>${escapeHtml(offer.komparse_id)}</td>
-
                 <td>${formatDate(offer.published_at)}</td>
-
-                <td>
-                    ${escapeHtml(offer.location_text) || "—"}
-                </td>
-
+                <td>${escapeHtml(offer.location_text) || "—"}</td>
                 <td>${formatShooting(offer)}</td>
-
                 <td>${escapeHtml(formatAge(offer))}</td>
-
                 <td>${escapeHtml(formatGender(offer))}</td>
-
-                <td class="review">
-                    ${escapeHtml(parserStatus)}
-                </td>
-
+                <td class="review">${escapeHtml(parserStatus)}</td>
                 <td>
                     ${
                         isAdminReview
@@ -410,7 +407,7 @@ async function loadOffers() {
                                     data-offer-id="${offer.id}"
                                     data-action="unreview"
                                 >
-                                    ✓ Vérifié
+                                    Retirer le signalement admin
                                 </button>
                               `
                             : `
@@ -419,7 +416,7 @@ async function loadOffers() {
                                     data-offer-id="${offer.id}"
                                     data-action="review"
                                 >
-                                    Marquer à vérifier
+                                    Marquer comme vérifiée
                                 </button>
                               `
                     }
@@ -427,6 +424,78 @@ async function loadOffers() {
             </tr>
         `;
     }).join("");
+}
+
+const OFFER_REVIEW_COLUMNS = [
+    "id",
+    "komparse_id",
+    "title",
+    "raw_text",
+    "detail_text",
+    "location_text",
+    "location_status",
+    "shoot_date",
+    "shoot_date_text",
+    "shoot_duration_text",
+    "age_min",
+    "age_max",
+    "age_description",
+    "gender_male",
+    "gender_female",
+    "published_at",
+    "parser_needs_review",
+    "parser_review_reason",
+    "admin_review_required"
+].join(",");
+
+function shouldShowInReview(offer) {
+    // Explicitly out-of-scope offers are not parser review items unless an
+    // administrator manually flagged them.
+    if (offer.location_status === "outside" && offer.admin_review_required !== true) {
+        return false;
+    }
+
+    return (
+        offer.location_status === "manual_review" ||
+        offer.parser_needs_review === true ||
+        offer.admin_review_required === true ||
+        !offer.shoot_date
+    );
+}
+
+async function loadAllReviewOffers() {
+    const pageSize = 500;
+    const uniqueOffers = new Map();
+
+    for (let offset = 0; ; offset += pageSize) {
+        const result = await supabaseClient
+            .from("offers")
+            .select(OFFER_REVIEW_COLUMNS)
+            .or("parser_needs_review.eq.true,admin_review_required.eq.true,location_status.eq.manual_review,shoot_date.is.null")
+            .order("id", { ascending: true })
+            .range(offset, offset + pageSize - 1);
+
+        if (result.error) {
+            throw result.error;
+        }
+
+        const page = result.data || [];
+        for (const offer of page) {
+            if (shouldShowInReview(offer)) {
+                uniqueOffers.set(offer.id, offer);
+            }
+        }
+
+        if (page.length < pageSize) {
+            break;
+        }
+    }
+
+    return [...uniqueOffers.values()].sort((a, b) => {
+        const aDate = a.published_at ? Date.parse(a.published_at) : 0;
+        const bDate = b.published_at ? Date.parse(b.published_at) : 0;
+        return bDate - aDate;
+    });
 }
 
 // ============================================================
