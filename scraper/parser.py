@@ -298,6 +298,11 @@ def extract_shoot_dates(
     dates: list[str] = []
     covered: list[tuple[int, int]] = []
 
+    # Date-range endpoints describe one shooting window, not exact dates.
+    range_pattern = r"\b(?:im\s+)?(?:dreh)?zeitraum\s+(?:vom\s+)?\d{1,2}\.\d{1,2}\.?\s*(?:bis|[-–])\s*\d{1,2}\.\d{1,2}\.?"
+    for match in re.finditer(range_pattern, t, re.IGNORECASE):
+        covered.append((match.start(), match.end()))
+
     # Alternative exact days: 7. o. 8. November / 7. oder 8. November.
     alternative_pattern = (
         rf"\b(\d{{1,2}})\.\s*(?:o\.|oder|/)\s*(\d{{1,2}})\.\s*"
