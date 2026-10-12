@@ -167,6 +167,14 @@ class TestScheduleParsing(unittest.TestCase):
             "Anzahl Drehtage noch unbestimmt",
         )
 
+    def test_numeric_range_without_zeitraum_is_not_two_exact_dates(self):
+        title = "Köln | Darsteller 30-50 Jahre | 09.11.2026 bis 17.12.2026"
+        self.assertEqual(extract_shoot_dates(title, default_year=2026), [])
+        self.assertEqual(
+            extract_shoot_date_text(title, default_year=2026),
+            "9. November bis 17. Dezember 2026",
+        )
+
     def test_full_years_on_both_range_endpoints_are_preserved_as_period(self):
         title = "Köln | Darsteller 30-50 Jahre | Drehzeitraum 09.11.2026 bis 17.12.2026"
         self.assertEqual(extract_shoot_dates(title, default_year=2026), [])
