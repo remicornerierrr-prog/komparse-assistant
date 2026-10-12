@@ -78,6 +78,13 @@ class TestAgeParsing(unittest.TestCase):
         result = extract_age_ranges("Alter: 18–23")
         self.assertEqual((result[0]["min"], result[0]["max"]), (18, 23))
 
+    def test_parenthesized_age_range_without_unit(self):
+        result = extract_age_ranges("unsportliche Paarungen (25-45)")
+        self.assertEqual((result[0]["min"], result[0]["max"]), (25, 45))
+
+    def test_parenthesized_duration_range_is_not_age(self):
+        self.assertEqual(extract_age_ranges("Drehdauer (2-3 Drehtage)"), [])
+
     def test_duration_range_without_age_cue_is_not_age(self):
         self.assertEqual(extract_age_ranges("2-3 Drehtage im Zeitraum"), [])
 
