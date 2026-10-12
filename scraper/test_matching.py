@@ -1214,6 +1214,7 @@ class MatchingParserEdgeCaseTests(unittest.TestCase):
         self.assertEqual(result["manual_review_reason"], "date_ambigue_et_anniversaire")
 
 
+class MissingShootDateMatchingTests(unittest.TestCase):
     def test_missing_shoot_date_does_not_block_match_when_other_criteria_match(self):
         offer = {
             "offer_id": "offer-no-date",
