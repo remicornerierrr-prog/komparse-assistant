@@ -81,6 +81,12 @@ def classify_location(location: Any) -> str:
     if accepted_pattern.fullmatch(text):
         return "v1"
 
+    # Compound regional labels can overlap the target area without naming
+    # a supported city explicitly. In particular, "Ruhrgebiet/Reinland"
+    # may include the Cologne/Rhineland area, so don't silently exclude it.
+    if re.search(r"\b(?:ruhrgebiet|rheinland|reinland)\b", text) and "/" in text:
+        return "manual_review"
+
     # If the label mentions one of the V1 cities but does not follow an
     # explicit supported format (e.g. "Köln und Ruhrgebiet"), don't silently
     # reject it. Send it for manual review instead.
