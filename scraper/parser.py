@@ -178,9 +178,9 @@ def extract_age_ranges(text: str) -> list[dict]:
     # duration, or date). Accept it without a unit only when explicitly
     # introduced by an age cue such as "Spielalter 30-40" or "Alter: 18-23".
     explicit_age_range_pattern = (
-        r"\\b(?:spielalter|alter)\\s*[:=]?\\s*"
-        r"(\\d{1,2})\\s*(?:bis|[-–])\\s*(\\d{1,2})"
-        r"(?!\\s*(?:Uhr|Std\\.?|Stunden|Tage|Jahre|Jahren)\\b)"
+        r"\b(?:spielalter|alter)\s*[:=]?\s*"
+        r"(\d{1,2})\s*(?:bis|[-–])\s*(\d{1,2})"
+        r"(?!\s*(?:Uhr|Std\.?|Stunden|Tage|Jahre|Jahren)\b)"
     )
     for match in re.finditer(explicit_age_range_pattern, t, re.IGNORECASE):
         add(match, int(match.group(1)), int(match.group(2)))
