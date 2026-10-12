@@ -300,7 +300,7 @@ def extract_shoot_dates(
 
     # Date-range endpoints describe one shooting window, not exact dates.
     range_patterns = (
-        r"\b(?:im\s+)?(?:dreh)?zeitraum\s+(?:vom\s+)?\d{1,2}\.\d{1,2}\.?\s*(?:bis|[-–])\s*\d{1,2}\.\d{1,2}\.?",
+        r"\b(?:im\s+)?(?:dreh)?zeitraum\s+(?:vom\s+)?\d{1,2}\.\d{1,2}\.?(?:\d{2,4})?\s*(?:bis|[-–])\s*\d{1,2}\.\d{1,2}\.?(?:\d{2,4})?",
         # Shared-month ranges: "zwischen 3. und 5. November",
         # "vom 3. bis 5. November", "3.–5. November".
         rf"\b(?:zwischen\s+|vom\s+)?\d{{1,2}}\.\s*(?:bis|und|[-–])\s*\d{{1,2}}\.\s*(?:{MONTH_PATTERN})",
@@ -387,24 +387,30 @@ def extract_shoot_date_text(
     # Explicit date ranges such as "im Zeitraum 09.11. bis 17.12."
     # are approximate multi-day windows, not one exact shooting date.
     date_range = re.search(
-        r"(\d{1,2})\.(\d{1,2})\.?\s*(?:bis|[-–])\s*"
-        r"(\d{1,2})\.(\d{1,2})\.?(?:\s*(\d{4}))?",
+        r"(\d{1,2})\.(\d{1,2})\.?(?:\s*(\d{2,4}))?\s*(?:bis|[-–])\s*"
+        r"(\d{1,2})\.(\d{1,2})\.?(?:\s*(\d{2,4}))?",
         combined,
         re.IGNORECASE,
     )
     if date_range:
-        start_day, start_month, end_day, end_month, year_text = date_range.groups()
+        start_day, start_month, start_year_text, end_day, end_month, end_year_text = date_range.groups()
         start_month_number, end_month_number = int(start_month), int(end_month)
         if 1 <= start_month_number <= 12 and 1 <= end_month_number <= 12:
-            year = int(year_text) if year_text else default_year
+            start_year = _resolve_year(start_year_text, default_year)
+            end_year = _resolve_year(end_year_text, start_year)
             month_names = {
                 1: "Januar", 2: "Februar", 3: "März", 4: "April",
                 5: "Mai", 6: "Juni", 7: "Juli", 8: "August",
                 9: "September", 10: "Oktober", 11: "November", 12: "Dezember",
             }
+            if start_year != end_year:
+                return (
+                    f"{int(start_day)}. {month_names[start_month_number]} {start_year} bis "
+                    f"{int(end_day)}. {month_names[end_month_number]} {end_year}"
+                )
             return (
                 f"{int(start_day)}. {month_names[start_month_number]} bis "
-                f"{int(end_day)}. {month_names[end_month_number]} {year}"
+                f"{int(end_day)}. {month_names[end_month_number]} {end_year}"
             )
 
     # Abbreviated month ranges such as "12. -16. Okt.".
