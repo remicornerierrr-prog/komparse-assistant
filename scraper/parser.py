@@ -986,9 +986,9 @@ def enrich_offer_from_detail(parsed: dict, detail_data: dict) -> dict:
 
         # Accept location only from explicitly labelled fields; incidental city
         # mentions are not reliable evidence of a filming location.
-        location_label = re.search(r"(?im)^\s*(?:Drehort|Spielort|Ort|Location|Einsatzort)\s*:\s*([^\n|]{2,100})", detail_text)
+        location_label = re.search(r"(?i)(?:^|[|;]\s*|\s{2,})(Drehort|Spielort|Ort|Location|Einsatzort)\s*:\s*([^|;]{2,100}?)(?=\s{2,}|[|;]|$)", detail_text)
         if location_label:
-            candidate = normalize_text(location_label.group(1))
+            candidate = normalize_text(location_label.group(2))
             candidate_info = detect_location(candidate)
             if candidate_info.get("location_status") != "manual_review":
                 parsed["location_text"] = candidate_info["location_text"]
