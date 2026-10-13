@@ -121,6 +121,12 @@ async function loadProfile() {
     ).value =
         data.city || "";
 
+    document.getElementById("notify-national").checked =
+        data.notify_national !== false;
+
+    document.getElementById("notify-regional").checked =
+        data.notify_regional !== false;
+
 
     document.getElementById(
         "height"
@@ -257,6 +263,22 @@ saveProfileButton.addEventListener(
                     )
                     .value
                     .trim();
+
+            const notifyNational =
+                document.getElementById("notify-national").checked;
+
+            const notifyRegional =
+                document.getElementById("notify-regional").checked;
+
+            if (!notifyNational && !notifyRegional) {
+                showMessage(
+                    "Veuillez choisir au moins un type d'annonce : nationale et/ou régionale."
+                );
+                showProfileSaveMessage(
+                    "Veuillez choisir au moins un type d'annonce."
+                );
+                return;
+            }
 
 
             const height =
@@ -405,6 +427,12 @@ saveProfileButton.addEventListener(
 
                 city:
                     city,
+
+                notify_national:
+                    notifyNational,
+
+                notify_regional:
+                    notifyRegional,
 
                 height_cm:
                     height
