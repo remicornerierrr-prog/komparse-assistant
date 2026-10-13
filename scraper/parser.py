@@ -490,6 +490,26 @@ def extract_shoot_date_text(
         year = month_range.group(3) or str(default_year)
         return f"{month_range.group(1)} bis {month_range.group(2)} {year}"
 
+    # Numeric alternative dates such as "14.10. oder 15.10.".
+    numeric_alternative = re.search(
+        r"\\b(\\d{1,2})\\.(\\d{1,2})\\.?\\s*(?:o\\.|oder|/)\\s*(\\d{1,2})\\.(\\d{1,2})\\.?(?:\\s*(\\d{4}))?\\b",
+        combined,
+        re.IGNORECASE,
+    )
+    if numeric_alternative:
+        day1, month1, day2, month2, year_text = numeric_alternative.groups()
+        year = _resolve_year(year_text, default_year)
+        month_names = {
+            1: "Januar", 2: "Februar", 3: "März", 4: "April",
+            5: "Mai", 6: "Juni", 7: "Juli", 8: "August",
+            9: "September", 10: "Oktober", 11: "November", 12: "Dezember",
+        }
+        m1, m2 = int(month1), int(month2)
+        if 1 <= m1 <= 12 and 1 <= m2 <= 12:
+            if m1 == m2:
+                return f"{int(day1)}. oder {int(day2)}. {month_names[m1]} {year}"
+            return f"{int(day1)}. {month_names[m1]} oder {int(day2)}. {month_names[m2]} {year}"
+
     # Exact alternatives: 7. o. 8. November / 7. oder 8. November.
     alternative_pattern = (
         rf"\b(\d{{1,2}})\.\s*(?:o\.|oder|/)\s*"
@@ -502,6 +522,28 @@ def extract_shoot_date_text(
             f"{alternative.group(1)}. oder {alternative.group(2)}. "
             f"{alternative.group(3)} {year}"
         )
+
+    # When several exact dates are required (not alternatives), keep all of them.
+    if len(shoot_dates) > 1:
+        parsed_dates = []
+        for value in shoot_dates:
+            try:
+                parsed_dates.append(datetime.strptime(value, "%Y-%m-%d"))
+            except ValueError:
+                continue
+        if len(parsed_dates) > 1:
+            parsed_dates.sort()
+            month_names = {
+                1: "Januar", 2: "Februar", 3: "März", 4: "April",
+                5: "Mai", 6: "Juni", 7: "Juli", 8: "August",
+                9: "September", 10: "Oktober", 11: "November", 12: "Dezember",
+            }
+            if all((d.month, d.year) == (parsed_dates[0].month, parsed_dates[0].year) for d in parsed_dates):
+                days = [str(d.day) for d in parsed_dates]
+                joined = " und ".join(days)
+                return f"{joined}. {month_names[parsed_dates[0].month]} {parsed_dates[0].year}"
+            labels = [f"{d.day}. {month_names[d.month]} {d.year}" for d in parsed_dates]
+            return " und ".join(labels)
 
     # Approximate periods with an explicit phase of the month.
     phase_pattern = (
