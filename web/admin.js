@@ -436,7 +436,7 @@ async function loadOffers() {
 
         return `
             <tr>
-                <td>${escapeHtml(offer.komparse_id)}</td>
+                <td>${renderOfferReference(offer)}</td>
                 <td>${formatDate(offer.published_at)}</td>
                 <td>${escapeHtml(offer.location_text) || "—"}</td>
                 <td>${formatShooting(offer)}</td>
