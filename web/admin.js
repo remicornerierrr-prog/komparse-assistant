@@ -207,8 +207,10 @@ function getParserStatus(offer) {
     const hasExactDate = Boolean(offer.shoot_date);
     const hasDateText = Boolean(offer.shoot_date_text);
 
-    if (!hasExactDate) {
-        missing.push(hasDateText ? "date exacte à confirmer" : "date");
+    if (!hasExactDate && !hasDateText) {
+        missing.push("date");
+    } else if (!hasExactDate && hasDateText && offer.parser_needs_review) {
+        missing.push("date exacte à confirmer");
     }
 
     // Une annonce qui demande explicitement des âges variés ne doit pas
@@ -467,7 +469,9 @@ const OFFER_REVIEW_COLUMNS = [
     "published_at",
     "parser_needs_review",
     "parser_review_reason",
-    "admin_review_required"
+    "admin_review_required",
+    "application_method",
+    "application_url"
 ].join(",");
 
 function shouldShowInReview(offer) {
@@ -661,11 +665,9 @@ qualificationForm.addEventListener("submit", async event => {
         data.parser_needs_review = false;
         data.admin_review_required = false;
         data.parser_review_reason = null;
-    } else {
-        // Saving corrections does not silently clear a review flag.
-        data.parser_needs_review = true;
-        data.admin_review_required = true;
     }
+    // When the checkbox is not selected, preserve the existing review flags:
+    // saving a correction alone must neither validate nor newly flag an offer.
 
     const submitButton = qualificationForm.querySelector('button[type="submit"]');
     submitButton.disabled = true;
