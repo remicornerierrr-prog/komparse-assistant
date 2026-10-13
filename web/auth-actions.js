@@ -82,7 +82,14 @@ signupButton.addEventListener(
                             email,
 
                         password:
-                            password
+                            password,
+
+                        // Le lien de confirmation doit revenir sur le site publié,
+                        // jamais sur une URL locale de développement.
+                        options: {
+                            emailRedirectTo:
+                                window.location.origin + window.location.pathname
+                        }
 
                     });
 
