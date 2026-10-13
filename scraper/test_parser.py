@@ -240,6 +240,12 @@ class TestScheduleParsing(unittest.TestCase):
             "2x 0,5 Drehtage + Videotagebuch",
         )
 
+    def test_time_range_is_preserved_when_title_has_no_drehtag_word(self):
+        self.assertEqual(
+            extract_shoot_duration_text("Großraum Köln | Männer und Frauen für RTL | Fr., 9. Oktober, 11–15:30 Uhr | 50 €"),
+            "11–15:30 Uhr",
+        )
+
     def test_seasonal_period_is_preserved_without_exact_date(self):
         title = "Deutschlandweit | Singlemütter 35-50 Jahre | Drehzeitraum im Sommer 2027, Anzahl Drehtage noch unbestimmt"
         self.assertEqual(
