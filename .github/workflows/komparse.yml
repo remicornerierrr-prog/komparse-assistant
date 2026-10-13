@@ -1,6 +1,13 @@
 name: Komparse scraper
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - "scraper/**"
+      - ".github/workflows/komparse.yml"
+
   schedule:
     - cron: "*/15 * * * *"
 
