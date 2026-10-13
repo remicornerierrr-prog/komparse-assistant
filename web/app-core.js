@@ -16,6 +16,24 @@ const supabaseClient =
         SUPABASE_PUBLISHABLE_KEY
     );
 
+// Après connexion, n'autoriser qu'une destination interne connue.
+// Cela évite les redirections ouvertes vers des sites externes.
+function redirectToRequestedRoute() {
+    const requestedRoute = new URLSearchParams(window.location.search).get("next");
+
+    if (requestedRoute !== "admin.html") {
+        return false;
+    }
+
+    const destination = new URL("./admin.html", window.location.href);
+    if (destination.origin !== window.location.origin) {
+        return false;
+    }
+
+    window.location.replace(destination.toString());
+    return true;
+}
+
 
 console.log(
     "Connexion Supabase initialisée."

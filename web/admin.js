@@ -785,6 +785,28 @@ async function loadAdminDashboard(session) {
 }
 
 // ============================================================
+// DÉCONNEXION DEPUIS L'ADMINISTRATION
+// ============================================================
+
+const adminLogoutButton = document.getElementById("admin-logout");
+
+if (adminLogoutButton) {
+    adminLogoutButton.addEventListener("click", async () => {
+        adminLogoutButton.disabled = true;
+
+        const { error } = await supabaseClient.auth.signOut();
+
+        if (error) {
+            showError("La déconnexion a échoué. Réessayez.");
+            adminLogoutButton.disabled = false;
+            return;
+        }
+
+        redirectToLogin();
+    });
+}
+
+// ============================================================
 // INITIALISATION
 // ============================================================
 

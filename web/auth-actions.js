@@ -151,6 +151,10 @@ signupButton.addEventListener(
             }
 
 
+            if (redirectToRequestedRoute()) {
+                return;
+            }
+
             showLoggedIn(
                 data.user
             );
@@ -466,6 +470,10 @@ loginButton.addEventListener(
                 return;
             }
 
+
+            if (redirectToRequestedRoute()) {
+                return;
+            }
 
             showLoggedIn(
                 data.user
