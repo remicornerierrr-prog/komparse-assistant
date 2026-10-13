@@ -492,7 +492,7 @@ def extract_shoot_date_text(
 
     # Numeric alternative dates such as "14.10. oder 15.10.".
     numeric_alternative = re.search(
-        r"\\b(\\d{1,2})\\.(\\d{1,2})\\.?\\s*(?:o\\.|oder|/)\\s*(\\d{1,2})\\.(\\d{1,2})\\.?(?:\\s*(\\d{4}))?\\b",
+        r"\b(\d{1,2})\.(\d{1,2})\.?\s*(?:o\.|oder|/)\s*(\d{1,2})\.(\d{1,2})\.?(?:\s*(\d{4}))?\b",
         combined,
         re.IGNORECASE,
     )
