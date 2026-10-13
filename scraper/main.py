@@ -28,14 +28,58 @@ from supabase import Client, create_client
 
 try:
     from .matching import match_offer_to_profile, NOTIFY_WHEN_AGE_UNSPECIFIED
-    from .gender_flags import gender_flags_from_value
     from .location_rules import classify_location
     from .parser import is_varied_age_description
+    from .offer_data import (
+        as_bool,
+        as_int,
+        as_optional_string,
+        build_matching_offer,
+        extract_top_level_gender_flags,
+        first_value,
+        normalize_offer,
+    )
+    from . import notifications
+    from .supabase_store import (
+        create_match,
+        delete_push_subscription,
+        get_existing_match,
+        get_existing_offer,
+        get_push_delivery,
+        get_push_subscriptions,
+        load_profiles,
+        mark_match_notified,
+        match_already_exists,
+        save_offer,
+        save_push_delivery,
+    )
 except ImportError:  # Support `python scraper/main.py` execution.
     from matching import match_offer_to_profile, NOTIFY_WHEN_AGE_UNSPECIFIED
-    from gender_flags import gender_flags_from_value
     from location_rules import classify_location
     from parser import is_varied_age_description
+    from offer_data import (
+        as_bool,
+        as_int,
+        as_optional_string,
+        build_matching_offer,
+        extract_top_level_gender_flags,
+        first_value,
+        normalize_offer,
+    )
+    import notifications
+    from supabase_store import (
+        create_match,
+        delete_push_subscription,
+        get_existing_match,
+        get_existing_offer,
+        get_push_delivery,
+        get_push_subscriptions,
+        load_profiles,
+        mark_match_notified,
+        match_already_exists,
+        save_offer,
+        save_push_delivery,
+    )
 
 
 # ============================================================
@@ -204,78 +248,6 @@ def load_parsed_offers() -> list[dict[str, Any]]:
 # HELPERS
 # ============================================================
 
-def first_value(
-    data: dict[str, Any],
-    *keys: str,
-    default: Any = None,
-) -> Any:
-    for key in keys:
-        value = data.get(key)
-
-        if value is not None:
-            return value
-
-    return default
-
-
-def as_bool(value: Any) -> bool:
-    if isinstance(value, bool):
-        return value
-
-    if value is None:
-        return False
-
-    if isinstance(value, str):
-        normalized = value.strip().lower()
-
-        if normalized in {
-            "true",
-            "1",
-            "yes",
-            "oui",
-        }:
-            return True
-
-        if normalized in {
-            "false",
-            "0",
-            "no",
-            "non",
-            "",
-        }:
-            return False
-
-    return bool(value)
-
-
-def as_int(value: Any) -> int | None:
-    if value is None:
-        return None
-
-    if isinstance(value, bool):
-        return None
-
-    if isinstance(value, int):
-        return value
-
-    try:
-        return int(value)
-    except (TypeError, ValueError):
-        return None
-
-
-def as_optional_string(value: Any) -> str | None:
-    if value is None:
-        return None
-
-    value = str(value).strip()
-
-    if not value:
-        return None
-
-    return value
-
-
 def prepare_offer_status(offer: dict[str, Any]) -> str:
     """Classify an offer once for this run and persist review reasons.
 
@@ -373,721 +345,26 @@ def prepare_offer_status(offer: dict[str, Any]) -> str:
 # GENRE DE L'OFFRE
 # ============================================================
 
-def extract_top_level_gender_flags(
-    parsed: dict[str, Any],
-) -> tuple[bool, bool]:
-    """Read canonical labels accurately (especially female != male)."""
-    gender_male = parsed.get("gender_male")
-    gender_female = parsed.get("gender_female")
-
-    if gender_male is not None or gender_female is not None:
-        return as_bool(gender_male), as_bool(gender_female)
-
-    gender_value = first_value(
-        parsed,
-        "gender",
-        "genders",
-        "sex",
-        "sexes",
-    )
-    return gender_flags_from_value(gender_value)
-
-
-# ============================================================
-# NORMALISER UNE OFFRE
-# ============================================================
-
-def normalize_offer(
-    parsed: dict[str, Any],
-) -> dict[str, Any]:
-
-    komparse_id = first_value(
-        parsed,
-        "komparse_id",
-        "offer_id",
-        "id",
-    )
-
-    title = first_value(
-        parsed,
-        "title",
-        "name",
-        default="",
-    )
-
-    raw_text = first_value(
-        parsed,
-        "raw_text",
-        "text",
-        default="",
-    )
-
-    # Nouveau : conserver le texte détaillé de l'annonce.
-    # Il permet notamment de reconnaître les formulations
-    # comme "gemischtes Alter" dans le tableau de bord.
-    detail_text = first_value(
-        parsed,
-        "detail_text",
-        default="",
-    )
-
-    shoot_date_text = as_optional_string(
-        first_value(parsed, "shoot_date_text", default=None)
-    )
-    shoot_duration_text = as_optional_string(
-        first_value(parsed, "shoot_duration_text", default=None)
-    )
-    age_description = as_optional_string(
-        first_value(parsed, "age_description", default=None)
-    )
-    if not age_description:
-        # Fail-safe in case the parser omitted a descriptive age label while
-        # the source text still contains one, e.g. "gemischtes Alter".
-        try:
-            from .parser import extract_age_description
-        except ImportError:
-            from parser import extract_age_description
-        age_source = " ".join((
-            str(title or ""),
-            str(raw_text or ""),
-            str(detail_text or ""),
-        ))
-        age_description = as_optional_string(extract_age_description(age_source))
-    parser_review_reason = as_optional_string(
-        first_value(parsed, "parser_review_reason", default=None)
-    )
-    parser_needs_review = as_bool(
-        first_value(parsed, "needs_review", "parser_needs_review", default=False)
-    )
-
-    location = first_value(
-        parsed,
-        "location",
-        "location_text",
-        "mvp_location",
-        default="",
-    )
-    location_status = as_optional_string(
-        first_value(parsed, "location_status", default=None)
-    )
-
-    shoot_date = first_value(
-        parsed,
-        "shoot_date",
-        "shooting_date",
-        "date",
-    )
-
-    age_min = as_int(
-        first_value(
-            parsed,
-            "age_min",
-            "min_age",
-            "age_from",
-        )
-    )
-
-    age_max = as_int(
-        first_value(
-            parsed,
-            "age_max",
-            "max_age",
-            "age_to",
-        )
-    )
-
-    # Fail safe: if neither numerical bounds nor an age description were
-    # extracted, keep the offer visible for review instead of silently
-    # treating it as complete.
-    if age_min is None and age_max is None and not age_description:
-        parser_needs_review = True
-        reasons = [
-            part.strip()
-            for part in (parser_review_reason or "").split(",")
-            if part.strip()
-        ]
-        if "age_non_numerique" not in reasons:
-            reasons.append("age_non_numerique")
-        parser_review_reason = ", ".join(reasons)
-
-    (
-        gender_male,
-        gender_female,
-    ) = extract_top_level_gender_flags(parsed)
-
-    email = as_optional_string(
-        first_value(
-            parsed,
-            "email",
-            "recipient_email",
-            default=None,
-        )
-    )
-
-    subject_keyword = as_optional_string(
-        first_value(
-            parsed,
-            "subject_keyword",
-            "subject",
-            "betreff",
-            "kennwort",
-            default=None,
-        )
-    )
-
-    application_method = as_optional_string(
-        first_value(
-            parsed,
-            "application_method",
-            default=None,
-        )
-    )
-
-    application_url = as_optional_string(
-        first_value(
-            parsed,
-            "application_url",
-            default=None,
-        )
-    )
-
-    source_url = first_value(
-        parsed,
-        "source_url",
-        "detail_url",
-        "url",
-        default="",
-    )
-
-    published_at = first_value(
-        parsed,
-        "published_at",
-        "publication_date",
-        "created_at",
-    )
-
-    return {
-        "komparse_id": (
-            str(komparse_id)
-            if komparse_id is not None
-            else ""
-        ),
-        "title": str(title or ""),
-        "raw_text": str(raw_text or ""),
-
-        # Nouveau champ transmis à Supabase.
-        "detail_text": str(detail_text or ""),
-        "shoot_date_text": shoot_date_text,
-        "shoot_duration_text": shoot_duration_text,
-        "age_description": age_description,
-        "parser_needs_review": parser_needs_review,
-        "parser_review_reason": parser_review_reason,
-
-        "location_text": str(location or ""),
-        "location_status": location_status,
-        "shoot_date": shoot_date,
-        "age_min": age_min,
-        "age_max": age_max,
-        "gender_male": gender_male,
-        "gender_female": gender_female,
-        "email": email,
-        "subject_keyword": subject_keyword,
-        "application_method": application_method,
-        "application_url": application_url,
-        "source_url": str(source_url or ""),
-        "published_at": published_at,
-
-        # On conserve les données originales du parser
-        # pour gérer notamment plusieurs rôles.
-        "parsed": parsed,
-    }
-
-
 # ============================================================
 # CHARGER LES PROFILS
-# ============================================================
-
-def load_profiles(
-    supabase: Client,
-) -> list[dict[str, Any]]:
-
-    response = (
-        supabase
-        .table("profiles")
-        .select(
-            "id,first_name,last_name,email,phone,"
-            "birth_date,gender,address,city,height_cm,"
-            "shoe_size,clothing_size,profession"
-        )
-        .execute()
-    )
-
-    profiles = response.data or []
-
-    print(
-        f"{len(profiles)} profils chargés "
-        "depuis Supabase."
-    )
-
-    return profiles
-
-
-# ============================================================
-# CHERCHER UNE OFFRE EXISTANTE
-# ============================================================
-
-def get_existing_offer(
-    supabase: Client,
-    komparse_id: str,
-) -> dict[str, Any] | None:
-
-    response = (
-        supabase
-        .table("offers")
-        .select("*")
-        .eq(
-            "komparse_id",
-            komparse_id,
-        )
-        .limit(1)
-        .execute()
-    )
-
-    rows = response.data or []
-
-    if not rows:
-        return None
-
-    return rows[0]
-
-
-# ============================================================
-# SAUVEGARDER / METTRE À JOUR UNE OFFRE
-# ============================================================
-
-def save_offer(
-    supabase: Client,
-    offer: dict[str, Any],
-) -> tuple[int, bool]:
-
-    existing = get_existing_offer(
-        supabase,
-        offer["komparse_id"],
-    )
-
-    payload = {
-        "komparse_id": offer["komparse_id"],
-        "title": offer["title"],
-        "raw_text": offer["raw_text"],
-
-        # Textes qui préservent les informations non normalisables
-        # sans fabriquer une date exacte ou une tranche d'âge.
-        "detail_text": offer["detail_text"],
-        "shoot_date_text": offer["shoot_date_text"],
-        "shoot_duration_text": offer["shoot_duration_text"],
-        "age_description": offer["age_description"],
-        "parser_needs_review": offer["parser_needs_review"],
-        "parser_review_reason": offer["parser_review_reason"],
-
-        "location_text": offer["location_text"],
-        "location_status": offer["location_status"],
-        "shoot_date": offer["shoot_date"],
-        "age_min": offer["age_min"],
-        "age_max": offer["age_max"],
-        "gender_male": offer["gender_male"],
-        "gender_female": offer["gender_female"],
-        "email": offer["email"],
-        "subject_keyword": offer["subject_keyword"],
-        "application_method": offer["application_method"],
-        "application_url": offer["application_url"],
-        "source_url": offer["source_url"],
-        "published_at": offer["published_at"],
-        "updated_at": datetime.now(
-            timezone.utc
-        ).isoformat(),
-    }
-
-    # --------------------------------------------------------
-    # Offre existante
-    # --------------------------------------------------------
-
-    if existing:
-        response = (
-            supabase
-            .table("offers")
-            .update(payload)
-            .eq(
-                "id",
-                existing["id"],
-            )
-            .execute()
-        )
-
-        rows = response.data or []
-
-        if rows:
-            return rows[0]["id"], False
-
-        # Certains appels UPDATE peuvent ne pas retourner
-        # de représentation de ligne. On recharge alors
-        # l'offre pour obtenir son ID.
-        refreshed = get_existing_offer(
-            supabase,
-            offer["komparse_id"],
-        )
-
-        if refreshed is None:
-            raise RuntimeError(
-                "La mise à jour de l'offre a échoué."
-            )
-
-        return refreshed["id"], False
-
-    # --------------------------------------------------------
-    # Nouvelle offre
-    # --------------------------------------------------------
-
-    response = (
-        supabase
-        .table("offers")
-        .insert(payload)
-        .execute()
-    )
-
-    rows = response.data or []
-
-    if rows:
-        return rows[0]["id"], True
-
-    # Protection en cas de création concurrente.
-    refreshed = get_existing_offer(
-        supabase,
-        offer["komparse_id"],
-    )
-
-    if refreshed is None:
-        raise RuntimeError(
-            "La création de l'offre a échoué."
-        )
-
-    return refreshed["id"], False
-
-
-# ============================================================
-# ADAPTER L'OFFRE POUR LE MATCHING
-# ============================================================
-
-def build_matching_offer(
-    offer: dict[str, Any],
-) -> dict[str, Any]:
-
-    if offer["gender_male"] and offer["gender_female"]:
-        genders = ["male", "female"]
-    elif offer["gender_male"]:
-        genders = ["male"]
-    elif offer["gender_female"]:
-        genders = ["female"]
-    else:
-        genders = []
-
-    matching_offer = {
-        "id": offer["komparse_id"],
-        "offer_id": offer["komparse_id"],
-        "title": offer["title"],
-        "raw_text": offer["raw_text"],
-        "detail_text": offer["detail_text"],
-        "location": offer["location_text"],
-        "location_text": offer["location_text"],
-        "shoot_date": offer["shoot_date"],
-        "shoot_dates": offer.get("parsed", {}).get("shoot_dates") or [],
-        "shoot_date_text": offer["shoot_date_text"],
-        "shoot_duration_text": offer["shoot_duration_text"],
-        "age_min": offer["age_min"],
-        "age_max": offer["age_max"],
-        "age_description": offer["age_description"],
-        "genders": genders,
-        "email": offer["email"],
-        "subject_keyword": offer["subject_keyword"],
-        "application_method": offer["application_method"],
-        "application_url": offer["application_url"],
-        "source_url": offer["source_url"],
-    }
-
-    # --------------------------------------------------------
-    # Préserver les rôles multiples du parser
-    # --------------------------------------------------------
-
-    original_profiles = (
-        offer
-        .get("parsed", {})
-        .get("profiles")
-    )
-
-    if (
-        isinstance(original_profiles, list)
-        and original_profiles
-    ):
-        matching_profiles = []
-
-        for role in original_profiles:
-            if not isinstance(role, dict):
-                continue
-
-            role_copy = dict(role)
-            if (
-                role_copy.get("age_min") is None
-                and role_copy.get("age_max") is None
-                and offer.get("age_description")
-            ):
-                role_copy["age_description"] = offer["age_description"]
-
-            # Le parser fournit actuellement `gender`.
-            # Le matching accepte également `genders`.
-            role_gender = role_copy.get("gender")
-
-            if role_gender is not None:
-                role_copy["genders"] = role_gender
-
-            matching_profiles.append(role_copy)
-
-        if matching_profiles:
-            matching_offer["profiles"] = matching_profiles
-
-    return matching_offer
-
-
-# ============================================================
-# CHERCHER UN MATCH EXISTANT
-# ============================================================
-
-def get_existing_match(
-    supabase: Client,
-    offer_id: int,
-    user_id: str,
-) -> dict[str, Any] | None:
-
-    response = (
-        supabase
-        .table("matches")
-        .select(
-            "id,offer_id,user_id,reason,"
-            "notified_at,application_status"
-        )
-        .eq("offer_id", offer_id)
-        .eq("user_id", user_id)
-        .limit(1)
-        .execute()
-    )
-
-    rows = response.data or []
-
-    if not rows:
-        return None
-
-    return rows[0]
-
-
-# ============================================================
-# VÉRIFIER SI UN MATCH EXISTE
-# ============================================================
-
-def match_already_exists(
-    supabase: Client,
-    offer_id: int,
-    user_id: str,
-) -> bool:
-
-    return (
-        get_existing_match(
-            supabase,
-            offer_id,
-            user_id,
-        )
-        is not None
-    )
-
-
-# ============================================================
-# CRÉER UN MATCH
-# ============================================================
-
-def create_match(
-    supabase: Client,
-    offer_id: int,
-    user_id: str,
-    reason: dict[str, bool],
-) -> tuple[int, bool]:
-
-    existing = get_existing_match(
-        supabase,
-        offer_id,
-        user_id,
-    )
-
-    if existing is not None:
-        print(
-            f"    Match déjà existant : "
-            f"offer={offer_id} "
-            f"user={user_id}"
-        )
-
-        return existing["id"], False
-
-    response = (
-        supabase
-        .table("matches")
-        .insert({
-            "offer_id": offer_id,
-            "user_id": user_id,
-            "reason": reason,
-            "application_status": "new",
-        })
-        .execute()
-    )
-
-    rows = response.data or []
-
-    if not rows:
-        raise RuntimeError(
-            "Le match n'a pas pu être créé."
-        )
-
-    return rows[0]["id"], True
-
-
-# ============================================================
-# RÉCUPÉRER LES ABONNEMENTS PUSH D'UN UTILISATEUR
-# ============================================================
-
-def get_push_subscriptions(
-    supabase: Client,
-    user_id: str,
-) -> list[dict[str, Any]]:
-    """Retourne tous les navigateurs/appareils enregistrés pour cet utilisateur."""
-    response = (
-        supabase
-        .table("push_subscriptions")
-        .select("id,subscription_json,endpoint,device_id,device_label")
-        .eq("user_id", user_id)
-        .execute()
-    )
-
-    return response.data or []
-
-
-def get_push_delivery(
-    supabase: Client,
-    match_id: int,
-    subscription_id: int,
-) -> dict[str, Any] | None:
-    response = (
-        supabase
-        .table("match_push_deliveries")
-        .select("id,match_id,push_subscription_id,status,attempts,sent_at,last_error")
-        .eq("match_id", match_id)
-        .eq("push_subscription_id", subscription_id)
-        .limit(1)
-        .execute()
-    )
-
-    rows = response.data or []
-    return rows[0] if rows else None
-
-
-def save_push_delivery(
-    supabase: Client,
-    match_id: int,
-    subscription_id: int,
-    status: str,
-    attempts: int,
-    last_error: str | None = None,
-    sent_at: str | None = None,
-) -> None:
-    now = datetime.now(timezone.utc).isoformat()
-
-    payload = {
-        "match_id": match_id,
-        "push_subscription_id": subscription_id,
-        "status": status,
-        "attempts": attempts,
-        "last_attempt_at": now,
-        "sent_at": sent_at,
-        "last_error": last_error,
-        "updated_at": now,
-    }
-
-    supabase.table("match_push_deliveries").upsert(
-        payload,
-        on_conflict="match_id,push_subscription_id",
-    ).execute()
-
-
-def delete_push_subscription(
-    supabase: Client,
-    subscription_id: int,
-) -> None:
-    supabase.table("push_subscriptions").delete().eq(
-        "id", subscription_id
-    ).execute()
-
-
-# ============================================================
-# ENVOYER UNE NOTIFICATION PUSH À UN APPAREIL
 # ============================================================
 
 def send_push_notification(
     subscription: dict[str, Any],
     offer: dict[str, Any],
 ) -> tuple[bool, int | None, str | None]:
-    payload = {
-        "title": "Nouvelle offre Komparse",
-        "body": (
-            offer["title"]
-            or "Une offre correspond à votre profil."
-        ),
-        "url": offer["source_url"] or "/",
-    }
+    """Keep the public pipeline hook while delegating delivery details."""
+    return notifications.send_push_notification(
+        subscription,
+        offer,
+        webpush_func=webpush,
+        webpush_exception=WebPushException,
+        vapid_private_key=VAPID_PRIVATE_KEY,
+        vapid_subject=VAPID_SUBJECT,
+        ttl_seconds=PUSH_TTL_SECONDS,
+        stats=NOTIFICATION_STATS,
+    )
 
-    NOTIFICATION_STATS["attempted"] += 1
-
-    try:
-        response = webpush(
-            subscription_info=subscription,
-            data=json.dumps(payload, ensure_ascii=False),
-            vapid_private_key=VAPID_PRIVATE_KEY,
-            vapid_claims={"sub": VAPID_SUBJECT},
-            ttl=PUSH_TTL_SECONDS,
-        )
-        NOTIFICATION_STATS["provider_accepted"] += 1
-        status_code = getattr(response, "status_code", None)
-        print(
-            "    Passerelle push acceptée"
-            + (f" (HTTP {status_code})" if status_code is not None else ".")
-        )
-        return True, status_code, None
-
-    except WebPushException as error:
-        NOTIFICATION_STATS["failed"] += 1
-        response = getattr(error, "response", None)
-        status_code = getattr(response, "status_code", None)
-        message = str(error)
-        print(
-            "    Erreur Web Push : "
-            + (f"HTTP {status_code} — " if status_code is not None else "")
-            + message
-        )
-        return False, status_code, message
-
-    except Exception as error:
-        NOTIFICATION_STATS["failed"] += 1
-        message = str(error)
-        print(f"    Erreur inattendue pendant l'envoi push : {message}")
-        return False, None, message
-
-
-# ============================================================
-# NOTIFIER TOUS LES NAVIGATEURS D'UN UTILISATEUR
-# ============================================================
 
 def notify_match_user(
     supabase: Client,
@@ -1095,148 +372,20 @@ def notify_match_user(
     offer: dict[str, Any],
     match_id: int,
 ) -> bool:
-    """Envoie la notification à chaque abonnement sans dupliquer les envois réussis.
-
-    `matches.notified_at` n'est marqué que lorsque tous les abonnements actifs
-    connus ont une livraison réussie. Les échecs sont retentés aux exécutions
-    suivantes, sans renvoyer aux appareils déjà servis.
-    """
-    subscriptions = get_push_subscriptions(supabase, user_id)
-
-    if not subscriptions:
-        NOTIFICATION_STATS["missing_subscription"] += 1
-        print(f"    Aucun abonnement push pour {user_id}")
-        return False
-
-    NOTIFICATION_STATS["subscriptions_seen"] += len(subscriptions)
-
-    for row in subscriptions:
-        subscription_id = row.get("id")
-        subscription = row.get("subscription_json")
-
-        if not subscription_id or not isinstance(subscription, dict) or not subscription.get("endpoint"):
-            NOTIFICATION_STATS["invalid_subscription"] += 1
-            print(f"    Abonnement invalide (id={subscription_id}) ; suppression de la ligne invalide.")
-            if subscription_id:
-                delete_push_subscription(supabase, subscription_id)
-            continue
-
-        delivery = get_push_delivery(
-            supabase,
-            match_id,
-            subscription_id,
-        )
-
-        if delivery and delivery.get("status") == "sent":
-            NOTIFICATION_STATS["device_deliveries_already_sent"] += 1
-            print(
-                "    Livraison déjà réussie pour "
-                + str(row.get("device_label") or f"abonnement {subscription_id}")
-                + " ; aucun doublon envoyé."
-            )
-            continue
-
-        attempts = int((delivery or {}).get("attempts") or 0) + 1
-        save_push_delivery(
-            supabase,
-            match_id,
-            subscription_id,
-            status="pending",
-            attempts=attempts,
-        )
-
-        success, status_code, error_message = send_push_notification(
-            subscription,
-            offer,
-        )
-
-        if success:
-            save_push_delivery(
-                supabase,
-                match_id,
-                subscription_id,
-                status="sent",
-                attempts=attempts,
-                sent_at=datetime.now(timezone.utc).isoformat(),
-            )
-            print(
-                "    ✓ Notification envoyée à "
-                + str(row.get("device_label") or f"abonnement {subscription_id}")
-            )
-            continue
-
-        if status_code in (404, 410):
-            # Le service push confirme que cet endpoint n'existe plus.
-            NOTIFICATION_STATS["expired_subscription"] += 1
-            print(
-                f"    Abonnement expiré (HTTP {status_code}) ; suppression de l'appareil {subscription_id}."
-            )
-            delete_push_subscription(supabase, subscription_id)
-            continue
-
-        save_push_delivery(
-            supabase,
-            match_id,
-            subscription_id,
-            status="failed",
-            attempts=attempts,
-            last_error=(error_message or f"Erreur HTTP {status_code}"),
-        )
-
-    # Recharger les abonnements actifs : certains endpoints ont pu expirer
-    # et être supprimés pendant cette tentative.
-    active_subscriptions = get_push_subscriptions(supabase, user_id)
-
-    if not active_subscriptions:
-        NOTIFICATION_STATS["missing_subscription"] += 1
-        print("    Aucun abonnement push actif après nettoyage.")
-        return False
-
-    all_delivered = True
-    for row in active_subscriptions:
-        subscription_id = row.get("id")
-        delivery = get_push_delivery(supabase, match_id, subscription_id)
-        if not delivery or delivery.get("status") != "sent":
-            all_delivered = False
-            break
-
-    if not all_delivered:
-        NOTIFICATION_STATS["partial_delivery"] = NOTIFICATION_STATS.get("partial_delivery", 0) + 1
-        print(
-            "    Livraison partielle : les appareils non servis seront retentés "
-            "lors d'une prochaine exécution."
-        )
-
-    return all_delivered
-
-
-# ============================================================
-# MARQUER UN MATCH COMME NOTIFIÉ
-# ============================================================
-
-def mark_match_notified(
-    supabase: Client,
-    match_id: int,
-) -> None:
-
-    now = datetime.now(
-        timezone.utc
-    ).isoformat()
-
-    (
-        supabase
-        .table("matches")
-        .update({
-            "notified_at": now,
-        })
-        .eq("id", match_id)
-        .execute()
+    """Keep dependency injection points available to existing tests."""
+    return notifications.notify_match_user(
+        supabase,
+        user_id,
+        offer,
+        match_id,
+        stats=NOTIFICATION_STATS,
+        get_push_subscriptions=get_push_subscriptions,
+        get_push_delivery=get_push_delivery,
+        save_push_delivery=save_push_delivery,
+        delete_push_subscription=delete_push_subscription,
+        send_push_notification=send_push_notification,
     )
 
-
-# ============================================================
-# TRAITER UNE OFFRE
-# ============================================================
 
 def process_offer(
     supabase: Client,

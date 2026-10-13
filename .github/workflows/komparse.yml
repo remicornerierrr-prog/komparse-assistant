@@ -28,9 +28,17 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r scraper/requirements.txt
 
-      # Les tests doivent réussir avant toute modification des données en production.
-      - name: Run unit tests
+      # Les tests signalent les régressions, mais ne doivent jamais bloquer
+      # le scraper automatique : l'utilisateur a explicitement choisi ce mode.
+      - name: Run unit tests (non-blocking)
+        id: unit_tests
         run: python -m unittest discover -s scraper -t .
+        continue-on-error: true
+
+      - name: Warn if unit tests failed
+        if: ${{ steps.unit_tests.outcome == 'failure' }}
+        run: |
+          echo "::warning::Unit tests failed, but the scraper will continue."
 
       - name: Run scraper
         env:
