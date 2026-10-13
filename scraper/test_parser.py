@@ -118,6 +118,19 @@ class TestAgeParsing(unittest.TestCase):
     def test_date_endpoint_is_not_mistaken_for_age(self):
         self.assertEqual(extract_age_ranges("vom 13. bis 16.10.2026"), [])
 
+    def test_bis_spaetestens_date_is_not_an_exact_shoot_date(self):
+        self.assertEqual(extract_shoot_dates("Drehzeit bis spätestens 25.10."), [])
+        self.assertEqual(
+            extract_shoot_date_text("Drehzeit bis spätestens 25.10.", default_year=2026),
+            "Bis spätestens 25. Oktober 2026",
+        )
+
+    def test_adjacent_month_names_form_a_period(self):
+        self.assertEqual(
+            extract_shoot_date_text("3-5 Drehtage im Zeitraum, Oktober November 2026", default_year=2026),
+            "Oktober bis November 2026",
+        )
+
     def test_jungs_is_male(self):
         self.assertEqual(detect_gender("Jungs, 8-10 Jahre"), {"male"})
 
@@ -315,6 +328,25 @@ class TestShootDates(unittest.TestCase):
     def test_detail_page_extracts_dates_from_termine_uhrzeit_label(self):
         result = parse_detail_page("<html><body><p>Termine/Uhrzeit: Donnerstag, 15.10.2026 + Freitag, 16.10.2026</p></body></html>")
         self.assertEqual(result["shoot_dates"], ["2026-10-15", "2026-10-16"])
+
+    def test_explicit_male_role_from_detail_page_is_preserved(self):
+        parsed = parse_offer({
+            "offer_id": "test-male-detail",
+            "publication_date": "2026-10-12",
+            "title": "Raum Köln | Darsteller Jeep-Fahrer, 40-55 Jahre",
+            "raw_text": "",
+            "detail_url": "https://komparse.de/Gesuch99998.htm",
+        })
+        result = enrich_offer_from_detail(parsed, {
+            "detail_text": "Für die Produktion suchen wir einen Mann, ca. 40-55 Jahre, als Jeep-Fahrer.",
+            "location_text": None,
+            "email": None,
+            "subject_keyword": None,
+            "shoot_dates": [],
+            "application_url": None,
+            "application_method": "unknown",
+        })
+        self.assertEqual(result["gender"], ["male"])
 
     def test_detail_page_extracts_date_from_shooting_sentence(self):
         result = parse_detail_page(
