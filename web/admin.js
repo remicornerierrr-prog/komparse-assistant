@@ -61,6 +61,31 @@ function escapeHtml(value) {
 }
 
 // ============================================================
+// LIEN VERS L'ANNONCE ORIGINALE KOMPARSE
+// ============================================================
+
+function renderOfferReference(offer) {
+    const reference = escapeHtml(offer.komparse_id || offer.id || "—");
+    const rawUrl = String(offer.source_url || "").trim();
+
+    if (!rawUrl) {
+        return reference;
+    }
+
+    try {
+        const url = new URL(rawUrl);
+        // Les liens sources attendus sont les pages publiques de Komparse.
+        if (url.protocol !== "https:" || url.hostname.toLowerCase() !== "komparse.de") {
+            return reference;
+        }
+
+        return `<a href="${escapeHtml(url.href)}" target="_blank" rel="noopener noreferrer" title="Ouvrir l’annonce originale Komparse">${reference} ↗</a>`;
+    } catch {
+        return reference;
+    }
+}
+
+// ============================================================
 // FORMATER UNE DATE
 // ============================================================
 
@@ -305,6 +330,7 @@ async function loadOffers() {
         .select([
             "id",
             "komparse_id",
+            "source_url",
             "title",
             "raw_text",
             "detail_text",
@@ -356,7 +382,7 @@ async function loadOffers() {
 
             return `
                 <tr>
-                    <td>${escapeHtml(offer.komparse_id)}</td>
+                    <td>${renderOfferReference(offer)}</td>
 
                     <td>${formatDate(offer.published_at)}</td>
 
@@ -453,6 +479,7 @@ async function loadOffers() {
 const OFFER_REVIEW_COLUMNS = [
     "id",
     "komparse_id",
+    "source_url",
     "title",
     "raw_text",
     "detail_text",
