@@ -727,6 +727,7 @@ def extract_shoot_duration_text(title: str, detail_text: str = "") -> str | None
         candidate,
         flags=re.IGNORECASE,
     )
+    candidate = re.sub(r"\b(?:zwischen|im Zeitraum|bis)\s*$", "", candidate, flags=re.IGNORECASE)
     candidate = re.sub(r"\s+", " ", candidate).strip(" ,;|:+-")
     candidate = re.sub(r"\s*\+\s*", " + ", candidate)
     return candidate or None
