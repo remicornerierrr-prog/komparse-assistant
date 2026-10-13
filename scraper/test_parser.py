@@ -129,6 +129,12 @@ class TestGenderParsing(unittest.TestCase):
     def test_gender_star(self):
         self.assertEqual(detect_gender("Kompars*innen gesucht"), {"male", "female"})
 
+    def test_einzelpersonen_und_paare_is_mixed(self):
+        self.assertEqual(
+            detect_gender("Einzelpersonen und Paare (ca. 22-70 Jahre)"),
+            {"male", "female"},
+        )
+
     def test_damen_und_herren_is_mixed(self):
         title = "Raum KÖLN | 3 Damen und Herren als Redakteure einer Tageszeitung, 25 bis 55 Jahre | 15. Oktober"
         self.assertEqual(detect_gender(title), {"male", "female"})
