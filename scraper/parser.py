@@ -515,6 +515,19 @@ def extract_shoot_date_text(
         if 1 <= start_day <= 31 and 1 <= end_day <= 31:
             return f"{start_day}. bis {end_day}. {month_name} {year}"
 
+    # Preserve month ranges when both endpoints have explicit years.
+    month_year_range = re.search(
+        rf"\b({MONTH_PATTERN})\s+(\d{{4}})\s*(?:bis|und|[-–])\s*"
+        rf"({MONTH_PATTERN})\s+(\d{{4}})\b",
+        combined,
+        re.IGNORECASE,
+    )
+    if month_year_range:
+        return (
+            f"{month_year_range.group(1)} {month_year_range.group(2)} bis "
+            f"{month_year_range.group(3)} {month_year_range.group(4)}"
+        )
+
     # Month-only or month-to-month windows, e.g. "Oktober-November".
     month_range = re.search(
         rf"\b({MONTH_PATTERN})(?:\s*(?:bis|[-–]|und)\s*|\s+)({MONTH_PATTERN})(?:\s+(\d{{4}}))?\b",
