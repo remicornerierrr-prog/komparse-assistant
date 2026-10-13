@@ -85,6 +85,7 @@ def detect_gender(text: str) -> set[str]:
         r"\b[\wäöüß-]+[*:_]innen\b",  # Darsteller*innen, Kompars*innen, Tester:innen
         r"\b(?:damen\s+(?:und|oder|/)\s+herren|herren\s+(?:und|oder|/)\s+damen)\b",
         r"\b(?:frauen\s+(?:und|oder|/)\s+männer|männer\s+(?:und|oder|/)\s+frauen)\b",
+        r"\beinzelpersonen\s+(?:und|oder|/)\s+paare\b",
     ]
     if any(re.search(pattern, t, re.IGNORECASE) for pattern in mixed_patterns):
         return {"male", "female"}
