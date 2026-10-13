@@ -39,6 +39,7 @@ try:
         first_value,
         normalize_offer,
     )
+    from . import notifications
     from .supabase_store import (
         create_match,
         delete_push_subscription,
@@ -65,6 +66,7 @@ except ImportError:  # Support `python scraper/main.py` execution.
         first_value,
         normalize_offer,
     )
+    import notifications
     from supabase_store import (
         create_match,
         delete_push_subscription,
@@ -351,55 +353,18 @@ def send_push_notification(
     subscription: dict[str, Any],
     offer: dict[str, Any],
 ) -> tuple[bool, int | None, str | None]:
-    payload = {
-        "title": "Nouvelle offre Komparse",
-        "body": (
-            offer["title"]
-            or "Une offre correspond à votre profil."
-        ),
-        "url": offer["source_url"] or "/",
-    }
+    """Keep the public pipeline hook while delegating delivery details."""
+    return notifications.send_push_notification(
+        subscription,
+        offer,
+        webpush_func=webpush,
+        webpush_exception=WebPushException,
+        vapid_private_key=VAPID_PRIVATE_KEY,
+        vapid_subject=VAPID_SUBJECT,
+        ttl_seconds=PUSH_TTL_SECONDS,
+        stats=NOTIFICATION_STATS,
+    )
 
-    NOTIFICATION_STATS["attempted"] += 1
-
-    try:
-        response = webpush(
-            subscription_info=subscription,
-            data=json.dumps(payload, ensure_ascii=False),
-            vapid_private_key=VAPID_PRIVATE_KEY,
-            vapid_claims={"sub": VAPID_SUBJECT},
-            ttl=PUSH_TTL_SECONDS,
-        )
-        NOTIFICATION_STATS["provider_accepted"] += 1
-        status_code = getattr(response, "status_code", None)
-        print(
-            "    Passerelle push acceptée"
-            + (f" (HTTP {status_code})" if status_code is not None else ".")
-        )
-        return True, status_code, None
-
-    except WebPushException as error:
-        NOTIFICATION_STATS["failed"] += 1
-        response = getattr(error, "response", None)
-        status_code = getattr(response, "status_code", None)
-        message = str(error)
-        print(
-            "    Erreur Web Push : "
-            + (f"HTTP {status_code} — " if status_code is not None else "")
-            + message
-        )
-        return False, status_code, message
-
-    except Exception as error:
-        NOTIFICATION_STATS["failed"] += 1
-        message = str(error)
-        print(f"    Erreur inattendue pendant l'envoi push : {message}")
-        return False, None, message
-
-
-# ============================================================
-# NOTIFIER TOUS LES NAVIGATEURS D'UN UTILISATEUR
-# ============================================================
 
 def notify_match_user(
     supabase: Client,
@@ -407,123 +372,21 @@ def notify_match_user(
     offer: dict[str, Any],
     match_id: int,
 ) -> bool:
-    """Envoie la notification à chaque abonnement sans dupliquer les envois réussis.
-
-    `matches.notified_at` n'est marqué que lorsque tous les abonnements actifs
-    connus ont une livraison réussie. Les échecs sont retentés aux exécutions
-    suivantes, sans renvoyer aux appareils déjà servis.
-    """
-    subscriptions = get_push_subscriptions(supabase, user_id)
-
-    if not subscriptions:
-        NOTIFICATION_STATS["missing_subscription"] += 1
-        print(f"    Aucun abonnement push pour {user_id}")
-        return False
-
-    NOTIFICATION_STATS["subscriptions_seen"] += len(subscriptions)
-
-    for row in subscriptions:
-        subscription_id = row.get("id")
-        subscription = row.get("subscription_json")
-
-        if not subscription_id or not isinstance(subscription, dict) or not subscription.get("endpoint"):
-            NOTIFICATION_STATS["invalid_subscription"] += 1
-            print(f"    Abonnement invalide (id={subscription_id}) ; suppression de la ligne invalide.")
-            if subscription_id:
-                delete_push_subscription(supabase, subscription_id)
-            continue
-
-        delivery = get_push_delivery(
-            supabase,
-            match_id,
-            subscription_id,
-        )
-
-        if delivery and delivery.get("status") == "sent":
-            NOTIFICATION_STATS["device_deliveries_already_sent"] += 1
-            print(
-                "    Livraison déjà réussie pour "
-                + str(row.get("device_label") or f"abonnement {subscription_id}")
-                + " ; aucun doublon envoyé."
-            )
-            continue
-
-        attempts = int((delivery or {}).get("attempts") or 0) + 1
-        save_push_delivery(
-            supabase,
-            match_id,
-            subscription_id,
-            status="pending",
-            attempts=attempts,
-        )
-
-        success, status_code, error_message = send_push_notification(
-            subscription,
-            offer,
-        )
-
-        if success:
-            save_push_delivery(
-                supabase,
-                match_id,
-                subscription_id,
-                status="sent",
-                attempts=attempts,
-                sent_at=datetime.now(timezone.utc).isoformat(),
-            )
-            print(
-                "    ✓ Notification envoyée à "
-                + str(row.get("device_label") or f"abonnement {subscription_id}")
-            )
-            continue
-
-        if status_code in (404, 410):
-            # Le service push confirme que cet endpoint n'existe plus.
-            NOTIFICATION_STATS["expired_subscription"] += 1
-            print(
-                f"    Abonnement expiré (HTTP {status_code}) ; suppression de l'appareil {subscription_id}."
-            )
-            delete_push_subscription(supabase, subscription_id)
-            continue
-
-        save_push_delivery(
-            supabase,
-            match_id,
-            subscription_id,
-            status="failed",
-            attempts=attempts,
-            last_error=(error_message or f"Erreur HTTP {status_code}"),
-        )
-
-    # Recharger les abonnements actifs : certains endpoints ont pu expirer
-    # et être supprimés pendant cette tentative.
-    active_subscriptions = get_push_subscriptions(supabase, user_id)
-
-    if not active_subscriptions:
-        NOTIFICATION_STATS["missing_subscription"] += 1
-        print("    Aucun abonnement push actif après nettoyage.")
-        return False
-
-    all_delivered = True
-    for row in active_subscriptions:
-        subscription_id = row.get("id")
-        delivery = get_push_delivery(supabase, match_id, subscription_id)
-        if not delivery or delivery.get("status") != "sent":
-            all_delivered = False
-            break
-
-    if not all_delivered:
-        NOTIFICATION_STATS["partial_delivery"] = NOTIFICATION_STATS.get("partial_delivery", 0) + 1
-        print(
-            "    Livraison partielle : les appareils non servis seront retentés "
-            "lors d'une prochaine exécution."
-        )
-
-    return all_delivered
+    """Keep dependency injection points available to existing tests."""
+    return notifications.notify_match_user(
+        supabase,
+        user_id,
+        offer,
+        match_id,
+        stats=NOTIFICATION_STATS,
+        get_push_subscriptions=get_push_subscriptions,
+        get_push_delivery=get_push_delivery,
+        save_push_delivery=save_push_delivery,
+        delete_push_subscription=delete_push_subscription,
+        send_push_notification=send_push_notification,
+    )
 
 
-# ============================================================
-# MARQUER UN MATCH COMME NOTIFIÉ
 def process_offer(
     supabase: Client,
     raw_parsed_offer: dict[str, Any],
