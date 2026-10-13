@@ -548,11 +548,11 @@ function shouldShowInReview(offer) {
     // A documented period or scheduling condition is valid source information.
     // Keep it out of the queue once an administrator has explicitly reviewed it.
     const hasSchedule = Boolean(offer.shoot_date || offer.shoot_date_text);
-    const hasAge = offer.age_min != null ||
-        offer.age_max != null ||
-        Boolean(String(offer.age_description || "").trim());
     const hasGender = offer.gender_male === true || offer.gender_female === true;
-    return !offer.location_text || !hasSchedule || !hasAge || !hasGender;
+    // L'âge peut légitimement ne pas être précisé dans l'annonce.
+    // Une fois la revue explicitement levée (parser_needs_review=false et
+    // admin_review_required=false), son absence seule ne doit pas la réinsérer.
+    return !offer.location_text || !hasSchedule || !hasGender;
 }
 
 async function loadAllReviewOffers() {
@@ -676,7 +676,8 @@ function validateQualification(data, markReviewed) {
         if (!data.location_text.trim()) return "Impossible de valider : la localisation manque.";
         if (data.location_status === "manual_review") return "Confirmez la localisation ou laissez l’annonce en revue.";
         if (!data.shoot_date && !data.shoot_date_text.trim()) return "Impossible de valider : indiquez une date, une période ou la modalité de tournage.";
-        if (data.age_min === null && data.age_max === null && !data.age_description.trim()) return "Impossible de valider : indiquez une tranche d’âge ou une description non numérique.";
+        // L'âge peut rester vide si l'annonce source ne le précise pas.
+        // L'administrateur confirme alors explicitement que cette absence est volontaire.
         if (!data.gender_male && !data.gender_female) return "Impossible de valider : confirmez le sexe recherché.";
         if (data.location_status === "outside") {
             // Out-of-scope offers can be marked reviewed without being matched.
