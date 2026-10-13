@@ -136,6 +136,12 @@ class TestAgeParsing(unittest.TestCase):
             "Oktober bis November 2026",
         )
 
+    def test_month_range_with_different_years_is_preserved(self):
+        self.assertEqual(
+            extract_shoot_date_text("zwei Drehtage nach Absprache zwischen Oktober 2026 und März 2027", default_year=2026),
+            "Oktober 2026 bis März 2027",
+        )
+
     def test_jungs_is_male(self):
         self.assertEqual(detect_gender("Jungs, 8-10 Jahre"), {"male"})
 
