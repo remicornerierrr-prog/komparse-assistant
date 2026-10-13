@@ -18,6 +18,7 @@ on:
       - "scraper/**"
       - ".github/workflows/komparse-healthcheck.yml"
       - "scraper/requirements.txt"
+      - "web/**"
 
 permissions:
   contents: read
