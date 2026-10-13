@@ -581,6 +581,36 @@ class TestRealAnnouncementExamples(unittest.TestCase):
         self.assertNotIn("age_non_numerique", result["parser_review_reasons"])
 
 
+class TestRecentRuleCorrections(unittest.TestCase):
+    def test_explicit_filming_city_overrides_bundesweit_heading(self):
+        parsed = parse_offer({
+            "offer_id": "91.334",
+            "publication_date": "2026-10-09 12:40",
+            "title": "Bundesweit | US-Native-Speaker (9-17 J.) für eine neue US-Kinder-Game-Show | 1 Drehtag, Ende November",
+            "raw_text": "",
+            "detail_url": "https://komparse.de/Gesuch91334.htm",
+        })
+        detail = parse_detail_page(
+            "<html><body><p>Die Dreharbeiten finden Ende November 2026 in Köln statt.</p></body></html>",
+            base_url="https://komparse.de/Gesuch91334.htm",
+        )
+        enriched = enrich_offer_from_detail(parsed, detail)
+        self.assertEqual(detail["location_text"], "Köln")
+        self.assertEqual(enriched["location_text"], "Köln")
+        self.assertEqual(enriched["location_status"], "v1")
+
+    def test_ex_relationship_prota_is_adult_and_open_to_both_genders(self):
+        result = parse_offer({
+            "offer_id": "91.346",
+            "publication_date": "2026-10-12 14:35",
+            "title": "NRW | Prota, die noch eine Kiste mit Gegenständen aus Ex-Beziehungen als Erinnerung aufgehoben hat und diese zeigen würde | 14.10. oder 15.10.",
+            "raw_text": "",
+            "detail_url": "https://komparse.de/Gesuch91346.htm",
+        })
+        self.assertEqual(result["age_min"], 18)
+        self.assertIsNone(result["age_max"])
+        self.assertEqual(result["gender"], ["female", "male"])
+
 if __name__ == "__main__":
     unittest.main()
 
