@@ -127,6 +127,104 @@
             background: #f5f5f5;
         }
 
+        .qualification-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            overflow-y: auto;
+            padding: 24px 12px;
+            background: rgba(15, 23, 42, 0.62);
+        }
+
+        .qualification-modal[hidden] {
+            display: none;
+        }
+
+        .qualification-panel {
+            width: min(900px, 100%);
+            padding: 24px;
+            border-radius: 12px;
+            background: white;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+        }
+
+        .qualification-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+        }
+
+        .qualification-field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            min-width: 0;
+        }
+
+        .qualification-field input,
+        .qualification-field select,
+        .qualification-field textarea {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 9px 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font: inherit;
+        }
+
+        .qualification-field textarea {
+            min-height: 76px;
+            resize: vertical;
+        }
+
+        .qualification-field-wide {
+            grid-column: 1 / -1;
+        }
+
+        .qualification-source {
+            max-height: 180px;
+            overflow: auto;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+            padding: 12px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+        }
+
+        .qualification-actions {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .qualification-validation {
+            padding: 10px 12px;
+            margin: 12px 0;
+            border-radius: 6px;
+            background: #fff7ed;
+            color: #9a3412;
+        }
+
+        @media (max-width: 650px) {
+            .qualification-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .qualification-field-wide {
+                grid-column: auto;
+            }
+
+            .qualification-panel {
+                padding: 16px;
+            }
+        }
+
         @media (max-width: 1100px) {
             .admin-grid {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -332,6 +430,118 @@
 
         </section>
 
+        <section
+            id="qualification-modal"
+            class="qualification-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="qualification-title"
+            hidden
+        >
+            <div class="qualification-panel">
+                <h2 id="qualification-title">Qualifier une annonce</h2>
+                <p id="qualification-offer-id"></p>
+                <div id="qualification-validation" class="qualification-validation" hidden></div>
+
+                <form id="qualification-form">
+                    <div class="qualification-grid">
+                        <label class="qualification-field qualification-field-wide">
+                            Titre de l’annonce
+                            <input name="title" maxlength="1000">
+                        </label>
+
+                        <label class="qualification-field">
+                            Localisation telle que qualifiée
+                            <input name="location_text" maxlength="500" required>
+                        </label>
+
+                        <label class="qualification-field">
+                            Statut de localisation
+                            <select name="location_status" required>
+                                <option value="v1">Dans le périmètre V1</option>
+                                <option value="manual_review">À confirmer manuellement</option>
+                                <option value="outside">Hors zone V1</option>
+                            </select>
+                        </label>
+
+                        <label class="qualification-field">
+                            Date exacte du tournage (si connue)
+                            <input name="shoot_date" type="date">
+                        </label>
+
+                        <label class="qualification-field">
+                            Date/période/modalité d’origine
+                            <input name="shoot_date_text" maxlength="500" placeholder="Ex. Ende November 2026 / Nach Absprache">
+                        </label>
+
+                        <label class="qualification-field qualification-field-wide">
+                            Durée et contraintes logistiques
+                            <input name="shoot_duration_text" maxlength="500">
+                        </label>
+
+                        <label class="qualification-field">
+                            Âge minimum
+                            <input name="age_min" type="number" min="0" max="120" step="1">
+                        </label>
+
+                        <label class="qualification-field">
+                            Âge maximum
+                            <input name="age_max" type="number" min="0" max="120" step="1">
+                        </label>
+
+                        <label class="qualification-field qualification-field-wide">
+                            Description d’âge non numérique
+                            <input name="age_description" maxlength="500" placeholder="Ex. gemischtes Alter, Senior*innen">
+                        </label>
+
+                        <label class="qualification-field">
+                            Sexe recherché
+                            <select name="gender" required>
+                                <option value="unknown">Non précisé / à confirmer</option>
+                                <option value="male">Hommes uniquement</option>
+                                <option value="female">Femmes uniquement</option>
+                                <option value="mixed">Mixte (hommes et femmes)</option>
+                            </select>
+                        </label>
+
+                        <label class="qualification-field">
+                            Mode de candidature
+                            <select name="application_method">
+                                <option value="">Non précisé</option>
+                                <option value="email">E-mail</option>
+                                <option value="form">Formulaire en ligne</option>
+                                <option value="website">Site web</option>
+                                <option value="other">Autre / à vérifier</option>
+                            </select>
+                        </label>
+
+                        <label class="qualification-field qualification-field-wide">
+                            URL de candidature
+                            <input name="application_url" type="url" maxlength="2000" placeholder="https://…">
+                        </label>
+
+                        <label class="qualification-field qualification-field-wide">
+                            Motif de revue / incertitude restante
+                            <textarea name="parser_review_reason" maxlength="2000"></textarea>
+                        </label>
+
+                        <div class="qualification-field qualification-field-wide">
+                            <strong>Texte source (lecture seule)</strong>
+                            <pre id="qualification-source" class="qualification-source"></pre>
+                        </div>
+
+                        <label class="qualification-field qualification-field-wide">
+                            <span><input name="mark_reviewed" type="checkbox" style="width:auto"> J’ai vérifié les informations ci-dessus et souhaite retirer cette annonce de la file de vérification si les champs requis sont complets.</span>
+                        </label>
+                    </div>
+
+                    <div class="qualification-actions">
+                        <button type="button" class="admin-button" data-action="close-editor">Annuler</button>
+                        <button type="submit" class="admin-button">Enregistrer la qualification</button>
+                    </div>
+                </form>
+            </div>
+        </section>
     </main>
 
 

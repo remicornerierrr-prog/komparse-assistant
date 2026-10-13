@@ -26,6 +26,13 @@ const notificationsCount = document.getElementById("notifications-count");
 const reviewCount = document.getElementById("review-count");
 const reviewOffersBody = document.getElementById("review-offers-body");
 const offersBody = document.getElementById("offers-body");
+const qualificationModal = document.getElementById("qualification-modal");
+const qualificationForm = document.getElementById("qualification-form");
+const qualificationOfferId = document.getElementById("qualification-offer-id");
+const qualificationSource = document.getElementById("qualification-source");
+const qualificationValidation = document.getElementById("qualification-validation");
+const offersById = new Map();
+let editingOfferId = null;
 
 // ============================================================
 // AFFICHER UNE ERREUR
@@ -200,8 +207,10 @@ function getParserStatus(offer) {
     const hasExactDate = Boolean(offer.shoot_date);
     const hasDateText = Boolean(offer.shoot_date_text);
 
-    if (!hasExactDate) {
-        missing.push(hasDateText ? "date exacte à confirmer" : "date");
+    if (!hasExactDate && !hasDateText) {
+        missing.push("date");
+    } else if (!hasExactDate && hasDateText && offer.parser_needs_review) {
+        missing.push("date exacte à confirmer");
     }
 
     // Une annonce qui demande explicitement des âges variés ne doit pas
@@ -312,7 +321,9 @@ async function loadOffers() {
             "published_at",
             "parser_needs_review",
             "parser_review_reason",
-            "admin_review_required"
+            "admin_review_required",
+            "application_method",
+            "application_url"
         ].join(","))
         .order("published_at", {
             ascending: false,
@@ -325,6 +336,9 @@ async function loadOffers() {
     }
 
     const offers = result.data || [];
+    for (const offer of offers) {
+        offersById.set(Number(offer.id), offer);
+    }
 
     if (offers.length === 0) {
         offersBody.innerHTML = `
@@ -362,6 +376,8 @@ async function loadOffers() {
 
                     <td class="${offer.admin_review_required ? "review" : ""}">
                         ${escapeHtml(adminStatus)}
+                        <br>
+                        <button class="admin-button" data-offer-id="${offer.id}" data-action="edit">Qualifier</button>
                     </td>
                 </tr>
             `;
@@ -372,6 +388,9 @@ async function loadOffers() {
     // La file est paginée pour qu'un ancien élément à vérifier ne soit pas
     // invisible simplement parce qu'il est plus ancien que les dernières offres.
     const reviewOffers = await loadAllReviewOffers();
+    for (const offer of reviewOffers) {
+        offersById.set(Number(offer.id), offer);
+    }
     if (reviewCount) {
         reviewCount.textContent = String(reviewOffers.length);
     }
@@ -399,6 +418,11 @@ async function loadOffers() {
                 <td>${escapeHtml(formatGender(offer))}</td>
                 <td class="review">${escapeHtml(parserStatus)}</td>
                 <td>
+                    <button
+                        class="admin-button"
+                        data-offer-id="${offer.id}"
+                        data-action="edit"
+                    >Qualifier</button>
                     ${
                         isAdminReview
                             ? `
@@ -445,7 +469,9 @@ const OFFER_REVIEW_COLUMNS = [
     "published_at",
     "parser_needs_review",
     "parser_review_reason",
-    "admin_review_required"
+    "admin_review_required",
+    "application_method",
+    "application_url"
 ].join(",");
 
 function shouldShowInReview(offer) {
@@ -455,12 +481,22 @@ function shouldShowInReview(offer) {
         return false;
     }
 
-    return (
+    if (
         offer.location_status === "manual_review" ||
         offer.parser_needs_review === true ||
-        offer.admin_review_required === true ||
-        !offer.shoot_date
-    );
+        offer.admin_review_required === true
+    ) {
+        return true;
+    }
+
+    // A documented period or scheduling condition is valid source information.
+    // Keep it out of the queue once an administrator has explicitly reviewed it.
+    const hasSchedule = Boolean(offer.shoot_date || offer.shoot_date_text);
+    const hasAge = offer.age_min != null ||
+        offer.age_max != null ||
+        Boolean(String(offer.age_description || "").trim());
+    const hasGender = offer.gender_male === true || offer.gender_female === true;
+    return !offer.location_text || !hasSchedule || !hasAge || !hasGender;
 }
 
 async function loadAllReviewOffers() {
@@ -471,7 +507,7 @@ async function loadAllReviewOffers() {
         const result = await supabaseClient
             .from("offers")
             .select(OFFER_REVIEW_COLUMNS)
-            .or("parser_needs_review.eq.true,admin_review_required.eq.true,location_status.eq.manual_review,shoot_date.is.null")
+            .or("parser_needs_review.eq.true,admin_review_required.eq.true,location_status.eq.manual_review,shoot_date.is.null,shoot_date_text.is.null,location_text.is.null,gender_male.eq.false,gender_female.eq.false,age_min.is.null,age_max.is.null")
             .order("id", { ascending: true })
             .range(offset, offset + pageSize - 1);
 
@@ -516,6 +552,163 @@ async function setReviewStatus(offerId, required) {
 }
 
 // ============================================================
+// QUALIFICATION MANUELLE DES ANNONCES
+// ============================================================
+
+function setEditorMessage(message) {
+    qualificationValidation.textContent = message || "";
+    qualificationValidation.hidden = !message;
+}
+
+function openQualificationEditor(offerId) {
+    const offer = offersById.get(Number(offerId));
+    if (!offer) {
+        showError("Annonce introuvable dans les données chargées. Actualisez le tableau.");
+        return;
+    }
+
+    editingOfferId = Number(offerId);
+    qualificationForm.reset();
+    setEditorMessage("");
+    qualificationOfferId.textContent = `Annonce Komparse ${offer.komparse_id || offer.id}`;
+
+    const fields = qualificationForm.elements;
+    fields.namedItem("title").value = offer.title || "";
+    fields.namedItem("location_text").value = offer.location_text || "";
+    fields.namedItem("location_status").value = offer.location_status || "manual_review";
+    fields.namedItem("shoot_date").value = offer.shoot_date || "";
+    fields.namedItem("shoot_date_text").value = offer.shoot_date_text || "";
+    fields.namedItem("shoot_duration_text").value = offer.shoot_duration_text || "";
+    fields.namedItem("age_min").value = offer.age_min ?? "";
+    fields.namedItem("age_max").value = offer.age_max ?? "";
+    fields.namedItem("age_description").value = offer.age_description || "";
+    fields.namedItem("gender").value =
+        offer.gender_male && offer.gender_female ? "mixed" :
+        offer.gender_male ? "male" :
+        offer.gender_female ? "female" : "unknown";
+    fields.namedItem("application_method").value = offer.application_method || "";
+    fields.namedItem("application_url").value = offer.application_url || "";
+    fields.namedItem("parser_review_reason").value = offer.parser_review_reason || "";
+    fields.namedItem("mark_reviewed").checked = false;
+
+    // Prefer the detail page text, then the captured listing text. Keep it
+    // text-only so source content cannot inject HTML into the admin page.
+    qualificationSource.textContent = offer.detail_text || offer.raw_text || "Aucun texte source enregistré.";
+    qualificationModal.hidden = false;
+    fields.namedItem("location_text").focus();
+}
+
+function closeQualificationEditor() {
+    qualificationModal.hidden = true;
+    editingOfferId = null;
+    setEditorMessage("");
+}
+
+function validateQualification(data, markReviewed) {
+    if (data.age_min !== null && data.age_min < 0) return "L’âge minimum ne peut pas être négatif.";
+    if (data.age_max !== null && data.age_max < 0) return "L’âge maximum ne peut pas être négatif.";
+    if (data.age_min !== null && data.age_max !== null && data.age_min > data.age_max) {
+        return "L’âge minimum ne peut pas dépasser l’âge maximum.";
+    }
+    if (data.shoot_date && data.shoot_date_text) {
+        // Exact date and source wording may coexist; this is intentional.
+    }
+    if (data.application_url && !/^https?:\/\//i.test(data.application_url)) {
+        return "L’URL de candidature doit commencer par http:// ou https://.";
+    }
+    if (markReviewed) {
+        if (!data.location_text.trim()) return "Impossible de valider : la localisation manque.";
+        if (data.location_status === "manual_review") return "Confirmez la localisation ou laissez l’annonce en revue.";
+        if (!data.shoot_date && !data.shoot_date_text.trim()) return "Impossible de valider : indiquez une date, une période ou la modalité de tournage.";
+        if (data.age_min === null && data.age_max === null && !data.age_description.trim()) return "Impossible de valider : indiquez une tranche d’âge ou une description non numérique.";
+        if (!data.gender_male && !data.gender_female) return "Impossible de valider : confirmez le sexe recherché.";
+        if (data.location_status === "outside") {
+            // Out-of-scope offers can be marked reviewed without being matched.
+        }
+    }
+    return "";
+}
+
+qualificationForm.addEventListener("submit", async event => {
+    event.preventDefault();
+    if (!editingOfferId) return;
+
+    const fields = qualificationForm.elements;
+    const ageMinValue = fields.namedItem("age_min").value.trim();
+    const ageMaxValue = fields.namedItem("age_max").value.trim();
+    const gender = fields.namedItem("gender").value;
+    const markReviewed = fields.namedItem("mark_reviewed").checked;
+    const data = {
+        title: fields.namedItem("title").value.trim() || null,
+        location_text: fields.namedItem("location_text").value.trim() || null,
+        location_status: fields.namedItem("location_status").value,
+        shoot_date: fields.namedItem("shoot_date").value || null,
+        shoot_date_text: fields.namedItem("shoot_date_text").value.trim() || null,
+        shoot_duration_text: fields.namedItem("shoot_duration_text").value.trim() || null,
+        age_min: ageMinValue === "" ? null : Number(ageMinValue),
+        age_max: ageMaxValue === "" ? null : Number(ageMaxValue),
+        age_description: fields.namedItem("age_description").value.trim() || null,
+        gender_male: gender === "male" || gender === "mixed",
+        gender_female: gender === "female" || gender === "mixed",
+        application_method: fields.namedItem("application_method").value || null,
+        application_url: fields.namedItem("application_url").value.trim() || null,
+        parser_review_reason: fields.namedItem("parser_review_reason").value.trim() || null
+    };
+
+    const validationMessage = validateQualification(data, markReviewed);
+    if (validationMessage) {
+        setEditorMessage(validationMessage);
+        return;
+    }
+
+    if (markReviewed) {
+        data.parser_needs_review = false;
+        data.admin_review_required = false;
+        data.parser_review_reason = null;
+    } else {
+        // Saving without explicit confirmation keeps the offer in the review queue.
+        data.parser_needs_review = true;
+        data.admin_review_required = true;
+    }
+
+    const submitButton = qualificationForm.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+    submitButton.textContent = "Enregistrement…";
+
+    try {
+        const result = await supabaseClient
+            .from("offers")
+            .update(data)
+            .eq("id", editingOfferId)
+            .select(OFFER_REVIEW_COLUMNS)
+            .single();
+
+        if (result.error) throw result.error;
+
+        offersById.set(Number(result.data.id), result.data);
+        closeQualificationEditor();
+        await loadCounters();
+        await loadOffers();
+    } catch (error) {
+        console.error("Erreur lors de la qualification de l’annonce :", error);
+        setEditorMessage("Enregistrement impossible : " + (error.message || "erreur inconnue"));
+    } finally {
+        submitButton.disabled = false;
+        submitButton.textContent = "Enregistrer la qualification";
+    }
+});
+
+qualificationModal.addEventListener("click", event => {
+    if (event.target === qualificationModal) closeQualificationEditor();
+});
+
+document.addEventListener("keydown", event => {
+    if (event.key === "Escape" && !qualificationModal.hidden) {
+        closeQualificationEditor();
+    }
+});
+
+// ============================================================
 // GESTION DES BOUTONS
 // ============================================================
 
@@ -528,6 +721,16 @@ document.addEventListener("click", async event => {
 
     const offerId = Number(button.dataset.offerId);
     const action = button.dataset.action;
+
+    if (action === "edit") {
+        if (offerId) openQualificationEditor(offerId);
+        return;
+    }
+
+    if (action === "close-editor") {
+        closeQualificationEditor();
+        return;
+    }
 
     if (!offerId) {
         return;
