@@ -932,6 +932,21 @@ def parse_detail_page(html: str | None, base_url: str | None = None) -> dict:
             detail_location_text = normalize_text(location_match.group(1))
             break
 
+    # A listing may say "Bundesweit" because applicants can come from anywhere,
+    # while the detail text gives a fixed filming city in a normal sentence.
+    # In that case the actual shooting location takes precedence for matching.
+    if not detail_location_text:
+        filming_location_patterns = (
+            r"\\b(?:die\\s+)?Dreharbeiten\\s+(?:finden|erfolgen|sind)\\b.{0,180}?\\bin\\s+([A-ZÄÖÜ][A-Za-zÄÖÜäöüß-]+)\\s+(?:statt|geplant|vorgesehen)\\b",
+            r"\\b(?:gedreht|aufgezeichnet|gefilmt)\\s+(?:wird|werden)\\b.{0,120}?\\bin\\s+([A-ZÄÖÜ][A-Za-zÄÖÜäöüß-]+)\\b",
+            r"\\bProduktionsort\\s+(?:ist|ist\\s+in)\\s+([A-ZÄÖÜ][A-Za-zÄÖÜäöüß-]+)\\b",
+        )
+        for pattern in filming_location_patterns:
+            location_match = re.search(pattern, detail_text, re.IGNORECASE)
+            if location_match:
+                detail_location_text = normalize_text(location_match.group(1))
+                break
+
     # Prefer an explicit schedule field, but don't assume that the page
     # always labels it exactly "Termin:". Some detail pages state the date in
     # a sentence about the shoot itself.
@@ -1032,6 +1047,23 @@ def parse_offer(offer: dict) -> dict:
     # Never assign an arbitrary date when several alternatives are given.
     shoot_date = title_shoot_dates[0] if len(title_shoot_dates) == 1 else None
     profiles = extract_profiles(title)
+
+    # Some documentary/interview roles explicitly concern past romantic
+    # relationships and personal keepsakes. Treat these as adult roles and
+    # open to men and women when no age/gender limit is stated.
+    adult_relationship_context = bool(re.search(
+        r"\\b(?:ex[- ]beziehungen|frühere[nr]?\\s+beziehungen|"
+        r"gegenstände[nr]?\\s+aus\\s+(?:ex[- ]beziehungen|früheren\\s+beziehungen)|"
+        r"liebesbriefe|erinnerungsstücke\\s+aus\\s+beziehungen)\\b",
+        title,
+        re.IGNORECASE,
+    )) and bool(re.search(r"\\bprota(?:gonist(?:in)?\\*?in)?\\b", title, re.IGNORECASE))
+
+    if adult_relationship_context and len(profiles) == 1:
+        profiles[0]["age_min"] = 18
+        profiles[0]["age_max"] = None
+        profiles[0]["gender"] = ["female", "male"]
+
     all_genders = {gender for profile in profiles for gender in profile.get("gender", [])}
 
     if len(profiles) == 1:
