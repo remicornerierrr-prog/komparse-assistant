@@ -179,6 +179,9 @@ class TestGenderParsing(unittest.TestCase):
         title = "Raum KÖLN | 3 Damen und Herren als Redakteure einer Tageszeitung, 25 bis 55 Jahre | 15. Oktober"
         self.assertEqual(detect_gender(title), {"male", "female"})
 
+    def test_aerztinnen_aerzte_is_mixed(self):
+        self.assertEqual(detect_gender("Ärztinnen, Ärzte und Pflegekräfte"), {"male", "female"})
+
     def test_damen_only_is_female(self):
         self.assertEqual(detect_gender("Damen für eine Fernsehproduktion"), {"female"})
 
