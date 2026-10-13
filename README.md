@@ -4,16 +4,19 @@ Prototype d'un assistant destiné aux figurants en Allemagne.
 
 ## Objectif du MVP V1
 
-Surveiller automatiquement les nouvelles annonces publiées sur Komparse.de
-et identifier celles qui correspondent au profil d'un figurant.
+Surveiller automatiquement les nouvelles annonces publiées sur Komparse.de, les analyser et identifier celles qui correspondent au profil d'un figurant. Les offres compatibles sont enregistrées dans Supabase et peuvent déclencher une notification Web Push.
 
-## Zone géographique
+## Zone géographique V1
 
 - Köln
 - Großraum Köln
 - Großraum Bonn
 - Großraum Düsseldorf
 - Großraum Köln/Bonn/Düsseldorf
+- Nordrhein-Westfalen (NRW)
+- Annonces nationales en Allemagne : Bundesweit, Deutschlandweit, Ganz Deutschland, Deutschland, Germany
+
+Les localisations qui ne correspondent pas clairement à ces règles restent en revue manuelle ou hors périmètre. Les rayons explicites jusqu'à 100 km peuvent être acceptés lorsqu'ils partent d'une ville prise en charge. Les rayons supérieurs à 100 km restent en revue manuelle.
 
 ## Critères de matching
 
@@ -21,29 +24,33 @@ et identifier celles qui correspondent au profil d'un figurant.
 - Âge
 - Sexe
 
-## Fonctionnement prévu
+Une annonce sans date exacte peut tout de même être considérée si les critères de matching sont utilisables ; la période et les modalités de tournage sont conservées séparément et aucune date n'est inventée.
 
-Komparse.de
-→ Scraper
-→ Analyse des annonces
-→ Matching avec les profils
-→ Notification push
-→ Préparation de la candidature
-→ Email avec photos
+## Pipeline automatisé
+
+Komparse.de → scraping → parsing et contrôles de qualité → mise à jour Supabase → matching avec les profils → enregistrement des matches → notifications Web Push.
+
+Le workflow GitHub Actions `Komparse scraper` est planifié toutes les 15 minutes et peut aussi être lancé manuellement. Le workflow `Deploy site to GitHub Pages` publie le contenu du dossier `web/` à chaque push sur `main`.
+
+## Notifications push
+
+- Les abonnements Web Push sont enregistrés par utilisateur et par appareil.
+- Les notifications sont envoyées via Web Push/VAPID depuis le workflow du scraper.
+- Les tentatives et résultats de livraison sont suivis par appareil afin de retenter les échecs sans renvoyer inutilement les notifications déjà délivrées.
+- Une réponse positive de la passerelle signifie qu'elle a accepté la notification, pas nécessairement que le système d'exploitation l'a affichée à l'écran.
+- Les secrets `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` et `VAPID_SUBJECT` doivent être configurés dans les secrets GitHub Actions.
 
 ## Règles de qualité du parsing
 
 - Le titre de page « Aktuelle Gesuche » est retiré avant l'analyse de la localisation.
-- Les localisations sont normalisées par `scraper/location_rules.py`, partagé entre le parseur et le matching. Les localisations nationales ou trop larges (par ex. `Bundesweit`, `NRW`) restent en revue manuelle.
-- Les mentions explicites telles que `Damen und Herren`, `m/w` et les formes inclusives (`Darsteller*innen`, `Kompars*innen`) sont mixtes. Les mots génériques `Komparsen`, `Darsteller` et `Kleindarsteller` ne sont pas interprétés automatiquement comme masculins : le sexe est alors à vérifier et aucun match/Push automatique n'est déclenché.
-- Les âges ouverts sont conservés sans inventer une borne : `ab 30 Jahren` devient `age_min=30`, `age_max=NULL`. `gemischtes Alter` reste une description d'âge, pas une tranche numérique.
-- Une date exacte est stockée dans `shoot_date`. Les périodes (`Ende November 2026`) et modalités (`Nach Absprache`) sont conservées dans `shoot_date_text`; la durée/logistique reste dans `shoot_duration_text`. Aucune journée exacte n'est inventée pour une période.
-- Avant de déployer, exécuter une fois le SQL `supabase/migrations/20261009_parser_quality_fields.sql` dans Supabase si ces colonnes n'existent pas encore.
-- Chaque exécution du workflow imprime un bilan des Push : tentatives, acceptations par la passerelle, échecs, abonnements absents/invalides et matches déjà marqués notifiés. Une réponse positive de la passerelle ne garantit pas que le système d'exploitation affiche visuellement la notification.
-
+- Les localisations sont normalisées par `scraper/location_rules.py`, partagé entre le parseur et le matching.
+- Les mentions explicites telles que `Damen und Herren`, `m/w` et les formes inclusives (`Darsteller*innen`, `Kompars*innen`) peuvent être interprétées comme mixtes selon le contexte. Les mots génériques `Komparsen`, `Darsteller` et `Kleindarsteller` ne sont pas interprétés automatiquement comme masculins : si le sexe n'est pas précisé, l'annonce peut rester en revue.
+- Les âges ouverts sont conservés sans inventer de borne : `ab 30 Jahren` devient `age_min=30`, `age_max=NULL`. `gemischtes Alter` reste une description, pas une tranche numérique.
+- Une date exacte est stockée dans `shoot_date`. Les périodes (`Ende November 2026`) et modalités (`Nach Absprache`) sont conservées dans `shoot_date_text`; la durée et la logistique restent dans `shoot_duration_text`.
+- Les champs de qualité de parsing sont définis dans `supabase/migrations/20261009_parser_quality_fields.sql`; les champs d'abonnements push multi-appareils sont définis dans `supabase/migrations/20261009_multi_browser_push.sql`.
 
 ## Données de référence et fixtures
 
 Les captures HTML et les instantanés JSON utilisés pour les tests sont rangés dans `scraper/fixtures/`. Les tests et scripts de régression lisent ces fichiers statiques et ne contactent pas le site en direct. Les fichiers `komparse_offers.json` et `komparse_parsed_offers.json` générés pendant une exécution normale restent à la racine du projet et sont ignorés par Git.
 
-Les anciennes notes d’installation et de patch sont archivées dans `docs/patch-archive/` pour conserver l’historique sans encombrer la racine.
+Les anciennes notes d'installation et de patch sont archivées dans `docs/patch-archive/`.
