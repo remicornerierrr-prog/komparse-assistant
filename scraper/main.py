@@ -40,6 +40,7 @@ try:
         normalize_offer,
     )
     from . import notifications
+    from .notification_eligibility import is_offer_recent, profile_allows_offer_scope
     from .supabase_store import (
         create_match,
         delete_push_subscription,
@@ -67,6 +68,7 @@ except ImportError:  # Support `python scraper/main.py` execution.
         normalize_offer,
     )
     import notifications
+    from notification_eligibility import is_offer_recent, profile_allows_offer_scope
     from supabase_store import (
         create_match,
         delete_push_subscription,
@@ -132,6 +134,7 @@ OFFER_STATUS_STATS = {
     "outside": 0,
     "matched_without_notification": 0,
     "no_profile_match": 0,
+    "too_old_for_push": 0,
 }
 
 
@@ -437,6 +440,17 @@ def process_offer(
         )
         return
 
+    # Only offers published today or yesterday may create matches or push alerts.
+    # Missing or unparsable publication dates fail closed to prevent stale alerts.
+    if not is_offer_recent(offer.get("published_at")):
+        OFFER_STATUS_STATS["too_old_for_push"] += 1
+        print(
+            f"  STATUT FINAL: TROP ANCIENNE / DATE DE PUBLICATION ABSENTE — "
+            f"aucun match ni push (ID {offer['komparse_id']}, "
+            f"publication={offer.get('published_at')!r})."
+        )
+        return
+
     matching_offer = build_matching_offer(offer)
     offer_was_notified = False
     any_profile_review = False
@@ -445,6 +459,14 @@ def process_offer(
 
     for profile in profiles:
         try:
+            if not profile_allows_offer_scope(offer.get("location_text"), profile):
+                print(
+                    "    Offre ignorée pour le profil "
+                    f"{profile.get('id')} : portée géographique non autorisée "
+                    "ou ville non correspondante."
+                )
+                continue
+
             result = match_offer_to_profile(matching_offer, profile)
 
             if result is False:
@@ -617,6 +639,7 @@ def main() -> None:
     print(f"  Hors zone                 : {OFFER_STATUS_STATS['outside']}")
     print(f"  Match trouvé, sans livraison confirmée : {OFFER_STATUS_STATS['matched_without_notification']}")
     print(f"  Aucun profil compatible  : {OFFER_STATUS_STATS['no_profile_match']}")
+    print(f"  Trop anciennes / date absente : {OFFER_STATUS_STATS['too_old_for_push']}")
     print("\nNotifications push — bilan par tentative/appareil :")
     print(f"  Tentatives d'envoi         : {NOTIFICATION_STATS['attempted']}")
     print(f"  Acceptées par la passerelle: {NOTIFICATION_STATS['provider_accepted']}")
