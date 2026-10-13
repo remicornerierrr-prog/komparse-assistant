@@ -1063,6 +1063,22 @@ def parse_offer(offer: dict) -> dict:
         profiles[0]["age_min"] = 18
         profiles[0]["age_max"] = None
         profiles[0]["gender"] = ["female", "male"]
+    
+    # Work-related casting descriptions imply an adult participant when they
+    # explicitly refer to regularly doing overtime or leaving a job.
+    adult_work_context = bool(re.search(
+        r"\\b(?:regelmäßig\\s+überstunden\\s+machen|"
+        r"regelmaessig\\s+ueberstunden\\s+machen|"
+        r"ihren\\s+job\\s+verlassen|den\\s+job\\s+verlassen|"
+        r"deshalb\\s+ihren\\s+job\\s+verlassen)\\b",
+        title,
+        re.IGNORECASE,
+    ))
+    if adult_work_context and len(profiles) == 1:
+        profiles[0]["age_min"] = max(18, profiles[0].get("age_min") or 0)
+        if profiles[0].get("age_max") is not None:
+            profiles[0]["age_max"] = max(18, profiles[0]["age_max"])
+
 
     all_genders = {gender for profile in profiles for gender in profile.get("gender", [])}
 
