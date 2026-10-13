@@ -371,7 +371,7 @@ class TestShootDates(unittest.TestCase):
         self.assertEqual(extract_shoot_dates("Drehtag 22.10.26"), ["2026-10-22"])
 
     def test_period_does_not_treat_payment_as_end_year(self):
-        self.assertEqual(extract_shoot_date_text("Halberstadt | 6 Drehtage im Zeitraum 16.-29. Oktober | 200 EUR Gage/10h", default_year=2026), "16. Oktober bis 29. Oktober 2026")
+        self.assertEqual(extract_shoot_date_text("Halberstadt | 6 Drehtage im Zeitraum 16.-29. Oktober | 200 EUR Gage/10h", default_year=2026), "16. bis 29. Oktober 2026")
 
 
 class TestApplicationDetection(unittest.TestCase):
