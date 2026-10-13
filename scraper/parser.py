@@ -101,12 +101,13 @@ def detect_gender(text: str) -> set[str]:
         r"\bvater\b",
         r"\bsohn\b",
         r"\bjunge(?:n)?\b",
+        r"\bjungs?\b",
         r"\bmale\b",
         r"(^|[\s(,/|\-])m(?=[\s),;./|\-]|$)",
     ]
 
     female_patterns = [
-        r"\bweiblich(?:e|er|en)?\b",
+        r"\bweiblich(?:e|er|en|es|em)?\b",
         r"\bweibl\.",
         r"\bfrau(?:en)?\b",
         r"\bdamen?\b",
@@ -121,6 +122,7 @@ def detect_gender(text: str) -> set[str]:
         r"\bredakteurin(?:nen)?\b",
         r"\bschauspielerin(?:nen)?\b",
         r"\bpatientin(?:nen)?\b",
+        r"\b(?:single)?mütter?\b",
         r"\bbeamtin(?:nen)?\b",
         r"\bfahrerin(?:nen)?\b",
         r"\bsportlerin(?:nen)?\b",
@@ -203,7 +205,7 @@ def extract_age_ranges(text: str) -> list[dict]:
 
     # Upper bound: bis/unter/höchstens 60 Jahre. Closed ranges are already occupied.
     upper_patterns = [
-        r"\b(?:bis|unter|höchstens|hoechstens)\s*(\d{1,2})\s*(?:J\.?|Jahre|Jahren)?\b",
+        r"\b(?:bis|unter|höchstens|hoechstens)\s*(\d{1,2})(?!\s*(?:\.\d|\.|Std\b|Stunden\b|Tage\b|Drehtage\b|Uhr\b|cm\b|Euro\b|€))\s*(?:J\.?|Jahre|Jahren)?\b",
     ]
     for pattern in upper_patterns:
         for match in re.finditer(pattern, t, re.IGNORECASE):
@@ -417,8 +419,8 @@ def extract_shoot_date_text(
     # Explicit date ranges such as "im Zeitraum 09.11. bis 17.12."
     # are approximate multi-day windows, not one exact shooting date.
     date_range = re.search(
-        r"(\d{1,2})\.(\d{1,2})\.?(?:\s*(\d{2,4}))?\s*(?:bis|[-–])\s*"
-        r"(\d{1,2})\.(\d{1,2})\.?(?:\s*(\d{2,4}))?",
+        r"(\d{1,2})\.(\d{1,2})\.?(?:\s*((?:19|20)\d{2}|\d{2})(?!\d|€))?\s*(?:bis|[-–])\s*"
+        r"(\d{1,2})\.(\d{1,2})\.?(?:\s*((?:19|20)\d{2}|\d{2})(?!\d|€))?",
         combined,
         re.IGNORECASE,
     )
