@@ -832,7 +832,7 @@ def parse_detail_page(html: str | None, base_url: str | None = None) -> dict:
     # always labels it exactly "Termin:". Some detail pages state the date in
     # a sentence about the shoot itself.
     schedule_labels = re.compile(
-        r"^(?:Termin|Drehtermin|Drehdatum|Drehzeitraum|Drehtag|Drehtage)\s*:",
+        r"^(?:Termine?(?:/Uhrzeit)?|Drehtermin|Drehdatum|Drehzeitraum|Drehtag|Drehtage)\s*:",
         re.IGNORECASE,
     )
     for line in lines:
