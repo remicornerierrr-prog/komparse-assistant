@@ -135,6 +135,10 @@ async function checkCurrentSession() {
         }
 
         if (data.session) {
+            if (redirectToRequestedRoute()) {
+                return;
+            }
+
             showLoggedIn(data.session.user);
             await loadProfile();
             await loadProfilePhotos();
@@ -201,6 +205,10 @@ supabaseClient.auth.onAuthStateChange(
         }
 
         if (session) {
+            if (redirectToRequestedRoute()) {
+                return;
+            }
+
             showLoggedIn(session.user);
             await loadProfile();
             await loadProfilePhotos();
