@@ -652,6 +652,19 @@ def extract_shoot_duration_text(title: str, detail_text: str = "") -> str | None
     title = normalize_text(title)
     detail_text = normalize_text(detail_text)
     segments = [part.strip() for part in title.split("|")]
+
+    # Preserve an explicit time range when the title uses hours instead of
+    # the word "Drehtag" (e.g. "Fr., 9. Oktober, 11–15:30 Uhr").
+    time_range = re.search(
+        r"\b(\d{1,2})(?::(\d{2}))?\s*[–-]\s*(\d{1,2})(?::(\d{2}))?\s*Uhr\b",
+        title,
+        re.IGNORECASE,
+    )
+    if time_range:
+        start_hour, start_minute, end_hour, end_minute = time_range.groups()
+        start = f"{int(start_hour):02d}:{start_minute}" if start_minute else str(int(start_hour))
+        end = f"{int(end_hour):02d}:{end_minute}" if end_minute else str(int(end_hour))
+        return f"{start}–{end} Uhr"
     candidates = [
         part for part in segments
         if re.search(r"\bDreh(?:tag|tage|tagen)\b", part, re.IGNORECASE)
