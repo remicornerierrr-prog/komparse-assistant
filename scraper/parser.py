@@ -207,6 +207,16 @@ def extract_age_ranges(text: str) -> list[dict]:
     ]
     for pattern in upper_patterns:
         for match in re.finditer(pattern, t, re.IGNORECASE):
+            # "Konf. 36 bis 40" refers to clothing size, not an age limit.
+            # The generic upper-bound rule would otherwise incorrectly read
+            # "bis 40" as an age and turn one valid age range into two profiles.
+            before = t[max(0, match.start() - 30):match.start()]
+            if re.search(
+                r"\\b(?:konf\\.?|konfektionsgröße|kleidergröße)\\s*\\d{1,2}\\s*$",
+                before,
+                re.IGNORECASE,
+            ):
+                continue
             add(match, None, int(match.group(1)))
 
     # Single stated age such as 'ca. 30 Jahre', excluding range phrases.
