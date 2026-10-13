@@ -35,6 +35,18 @@ class TestAgeParsing(unittest.TestCase):
         self.assertEqual(result[0]["min"], 35)
         self.assertEqual(result[0]["max"], 60)
 
+    def test_clothing_size_is_not_mistaken_for_an_age_range(self):
+        title = "Großraum Köln | 3 junge weibliche Kompars.innen (18 bis 45 Jahre - Konf. 36 bis 40)"
+        result = parse_offer({
+            "offer_id": "91.321",
+            "publication_date": "2026-10-10 10:00",
+            "title": title,
+            "raw_text": "",
+            "detail_url": "https://komparse.de/Gesuch91321.htm",
+        })
+        self.assertEqual((result["age_min"], result["age_max"]), (18, 45))
+        self.assertEqual(result["age_description"], "18 bis 45 Jahre")
+
     def test_age_dash_with_j(self):
         result = extract_age_ranges("männl. 28-53 J.")
         self.assertEqual(result[0]["min"], 28)
