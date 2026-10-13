@@ -373,6 +373,22 @@ class TestShootDates(unittest.TestCase):
     def test_period_does_not_treat_payment_as_end_year(self):
         self.assertEqual(extract_shoot_date_text("Halberstadt | 6 Drehtage im Zeitraum 16.-29. Oktober | 200 EUR Gage/10h", default_year=2026), "16. bis 29. Oktober 2026")
 
+    def test_numeric_alternative_dates_are_preserved(self):
+        self.assertEqual(
+            extract_shoot_date_text("NRW | Prota | 14.10. oder 15.10.", default_year=2026),
+            "14. oder 15. Oktober 2026",
+        )
+
+    def test_multiple_required_dates_are_listed(self):
+        self.assertEqual(
+            extract_shoot_date_text(
+                "Köln | Frauen 40-55 Jahre | 15.10. + 16.10.",
+                default_year=2026,
+                shoot_dates=["2026-10-15", "2026-10-16"],
+            ),
+            "15 und 16. Oktober 2026",
+        )
+
 
 class TestApplicationDetection(unittest.TestCase):
     def test_website_application_url(self):
