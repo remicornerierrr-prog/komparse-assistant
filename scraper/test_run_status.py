@@ -72,9 +72,9 @@ class OfferRunStatusTests(unittest.TestCase):
             parser_needs_review=True,
             parser_review_reason="localisation_ambigue",
         )
-        # A supported radius up to 100 km clears the stale location-review
-        # reason and makes the offer eligible for V1.
-        self.assertEqual(prepare_offer_status(offer), "v1")
+        # The location classification is now supported, but the existing
+        # parser flag remains a separate review signal until resolved.
+        self.assertEqual(prepare_offer_status(offer), "manual_review")
         self.assertEqual(offer["location_status"], "v1")
         self.assertNotIn("localisation_ambigue", offer["parser_review_reason"])
 
