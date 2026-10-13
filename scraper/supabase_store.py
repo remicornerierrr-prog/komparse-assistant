@@ -62,6 +62,31 @@ def get_existing_offer(
 
 
 
+def _preserve_existing_age_bounds(
+    existing: dict[str, Any],
+    payload: dict[str, Any],
+) -> None:
+    """Keep manually corrected age bounds when a later parse finds no age."""
+    if payload.get("age_min") is None and existing.get("age_min") is not None:
+        payload["age_min"] = existing["age_min"]
+
+    if (
+        payload.get("age_min") is None
+        and payload.get("age_max") is None
+        and existing.get("age_max") is not None
+    ):
+        payload["age_max"] = existing["age_max"]
+
+    if payload.get("age_min") is not None or payload.get("age_max") is not None:
+        reasons = [
+            item.strip()
+            for item in str(payload.get("parser_review_reason") or "").split(",")
+            if item.strip() and item.strip() != "age_non_numerique"
+        ]
+        payload["parser_review_reason"] = ", ".join(reasons) or None
+        payload["parser_needs_review"] = bool(reasons)
+
+
 def save_offer(
     supabase: Client,
     offer: dict[str, Any],
@@ -109,6 +134,10 @@ def save_offer(
     # --------------------------------------------------------
 
     if existing:
+        # Ne pas effacer une correction manuelle d'âge si le parseur
+        # ne retrouve pas de tranche d'âge lors d'un scraping ultérieur.
+        _preserve_existing_age_bounds(existing, payload)
+
         response = (
             supabase
             .table("offers")
