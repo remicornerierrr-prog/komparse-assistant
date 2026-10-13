@@ -49,6 +49,10 @@ def classify_location(location: Any) -> str:
     if not text:
         return "manual_review"
 
+    # Hürth borders Cologne and is part of the immediate Cologne casting area.
+    if re.fullmatch(r"(?:hurth/koln|koln/hurth)", text):
+        return "v1"
+
     # Explicitly approved expanded V1 geography:
     # NRW and nationwide German searches are eligible.
     if re.fullmatch(r"(?:nrw|nordrhein[- ]westfalen)(?:\s*\+.*)?", text):
