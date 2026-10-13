@@ -28,6 +28,11 @@ class TestCompoundLocationRules(unittest.TestCase):
         self.assertEqual(result["location_status"], "outside")
         self.assertFalse(result["matches_mvp"])
 
+    def test_huerth_koeln_is_in_the_cologne_area(self):
+        result = detect_location("Hürth/Köln")
+        self.assertEqual(result["location_status"], "v1")
+        self.assertTrue(result["matches_mvp"])
+
 
 class TestAgeParsing(unittest.TestCase):
     def test_age_bis(self):
