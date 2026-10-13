@@ -239,7 +239,17 @@ function getParserStatus(offer) {
 
     if (!hasExactDate && !hasDateText) {
         missing.push("date");
-    } else if (!hasExactDate && hasDateText && offer.parser_needs_review) {
+    } else if (
+        !hasExactDate &&
+        hasDateText &&
+        String(offer.parser_review_reason || "")
+            .split(",")
+            .map(value => value.trim())
+            .includes("date_exacte_absente")
+    ) {
+        // Une période ou une modalité de tournage renseignée est une donnée
+        // exploitable. Ne pas la présenter comme manquante uniquement parce
+        // qu'un autre champ (par ex. l'âge) nécessite une vérification.
         missing.push("date exacte à confirmer");
     }
 
@@ -272,6 +282,20 @@ function getParserStatus(offer) {
             .split(",")
             .map(value => value.trim())
             .filter(Boolean)
+            .filter(value => {
+                // Les valeurs déjà déterminées ne doivent pas rester
+                // signalées comme inconnues par un ancien motif générique.
+                if (value === "date_exacte_absente" && hasDateText) return false;
+                if (
+                    value === "sexe_annonce_non_precise" &&
+                    (offer.gender_male || offer.gender_female)
+                ) return false;
+                if (
+                    value === "localisation_ambigue" &&
+                    offer.location_status !== "manual_review"
+                ) return false;
+                return true;
+            })
             .map(value => labels[value] || value);
         return reason.length
             ? `À vérifier : ${[...new Set(reason)].join(", ")}`
