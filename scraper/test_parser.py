@@ -312,6 +312,10 @@ class TestShootDates(unittest.TestCase):
         )
         self.assertEqual(result["shoot_dates"], ["2026-10-15"])
 
+    def test_detail_page_extracts_dates_from_termine_uhrzeit_label(self):
+        result = parse_detail_page("<html><body><p>Termine/Uhrzeit: Donnerstag, 15.10.2026 + Freitag, 16.10.2026</p></body></html>")
+        self.assertEqual(result["shoot_dates"], ["2026-10-15", "2026-10-16"])
+
     def test_detail_page_extracts_date_from_shooting_sentence(self):
         result = parse_detail_page(
             "<html><body><p>Die Dreharbeiten finden am 15. Oktober 2026 statt.</p></body></html>"
@@ -365,6 +369,9 @@ class TestShootDates(unittest.TestCase):
 
     def test_numeric_date_with_year(self):
         self.assertEqual(extract_shoot_dates("Drehtag 22.10.26"), ["2026-10-22"])
+
+    def test_period_does_not_treat_payment_as_end_year(self):
+        self.assertEqual(extract_shoot_date_text("Halberstadt | 6 Drehtage im Zeitraum 16.-29. Oktober | 200 EUR Gage/10h", default_year=2026), "16. Oktober bis 29. Oktober 2026")
 
 
 class TestApplicationDetection(unittest.TestCase):
