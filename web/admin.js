@@ -507,7 +507,7 @@ async function loadAllReviewOffers() {
         const result = await supabaseClient
             .from("offers")
             .select(OFFER_REVIEW_COLUMNS)
-            .or("parser_needs_review.eq.true,admin_review_required.eq.true,location_status.eq.manual_review,shoot_date.is.null")
+            .or("parser_needs_review.eq.true,admin_review_required.eq.true,location_status.eq.manual_review,shoot_date.is.null,shoot_date_text.is.null,location_text.is.null,gender_male.eq.false,gender_female.eq.false,age_min.is.null,age_max.is.null")
             .order("id", { ascending: true })
             .range(offset, offset + pageSize - 1);
 
@@ -665,9 +665,11 @@ qualificationForm.addEventListener("submit", async event => {
         data.parser_needs_review = false;
         data.admin_review_required = false;
         data.parser_review_reason = null;
+    } else {
+        // Saving without explicit confirmation keeps the offer in the review queue.
+        data.parser_needs_review = true;
+        data.admin_review_required = true;
     }
-    // When the checkbox is not selected, preserve the existing review flags:
-    // saving a correction alone must neither validate nor newly flag an offer.
 
     const submitButton = qualificationForm.querySelector('button[type="submit"]');
     submitButton.disabled = true;
