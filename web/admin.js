@@ -100,9 +100,14 @@ function formatDate(value) {
         return escapeHtml(value);
     }
 
+    // Komparse affiche l'heure locale allemande dans ses annonces.
+    // La valeur importée est stockée avec un suffixe UTC, mais son heure
+    // représente déjà l'heure locale source : ne pas appliquer le fuseau
+    // horaire du navigateur une seconde fois.
     return date.toLocaleString("fr-FR", {
         dateStyle: "short",
-        timeStyle: "short"
+        timeStyle: "short",
+        timeZone: "UTC"
     });
 }
 
