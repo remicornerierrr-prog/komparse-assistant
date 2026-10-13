@@ -39,33 +39,33 @@ def normalize_location(value: Any) -> str:
 
 
 def classify_location(location: Any) -> str:
-    """Return ``v1``, ``manual_review`` or ``outside``.
+    """Return v1, manual_review or outside.
 
-    Labels in the configured Köln/Bonn/Düsseldorf area are eligible for
-    automatic V1 matching when they match an explicit supported format.
-    Mentions of any target city in an unrecognized or compound label are
-    ambiguous and must be reviewed; they must never be silently excluded.
+    V1 includes the original Köln/Bonn/Düsseldorf area, all of NRW, and
+    nationwide German searches. Radius-based labels and mixed regions that
+    cannot be mapped reliably remain for manual review.
     """
     text = normalize_location(location)
     if not text:
         return "manual_review"
 
-    manual_patterns = (
-        r"^nrw\b",
-        r"^nordrhein[- ]westfalen\b",
-        r"^deutschlandweit\b",
-        r"^bundesweit\b",
-        r"^ganz deutschland\b",
+    # Explicitly approved expanded V1 geography:
+    # NRW and nationwide German searches are eligible.
+    if re.fullmatch(r"(?:nrw|nordrhein[- ]westfalen)(?:\s*\+.*)?", text):
+        return "v1"
+
+    nationwide_patterns = (
+        r"^bundesweit$",
+        r"^deutschlandweit$",
+        r"^ganz deutschland$",
         r"^deutschland$",
-        r"^germany\b",
-        r"^europaweit\b",
-        r"^deutschland/\w+",
+        r"^germany$",
     )
-    if any(re.search(pattern, text) for pattern in manual_patterns):
-        return "manual_review"
+    if any(re.fullmatch(pattern, text) for pattern in nationwide_patterns):
+        return "v1"
 
     # Optional geographic prefix, one supported city or a slash-separated
-    # list of supported cities, then an optional radius/surrounding suffix.
+    # list of supported cities, then an optional surrounding suffix.
     city_list = r"(?:koln|bonn|dusseldorf)(?:/(?:koln|bonn|dusseldorf))*"
     prefix = r"(?:(?:grossraum|raum|region)\s+)?"
     suffix = (
@@ -74,25 +74,19 @@ def classify_location(location: Any) -> str:
         r"|\s+(?:und|&)\s+umgebung"
         r")?"
     )
-    accepted_pattern = re.compile(
-        r"^" + prefix + city_list + suffix + r"$"
-    )
+    accepted_pattern = re.compile(r"^" + prefix + city_list + suffix + r"$")
 
     if accepted_pattern.fullmatch(text):
         return "v1"
 
     # Compound regional labels can overlap the target area without naming
-    # a supported city explicitly. In particular, "Ruhrgebiet/Reinland"
-    # may include the Cologne/Rhineland area, so don't silently exclude it.
+    # a supported city explicitly. Keep these for manual review.
     if re.search(r"\b(?:ruhrgebiet|rheinland|reinland)\b", text) and "/" in text:
         return "manual_review"
 
     # If the label mentions one of the V1 cities but does not follow an
-    # explicit supported format (e.g. "Köln und Ruhrgebiet"), don't silently
-    # reject it. Send it for manual review instead.
-    target_city_mention = re.compile(
-        r"\b(?:koln|bonn|dusseldorf)\b"
-    )
+    # explicit supported format (e.g. "Köln und Ruhrgebiet"), review it.
+    target_city_mention = re.compile(r"\b(?:koln|bonn|dusseldorf)\b")
     if target_city_mention.search(text):
         return "manual_review"
 
