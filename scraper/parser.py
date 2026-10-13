@@ -368,6 +368,9 @@ def extract_shoot_dates(
     for match in re.finditer(numeric_pattern, t):
         if any(match.start() < end and match.end() > start for start, end in covered):
             continue
+        preceding = t[max(0, match.start() - 35):match.start()]
+        if re.search(r"\bbis\s+spätestens\s*$", preceding, re.IGNORECASE):
+            continue
         day = int(match.group(1))
         month = int(match.group(2))
         year = _resolve_year(match.group(3), default_year)
@@ -381,6 +384,9 @@ def extract_shoot_dates(
     written_pattern = rf"\b(\d{{1,2}})\.\s*({MONTH_PATTERN})(?:\s+(\d{{4}}))?\b"
     for match in re.finditer(written_pattern, t, re.IGNORECASE):
         if any(match.start() < end and match.end() > start for start, end in covered):
+            continue
+        preceding = t[max(0, match.start() - 35):match.start()]
+        if re.search(r"\bbis\s+spätestens\s*$", preceding, re.IGNORECASE):
             continue
         day = int(match.group(1))
         month = GERMAN_MONTHS.get(match.group(2).casefold())
@@ -415,6 +421,33 @@ def extract_shoot_date_text(
     title = normalize_text(title)
     detail_text = normalize_text(detail_text)
     combined = f"{title} {detail_text}".strip()
+
+    # A latest-possible deadline is a window boundary, not an exact shoot date.
+    deadline_numeric = re.search(
+        r"\bbis\s+spätestens\s+(\d{1,2})\.(\d{1,2})\.?(?:\s*(\d{4}))?\b",
+        combined,
+        re.IGNORECASE,
+    )
+    if deadline_numeric:
+        day, month, year_text = deadline_numeric.groups()
+        month_names = {
+            1: "Januar", 2: "Februar", 3: "März", 4: "April",
+            5: "Mai", 6: "Juni", 7: "Juli", 8: "August",
+            9: "September", 10: "Oktober", 11: "November", 12: "Dezember",
+        }
+        month_number = int(month)
+        if 1 <= month_number <= 12:
+            year = _resolve_year(year_text, default_year)
+            return f"Bis spätestens {int(day)}. {month_names[month_number]} {year}"
+
+    deadline_written = re.search(
+        rf"\bbis\s+spätestens\s+(\d{{1,2}})\.\s*({MONTH_PATTERN})(?:\s+(\d{{4}}))?\b",
+        combined,
+        re.IGNORECASE,
+    )
+    if deadline_written:
+        year = _resolve_year(deadline_written.group(3), default_year)
+        return f"Bis spätestens {deadline_written.group(1)}. {deadline_written.group(2)} {year}"
 
     # Explicit date ranges such as "im Zeitraum 09.11. bis 17.12."
     # are approximate multi-day windows, not one exact shooting date.
@@ -482,7 +515,7 @@ def extract_shoot_date_text(
 
     # Month-only or month-to-month windows, e.g. "Oktober-November".
     month_range = re.search(
-        rf"\b({MONTH_PATTERN})\s*(?:bis|[-–])\s*({MONTH_PATTERN})(?:\s+(\d{{4}}))?\b",
+        rf"\b({MONTH_PATTERN})(?:\s*(?:bis|[-–]|und)\s*|\s+)({MONTH_PATTERN})(?:\s+(\d{{4}}))?\b",
         combined,
         re.IGNORECASE,
     )
@@ -1041,9 +1074,26 @@ def enrich_offer_from_detail(parsed: dict, detail_data: dict) -> dict:
 
     detail_text = parsed["detail_text"]
     if detail_text:
-        # Do not infer the casting gender from the whole detail page: incidental
-        # references to men/women can describe the story rather than the requested
-        # profile. Keep the title-derived value until a labelled field is parsed.
+        # Use only explicit casting phrases, not incidental references to genders.
+        profiles_for_gender = parsed.get("profiles") or []
+        if len(profiles_for_gender) == 1 and not profiles_for_gender[0].get("gender"):
+            explicit_gender = None
+            evidence = None
+            if re.search(r"\bwir suchen einen Mann\b|\bsuchen wir einen Mann\b|\bmännliches? (?:Picture )?Double\b", detail_text, re.IGNORECASE):
+                explicit_gender = ["male"]
+                evidence = "Explicit casting phrase identifies a man/male double"
+            elif re.search(r"\bwir suchen eine Frau\b|\bsuchen wir eine Frau\b|\bweibliches? (?:Picture )?Double\b", detail_text, re.IGNORECASE):
+                explicit_gender = ["female"]
+                evidence = "Explicit casting phrase identifies a woman/female double"
+            if explicit_gender:
+                profiles_for_gender[0]["gender"] = explicit_gender
+                parsed["profiles"] = profiles_for_gender
+                parsed["gender"] = explicit_gender
+                parsed["field_sources"]["gender"] = {
+                    "source": "detail_page",
+                    "url": parsed.get("detail_url"),
+                    "evidence": evidence,
+                }
 
         # Accept location only from explicitly labelled fields; incidental city
         # mentions are not reliable evidence of a filming location.
