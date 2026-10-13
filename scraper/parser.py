@@ -212,7 +212,7 @@ def extract_age_ranges(text: str) -> list[dict]:
             # "bis 40" as an age and turn one valid age range into two profiles.
             before = t[max(0, match.start() - 30):match.start()]
             if re.search(
-                r"\\b(?:konf\\.?|konfektionsgröße|kleidergröße)\\s*\\d{1,2}\\s*$",
+                r"\b(?:konf\.?|konfektionsgröße|kleidergröße)\s*\d{1,2}\s*$",
                 before,
                 re.IGNORECASE,
             ):
