@@ -246,6 +246,12 @@ class TestScheduleParsing(unittest.TestCase):
             "11–15:30 Uhr",
         )
 
+    def test_duration_does_not_end_with_dangling_zwischen(self):
+        self.assertEqual(
+            extract_shoot_duration_text("Raum Köln | Jeep-Fahrer 40-55 Jahre | 1–2 Drehtage zwischen 3. und 5. November"),
+            "1–2 Drehtage",
+        )
+
     def test_seasonal_period_is_preserved_without_exact_date(self):
         title = "Deutschlandweit | Singlemütter 35-50 Jahre | Drehzeitraum im Sommer 2027, Anzahl Drehtage noch unbestimmt"
         self.assertEqual(
