@@ -937,9 +937,9 @@ def parse_detail_page(html: str | None, base_url: str | None = None) -> dict:
     # In that case the actual shooting location takes precedence for matching.
     if not detail_location_text:
         filming_location_patterns = (
-            r"\\b(?:die\\s+)?Dreharbeiten\\s+(?:finden|erfolgen|sind)\\b.{0,180}?\\bin\\s+([A-ZÄÖÜ][A-Za-zÄÖÜäöüß-]+)\\s+(?:statt|geplant|vorgesehen)\\b",
-            r"\\b(?:gedreht|aufgezeichnet|gefilmt)\\s+(?:wird|werden)\\b.{0,120}?\\bin\\s+([A-ZÄÖÜ][A-Za-zÄÖÜäöüß-]+)\\b",
-            r"\\bProduktionsort\\s+(?:ist|ist\\s+in)\\s+([A-ZÄÖÜ][A-Za-zÄÖÜäöüß-]+)\\b",
+            r"\b(?:die\s+)?Dreharbeiten\s+(?:finden|erfolgen|sind)\b.{0,180}?\bin\s+([A-ZÄÖÜ][A-Za-zÄÖÜäöüß-]+)\s+(?:statt|geplant|vorgesehen)\b",
+            r"\b(?:gedreht|aufgezeichnet|gefilmt)\s+(?:wird|werden)\b.{0,120}?\bin\s+([A-ZÄÖÜ][A-Za-zÄÖÜäöüß-]+)\b",
+            r"\bProduktionsort\s+(?:ist|ist\s+in)\s+([A-ZÄÖÜ][A-Za-zÄÖÜäöüß-]+)\b",
         )
         for pattern in filming_location_patterns:
             location_match = re.search(pattern, detail_text, re.IGNORECASE)
@@ -1052,12 +1052,12 @@ def parse_offer(offer: dict) -> dict:
     # relationships and personal keepsakes. Treat these as adult roles and
     # open to men and women when no age/gender limit is stated.
     adult_relationship_context = bool(re.search(
-        r"\\b(?:ex[- ]beziehungen|frühere[nr]?\\s+beziehungen|"
-        r"gegenstände[nr]?\\s+aus\\s+(?:ex[- ]beziehungen|früheren\\s+beziehungen)|"
-        r"liebesbriefe|erinnerungsstücke\\s+aus\\s+beziehungen)\\b",
+        r"\b(?:ex[- ]beziehungen|frühere[nr]?\s+beziehungen|"
+        r"gegenstände[nr]?\s+aus\s+(?:ex[- ]beziehungen|früheren\s+beziehungen)|"
+        r"liebesbriefe|erinnerungsstücke\s+aus\s+beziehungen)\b",
         title,
         re.IGNORECASE,
-    )) and bool(re.search(r"\\bprota(?:gonist(?:in)?\\*?in)?\\b", title, re.IGNORECASE))
+    )) and bool(re.search(r"\bprota(?:gonist(?:in)?\*?in)?\b", title, re.IGNORECASE))
 
     if adult_relationship_context and len(profiles) == 1:
         profiles[0]["age_min"] = 18
