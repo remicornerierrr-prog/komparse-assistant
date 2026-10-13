@@ -70,7 +70,7 @@ def classify_location(location: Any) -> str:
     prefix = r"(?:(?:grossraum|raum|region)\s+)?"
     suffix = (
         r"(?:"
-        r"\+(?:umgebung|\d+\s*km(?:\s+umkreis)?)"
+        r"\+(?:umgebung|(?:[1-9]\d?|100)\s*km(?:\s+umkreis)?)"
         r"|\s+(?:und|&)\s+umgebung"
         r")?"
     )

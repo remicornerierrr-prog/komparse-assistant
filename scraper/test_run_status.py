@@ -68,13 +68,12 @@ class OfferRunStatusTests(unittest.TestCase):
 
     def test_stale_location_review_reason_is_cleared_when_now_supported(self):
         offer = self.make_offer(
-            location_text="Köln + 150 km Umkreis",
+            location_text="Köln + 100 km Umkreis",
             parser_needs_review=True,
             parser_review_reason="localisation_ambigue",
         )
-        # The existing parser flag is preserved as a review signal unless
-        # another known reason can explain it. The classification itself is
-        # upgraded to the supported V1 status.
+        # The location classification is now supported, but the existing
+        # parser flag remains a separate review signal until resolved.
         self.assertEqual(prepare_offer_status(offer), "manual_review")
         self.assertEqual(offer["location_status"], "v1")
         self.assertNotIn("localisation_ambigue", offer["parser_review_reason"])

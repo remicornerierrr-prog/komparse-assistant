@@ -781,21 +781,11 @@ class MatchingV1Tests(unittest.TestCase):
 
             "Köln +100km",
 
-            "Köln +150 km",
-
-            "Köln +150km",
-
-            "Köln + 150 km Umkreis",
-
             "Köln + Umgebung",
-
-            "Raum Köln + 200 km Umkreis",
 
             "Region Bonn + 75 km",
 
             "Region Düsseldorf + Umgebung",
-
-            "Großraum Köln/Bonn + 120 km Umkreis",
 
             "Aktuelle GesucheKöln",
 
@@ -828,6 +818,14 @@ class MatchingV1Tests(unittest.TestCase):
         ambiguous_locations = [
 
             "Köln und Ruhrgebiet",
+
+            "Raum Köln + 200 km Umkreis",
+
+            "Großraum Köln/Bonn + 120 km Umkreis",
+
+            "Köln +150 km",
+
+            "Köln + 150 km Umkreis",
 
             "Raum Köln/Ruhrgebiet",
 
