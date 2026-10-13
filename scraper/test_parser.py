@@ -112,6 +112,21 @@ class TestAgeParsing(unittest.TestCase):
     def test_duration_range_without_age_cue_is_not_age(self):
         self.assertEqual(extract_age_ranges("2-3 Drehtage im Zeitraum"), [])
 
+    def test_duration_hours_is_not_mistaken_for_age(self):
+        self.assertEqual(extract_age_ranges("ca. 2 bis 3 Stunden Drehzeit"), [])
+
+    def test_date_endpoint_is_not_mistaken_for_age(self):
+        self.assertEqual(extract_age_ranges("vom 13. bis 16.10.2026"), [])
+
+    def test_jungs_is_male(self):
+        self.assertEqual(detect_gender("Jungs, 8-10 Jahre"), {"male"})
+
+    def test_weibliches_picture_double_is_female(self):
+        self.assertEqual(detect_gender("weibliches Picture Double, 35-55 Jahre"), {"female"})
+
+    def test_singlemuetter_is_female(self):
+        self.assertEqual(detect_gender("Singlemütter für Datingformat"), {"female"})
+
 
 class TestGenderParsing(unittest.TestCase):
     def test_male_abbreviation(self):
