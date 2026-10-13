@@ -378,10 +378,10 @@ class MatchingV1Tests(unittest.TestCase):
 
 
     # ========================================================
-    # 9. NRW = MANUAL REVIEW
+    # 9. NRW = V1 ELIGIBLE
     # ========================================================
 
-    def test_09_nrw_requires_manual_review(self):
+    def test_09_nrw_is_v1_eligible(self):
 
         offer = self.make_offer(
 
@@ -402,21 +402,21 @@ class MatchingV1Tests(unittest.TestCase):
         )
 
 
-        self.assertTrue(
+        self.assertFalse(
             result["manual_review"]
         )
 
 
-        self.assertFalse(
+        self.assertTrue(
             result["matched"]
         )
 
 
     # ========================================================
-    # 10. DEUTSCHLANDWEIT = MANUAL REVIEW
+    # 10. DEUTSCHLANDWEIT = V1 ELIGIBLE
     # ========================================================
 
-    def test_10_deutschlandweit_requires_manual_review(self):
+    def test_10_deutschlandweit_is_v1_eligible(self):
 
         offer = self.make_offer(
 
@@ -437,12 +437,12 @@ class MatchingV1Tests(unittest.TestCase):
         )
 
 
-        self.assertTrue(
+        self.assertFalse(
             result["manual_review"]
         )
 
 
-        self.assertFalse(
+        self.assertTrue(
             result["matched"]
         )
 
@@ -826,14 +826,6 @@ class MatchingV1Tests(unittest.TestCase):
     def test_16_ambiguous_locations(self):
 
         ambiguous_locations = [
-
-            "NRW",
-
-            "NRW + Grenzregion NL/BE (deutschsprachig)",
-
-            "Deutschlandweit",
-
-            "Bundesweit",
 
             "Köln und Ruhrgebiet",
 
