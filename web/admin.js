@@ -380,7 +380,6 @@ async function loadOffers() {
             "parser_needs_review",
             "parser_review_reason",
             "admin_review_required",
-    "admin_qualified",
             "admin_qualified",
             "application_method",
             "application_url"
