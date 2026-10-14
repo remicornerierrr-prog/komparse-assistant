@@ -875,10 +875,15 @@ def match_offer_to_profile(
                 or offer.get("age_description")
                 or ""
             ).strip()
-            described_ranges = extract_age_ranges(age_description_text)
-            if described_ranges:
-                age_min = described_ranges[0].get("min")
-                age_max = described_ranges[0].get("max")
+            if re.search(
+                r"\b(?:Anfang|Mitte|Ende)\s+\d{2}\b",
+                age_description_text,
+                re.IGNORECASE,
+            ):
+                described_ranges = extract_age_ranges(age_description_text)
+                if described_ranges:
+                    age_min = described_ranges[0].get("min")
+                    age_max = described_ranges[0].get("max")
         offer_genders = _extract_offer_genders(role)
 
         # Aucune borne numérique signifie une plage d'âge ouverte quand

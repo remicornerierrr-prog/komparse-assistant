@@ -1320,7 +1320,7 @@ class MatchingUnspecifiedCriteriaTests(unittest.TestCase):
             "genders": [],
         }
         female_result = match_offer_to_profile(offer, self.female_30)
-        male_result = match_offer_to_profile(offer, self.profile_male_35)
+        male_result = match_offer_to_profile(offer, self.male_35)
         self.assertTrue(female_result["matched"])
         self.assertTrue(male_result["matched"])
 
@@ -1335,7 +1335,7 @@ class MatchingUnspecifiedCriteriaTests(unittest.TestCase):
             "age_description": "Mitte 40",
             "genders": ["female"],
         }
-        young_result = match_offer_to_profile(offer, self.profile_female_35)
+        young_result = match_offer_to_profile(offer, self.female_30)
         self.assertFalse(young_result["matched"])
         self.assertFalse(young_result.get("manual_review", False))
 
