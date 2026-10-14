@@ -878,10 +878,7 @@ def match_offer_to_profile(
                 or offer.get("age_description")
                 or ""
             ).strip()
-            if varied_age or (
-                NOTIFY_WHEN_AGE_UNSPECIFIED
-                and not age_description
-            ):
+            if varied_age or not age_description:
                 age_match = True
             else:
                 # A descriptive but non-numeric label such as "Mitte 40"
@@ -909,17 +906,10 @@ def match_offer_to_profile(
             if not age_match:
                 continue
 
-        # Une offre sans âge numérique ni sexe renseigné est ouverte à tous
-        # les profils quand le réglage demandé est actif. En revanche, si
-        # une tranche d'âge est spécifiée mais que le sexe de l'offre ne
-        # l'est pas, on garde le contrôle manuel plutôt que de notifier à
-        # tort des profils.
+        # If the notice does not specify gender, match profiles of every
+        # gender; any explicit age bounds are still enforced above.
         if not offer_genders:
-            if age_unspecified and NOTIFY_WHEN_AGE_UNSPECIFIED:
-                gender_match = True
-            else:
-                review_reasons.append("sexe_annonce_non_precise")
-                continue
+            gender_match = True
         else:
             if not profile_gender:
                 review_reasons.append("sexe_profil_absent")

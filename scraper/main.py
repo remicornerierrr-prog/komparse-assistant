@@ -307,12 +307,10 @@ def prepare_offer_status(offer: dict[str, Any]) -> str:
     age_unbounded = not top_level_has_age and not role_has_age
     age_description = offer.get("age_description")
     explicit_varied_age = is_varied_age_description(age_description)
+    # No age mentioned means unrestricted age; a vague age description
+    # such as "Mitte 40" remains a manual-review case.
     open_age_policy = age_unbounded and (
-        explicit_varied_age
-        or (
-            NOTIFY_WHEN_AGE_UNSPECIFIED
-            and not age_description
-        )
+        explicit_varied_age or not age_description
     )
 
     # Under the explicit open-age policy, absence of a numeric age is not
@@ -321,13 +319,20 @@ def prepare_offer_status(offer: dict[str, Any]) -> str:
     # handled separately above and do not, by themselves, block V1 matching.
     if open_age_policy:
         reasons.discard("age_non_numerique")
-        if not offer.get("gender_male") and not offer.get("gender_female"):
-            reasons.discard("sexe_annonce_non_precise")
+
+    # An unspecified gender means the casting is open to every gender.
+    reasons.discard("sexe_annonce_non_precise")
 
     # Si la date est la seule information manquante, le drapeau général du
     # parseur ne doit pas réintroduire un blocage artificiel. Les autres
     # motifs de vérification restent bloquants.
-    if as_bool(offer.get("parser_needs_review")) and not reasons and not open_age_policy and has_exact_date:
+    if (
+        as_bool(offer.get("parser_needs_review"))
+        and not reasons
+        and not offer.get("parser_review_reason")
+        and not open_age_policy
+        and has_exact_date
+    ):
         if not offer.get("gender_male") and not offer.get("gender_female"):
             reasons.add("sexe_annonce_non_precise")
         elif age_unbounded and not offer.get("age_description"):
@@ -337,6 +342,7 @@ def prepare_offer_status(offer: dict[str, Any]) -> str:
 
     requires_review = bool(reasons) or (
         as_bool(offer.get("parser_needs_review"))
+        and not offer.get("parser_review_reason")
         and not open_age_policy
         and has_exact_date
     )
