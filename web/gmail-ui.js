@@ -1,11 +1,12 @@
 // Gmail OAuth UI. OAuth tokens remain server-side.
 (function () {
+  const section = document.getElementById("gmail-connection-section");
   const button = document.getElementById("gmail-connect-button");
   const status = document.getElementById("gmail-connection-status");
-  if (!button || !status) return;
+  if (!section || !button || !status) return;
 
   const messages = {
-    connected: "Gmail a été connecté. L'envoi des candidatures reste à finaliser et tester.",
+    connected: "Gmail a été connecté.",
     cancelled: "Connexion Gmail annulée.",
     not_configured: "La configuration serveur Gmail est incomplète. Vérifiez les secrets Supabase.",
     invalid_callback: "Le retour de Google est incomplet. Réessayez.",
@@ -17,6 +18,37 @@
     save_failed: "Gmail a été autorisé mais la connexion n'a pas pu être enregistrée.",
     connection_failed: "Une erreur est survenue pendant la connexion Gmail."
   };
+
+  function showConnected(email) {
+    section.replaceChildren();
+    const message = document.createElement("p");
+    message.setAttribute("role", "status");
+    message.setAttribute("aria-live", "polite");
+    message.className = "gmail-connected-message";
+    message.textContent = "👌 Profil connecté avec l'adresse email " + email;
+    section.append(message);
+  }
+
+  async function refreshConnectionStatus() {
+    try {
+      const { data: authData, error: authError } = await supabaseClient.auth.getUser();
+      if (authError || !authData.user) return;
+
+      const { data, error } = await supabaseClient
+        .from("gmail_connections")
+        .select("gmail_email")
+        .eq("user_id", authData.user.id)
+        .maybeSingle();
+
+      if (error) {
+        console.error("Impossible de vérifier la connexion Gmail :", error);
+        return;
+      }
+      if (data && data.gmail_email) showConnected(data.gmail_email);
+    } catch (error) {
+      console.error("Erreur de vérification de la connexion Gmail :", error);
+    }
+  }
 
   const params = new URLSearchParams(window.location.search);
   const outcome = params.get("gmail_oauth");
@@ -57,4 +89,6 @@
       button.textContent = "Réessayer de connecter Gmail";
     }
   });
+
+  refreshConnectionStatus();
 })();
