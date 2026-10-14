@@ -31,11 +31,11 @@ signupButton.addEventListener(
 
 
         if (
-            password.length < 6
+            password.length < 10
         ) {
 
             showMessage(
-                "Le mot de passe doit contenir au moins 6 caractères."
+                "Le mot de passe doit contenir au moins 10 caractères."
             );
 
 
@@ -289,8 +289,8 @@ if (resetPasswordButton) {
             return;
         }
 
-        if (newPassword.length < 6) {
-            showMessage("Le mot de passe doit contenir au moins 6 caractères.", "error");
+        if (newPassword.length < 10) {
+            showMessage("Le mot de passe doit contenir au moins 10 caractères.", "error");
             newPasswordInput.focus();
             return;
         }
