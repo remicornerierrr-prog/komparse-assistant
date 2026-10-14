@@ -16,7 +16,7 @@ class LocationRulesTests(unittest.TestCase):
             with self.subTest(label=label):
                 self.assertEqual(classify_location(label), "v1")
 
-    def test_broad_regions_require_manual_review(self):
+    def test_broad_regions_are_valid_scopes(self):
         for label in (
             "NRW",
             "Nordrhein-Westfalen",
@@ -25,7 +25,7 @@ class LocationRulesTests(unittest.TestCase):
             "Deutschland",
         ):
             with self.subTest(label=label):
-                self.assertEqual(classify_location(label), "manual_review")
+                self.assertEqual(classify_location(label), "v1")
 
     def test_radius_and_surrounding_area_require_manual_review(self):
         for label in (
