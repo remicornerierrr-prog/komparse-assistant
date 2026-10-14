@@ -9,6 +9,11 @@ REVOKE ALL PRIVILEGES ON TABLE public.matches, public.offers FROM anon;
 -- Keep the minimum table privilege needed for SELECT policies to apply.
 GRANT SELECT ON TABLE public.matches, public.offers TO authenticated;
 
+-- Clients cannot write matches. Offers remain UPDATE-able only through the
+-- pre-existing administrator RLS policy; ordinary users cannot insert/delete.
+REVOKE INSERT, UPDATE, DELETE ON TABLE public.matches FROM authenticated;
+REVOKE INSERT, DELETE ON TABLE public.offers FROM authenticated;
+
 DROP POLICY IF EXISTS "Users can view own matches" ON public.matches;
 CREATE POLICY "Users can view own matches"
     ON public.matches
