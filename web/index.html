@@ -265,6 +265,25 @@
             margin-right: 8px;
         }
 
+        .regional-preference-row {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .regional-preference-row label {
+            margin: 0;
+        }
+
+        #notify-region {
+            width: auto;
+            min-width: 115px;
+            padding: 6px 8px;
+            font-size: 14px;
+        }
+
         #push-status {
             margin-top: 10px;
             font-size: 14px;
@@ -523,7 +542,15 @@
         <fieldset id="notification-scope">
             <legend>Types d’annonces à recevoir</legend>
             <label><input type="checkbox" id="notify-national" checked> Annonces nationales</label>
-            <label><input type="checkbox" id="notify-regional" checked> Annonces régionales</label>
+            <div class="regional-preference-row">
+                <label for="notify-regional"><input type="checkbox" id="notify-regional" checked> Annonces régionales</label>
+                <label for="notify-region">Région supplémentaire</label>
+                <select id="notify-region" aria-describedby="notify-region-help">
+                    <option value="">Aucune</option>
+                    <option value="nrw">NRW</option>
+                </select>
+            </div>
+            <small id="notify-region-help">NRW inclut les annonces NRW et celles indiquant une ville située dans ce Land.</small>
         </fieldset>
 
 
