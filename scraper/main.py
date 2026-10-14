@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -311,10 +312,10 @@ def prepare_offer_status(offer: dict[str, Any]) -> str:
     # approximate numeric band by extract_age_ranges; they must not trigger
     # manual review just because the top-level numeric fields are empty.
     described_age_is_interpretable = bool(
-        __import__("re").search(
+        re.search(
             r"\b(?:Anfang|Mitte|Ende)\s+\d{2}\b",
             str(age_description or ""),
-            __import__("re").IGNORECASE,
+            re.IGNORECASE,
         )
     )
     # No age mentioned means unrestricted age. Recognizable age descriptions
