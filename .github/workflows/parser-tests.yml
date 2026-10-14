@@ -1,6 +1,12 @@
 name: Parser tests
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - "scraper/**"
+      - ".github/workflows/parser-tests.yml"
   pull_request:
     paths:
       - "scraper/**"
