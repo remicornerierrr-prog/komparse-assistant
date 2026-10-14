@@ -21,6 +21,7 @@ class MatchingV1Tests(unittest.TestCase):
             "id":
                 "user-male-35",
 
+            "city": "Köln",
             "birth_date":
                 "1990-10-21",
 
@@ -35,6 +36,7 @@ class MatchingV1Tests(unittest.TestCase):
             "id":
                 "user-female-30",
 
+            "city": "Köln",
             "birth_date":
                 "1996-06-15",
 
@@ -49,6 +51,7 @@ class MatchingV1Tests(unittest.TestCase):
             "id":
                 "user-male-56",
 
+            "city": "Köln",
             "birth_date":
                 "1970-01-01",
 
@@ -63,6 +66,7 @@ class MatchingV1Tests(unittest.TestCase):
             "id":
                 "user-female-70",
 
+            "city": "Köln",
             "birth_date":
                 "1956-05-10",
 
@@ -626,6 +630,7 @@ class MatchingV1Tests(unittest.TestCase):
                 "id":
                     "user-birthday",
 
+                "city": "Köln",
                 "birth_date":
                     "1990-10-21",
 
@@ -1099,11 +1104,13 @@ class MatchingParserEdgeCaseTests(unittest.TestCase):
     def setUp(self):
         self.profile_male_35 = {
             "id": "male35",
+            "city": "Köln",
             "birth_date": "1990-10-21",
             "gender": "male",
         }
         self.profile_female_35 = {
             "id": "female35",
+            "city": "Köln",
             "birth_date": "1991-01-15",
             "gender": "female",
         }
@@ -1161,6 +1168,7 @@ class MatchingParserEdgeCaseTests(unittest.TestCase):
         }
         profile = {
             "id": "birthday",
+            "city": "Köln",
             "birth_date": "1990-10-21",
             "gender": "male",
         }
@@ -1183,6 +1191,7 @@ class MissingShootDateMatchingTests(unittest.TestCase):
         }
         profile = {
             "id": "user-male-35",
+            "city": "Köln",
             "birth_date": "1990-10-21",
             "gender": "male",
         }
@@ -1200,11 +1209,13 @@ class MatchingUnspecifiedCriteriaTests(unittest.TestCase):
     def setUp(self):
         self.female_30 = {
             "id": "sample-female-30",
+            "city": "Köln",
             "birth_date": "1996-06-15",
             "gender": "female",
         }
         self.male_35 = {
             "id": "sample-male-35",
+            "city": "Köln",
             "birth_date": "1990-10-21",
             "gender": "male",
         }
@@ -1235,11 +1246,13 @@ class MatchingUnspecifiedCriteriaTests(unittest.TestCase):
         }
         young_profile = {
             "id": "female-20",
+            "city": "Köln",
             "birth_date": "2006-03-01",
             "gender": "female",
         }
         older_profile = {
             "id": "female-35",
+            "city": "Köln",
             "birth_date": "1991-03-01",
             "gender": "female",
         }
@@ -1306,6 +1319,7 @@ class MatchingUnspecifiedCriteriaTests(unittest.TestCase):
 
         profile_45 = {
             "id": "female45",
+            "city": "Köln",
             "birth_date": "1981-01-15",
             "gender": "female",
         }
@@ -1327,6 +1341,7 @@ class MatchingUnspecifiedCriteriaTests(unittest.TestCase):
                 }
                 result = match_offer_to_profile(offer, {
                     "id": "female45",
+                    "city": "Köln",
                     "birth_date": "1981-01-15",
                     "gender": "female",
                 })
