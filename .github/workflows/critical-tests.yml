@@ -6,7 +6,9 @@ on:
     paths:
       - "scraper/location_rules.py"
       - "scraper/matching.py"
+      - "scraper/parser.py"
       - "scraper/notification_eligibility.py"
+      - "scraper/requirements.txt"
       - "scraper/test_location_rules.py"
       - "scraper/test_location_rules_expanded.py"
       - "scraper/test_matching.py"
@@ -16,7 +18,9 @@ on:
     paths:
       - "scraper/location_rules.py"
       - "scraper/matching.py"
+      - "scraper/parser.py"
       - "scraper/notification_eligibility.py"
+      - "scraper/requirements.txt"
       - "scraper/test_location_rules.py"
       - "scraper/test_location_rules_expanded.py"
       - "scraper/test_matching.py"
@@ -34,7 +38,7 @@ concurrency:
 jobs:
   critical-rules:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -42,6 +46,10 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: "scraper/requirements.txt"
+      - name: Install scraper dependencies
+        run: python -m pip install -r scraper/requirements.txt
       - name: Run blocking location, matching and notification eligibility tests
         run: |
           python -m unittest -v \
