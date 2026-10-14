@@ -20,17 +20,19 @@ def send_push_notification(
     ttl_seconds: int,
     stats: dict[str, int],
 ) -> tuple[bool, int | None, str | None]:
+    raw_offer_id = offer.get("id")
+    offer_id = (
+        int(raw_offer_id)
+        if str(raw_offer_id or "").isdigit() and int(raw_offer_id) > 0
+        else None
+    )
     payload = {
         "title": "Nouvelle offre Komparse",
         "body": (
-            offer["title"]
+            offer.get("title")
             or "Une offre correspond à votre profil."
         ),
-        "url": (
-            f"/offers.html?id={int(offer['id'])}"
-            if str(offer.get("id", "")).isdigit() and int(offer["id"]) > 0
-            else "/offers.html"
-        ),
+        "offer_id": offer_id,
     }
 
     stats["attempted"] += 1
