@@ -70,8 +70,9 @@ def classify_location(location: Any) -> str:
     ):
         return "v1"
 
-    # NRW-wide labels and known NRW cities are eligible for profile-level scope filtering.
-    if is_nrw_location(text):
+    # Nationwide and NRW-wide labels are valid scopes. The matching
+    # layer applies each profile's explicit national/regional preferences.
+    if re.fullmatch(r"(?:nrw|nordrhein[- ]westfalen)(?:\s*\+.*)?", text):
         return "v1"
 
     nationwide_patterns = (
