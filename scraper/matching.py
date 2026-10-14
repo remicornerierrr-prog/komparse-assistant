@@ -35,9 +35,11 @@ from typing import Any
 
 try:
     from .location_rules import classify_location
+    from .notification_eligibility import profile_allows_offer_scope
     from .parser import extract_age_ranges
 except ImportError:  # pragma: no cover - script execution path
     from location_rules import classify_location
+    from notification_eligibility import profile_allows_offer_scope
     from parser import extract_age_ranges
 
 
@@ -789,34 +791,22 @@ def match_offer_to_profile(
     )
 
 
-    # Hors bassin V1
+    # Out-of-scope offers are rejected. Broad national/regional labels are
+    # eligible only when the user explicitly enabled the corresponding scope.
     if location_status == "outside":
-
         return False
 
+    if not profile_allows_offer_scope(location, profile):
+        return False
 
-    # Localisation ambiguë
+    # Other ambiguous labels remain review-only unless the profile's explicit
+    # regional preference and city compatibility make the scope actionable.
     if location_status == "manual_review":
-
         return {
-
             "matched": False,
-
             "manual_review": True,
-
-            "reason": {
-
-                "location": False,
-
-                "age": False,
-
-                "gender": False,
-
-            },
-
-            "manual_review_reason":
-                "localisation_ambigue"
-
+            "reason": {"location": False, "age": False, "gender": False},
+            "manual_review_reason": "localisation_ambigue",
         }
 
 
