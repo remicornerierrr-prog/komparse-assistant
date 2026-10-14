@@ -34,17 +34,24 @@
       const { data: authData, error: authError } = await supabaseClient.auth.getUser();
       if (authError || !authData.user) return;
 
-      const { data, error } = await supabaseClient
-        .from("gmail_connections")
-        .select("gmail_email")
-        .eq("user_id", authData.user.id)
-        .maybeSingle();
+      const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
+      if (sessionError || !sessionData.session) return;
 
-      if (error) {
-        console.error("Impossible de vérifier la connexion Gmail :", error);
+      const response = await fetch("https://glufyxsdmaccuuqpoxbo.supabase.co/functions/v1/gmail-status", {
+        method: "POST",
+        headers: {
+          "Authorization": "Bearer " + sessionData.session.access_token,
+          "apikey": SUPABASE_PUBLISHABLE_KEY,
+          "Content-Type": "application/json"
+        },
+        body: "{}"
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        console.error("Impossible de vérifier la connexion Gmail :", result.error || response.status);
         return;
       }
-      if (data && data.gmail_email) showConnected(data.gmail_email);
+      if (result.connected && result.email) showConnected(result.email);
     } catch (error) {
       console.error("Erreur de vérification de la connexion Gmail :", error);
     }
