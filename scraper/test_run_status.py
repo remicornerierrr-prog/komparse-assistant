@@ -66,17 +66,17 @@ class OfferRunStatusTests(unittest.TestCase):
         self.assertIn("localisation_ambigue", offer["parser_review_reason"])
         self.assertNotIn("date_exacte_absente", offer["parser_review_reason"] or "")
 
-    def test_stale_location_review_reason_is_cleared_when_now_supported(self):
+    def test_radius_location_remains_manual_review(self):
         offer = self.make_offer(
             location_text="Köln + 100 km Umkreis",
             parser_needs_review=True,
             parser_review_reason="localisation_ambigue",
         )
-        # A stale location-only review reason must be cleared once the label
-        # is recognized. No unrelated review reason remains, so it is eligible.
-        self.assertEqual(prepare_offer_status(offer), "v1")
-        self.assertEqual(offer["location_status"], "v1")
-        self.assertIsNone(offer["parser_review_reason"])
+        # Radius-based locations are not auto-approved without explicit config.
+        self.assertEqual(prepare_offer_status(offer), "manual_review")
+        self.assertEqual(offer["location_status"], "manual_review")
+        self.assertTrue(offer["parser_needs_review"])
+        self.assertIn("localisation_ambigue", offer["parser_review_reason"])
 
 
     def test_open_age_and_unspecified_gender_are_eligible_when_date_is_exact(self):
