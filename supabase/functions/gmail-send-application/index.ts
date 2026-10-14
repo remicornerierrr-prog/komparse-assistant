@@ -35,7 +35,15 @@ Deno.serve(async(req:Request)=>{
   const names:Record<string,string>={portrait:"portrait",left:"blick-links",right:"blick-rechts",full_body:"ganzkoerper"};
   const d=draft(offer,p);
   const {data:connection,error:ce}=await admin.from("gmail_connections").select("*").eq("user_id",u.user.id).maybeSingle(); if(ce)throw ce; if(!connection)return json({error:"Connectez d'abord votre compte Gmail."},422);
-  if(action==="preview")return json({success:true,sender:connection.gmail_email,recipient:offer.email,subject:d.subject,body:d.body,photos:photos.map((x:any)=>names[x.photo_type]||"profilfoto")});
+  if(action==="preview"){
+   const photoPreviews=[];
+   for(const photo of photos){
+    const {data:signed,error:se}=await admin.storage.from("profile-photos").createSignedUrl(photo.storage_path,300);
+    if(se||!signed?.signedUrl)throw new Error("Photo inaccessible");
+    photoPreviews.push({name:names[photo.photo_type]||"profilfoto",url:signed.signedUrl});
+   }
+   return json({success:true,sender:connection.gmail_email,recipient:offer.email,subject:d.subject,body:d.body,photos:photoPreviews.map((x:any)=>x.name),photo_previews:photoPreviews});
+  }
   const subject=typeof input.subject==="string"?input.subject.trim():"", emailBody=typeof input.body==="string"?input.body:"";
   if(!subject||subject.length>250||!emailBody.trim()||emailBody.length>12000)return json({error:"Objet ou message invalide."},400);
   if(!Array.isArray(connection.granted_scopes)||!connection.granted_scopes.includes("https://www.googleapis.com/auth/gmail.send"))return json({error:"Autorisation Gmail d'envoi manquante. Reconnectez Gmail."},422);
