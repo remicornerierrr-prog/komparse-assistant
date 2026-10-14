@@ -42,7 +42,7 @@
   async function showList(userId) {
     root.append(node("h2", "Mes offres"));
     const { data: matches, error } = await client.from("matches")
-      .select("id,offer_id,created_at,offers(id,title,location_text,shoot_date,shoot_date_text,age_description,source_url)")
+      .select("id,offer_id,created_at,offers(id,title,location_text,shoot_date,shoot_date_text,age_min,age_max,age_description,source_url)")
       .eq("user_id", userId).order("created_at", { ascending: false });
     if (error) {
       root.append(node("p", "Impossible de charger vos offres. Réessayez plus tard."));
@@ -94,7 +94,9 @@
       root.append(node("p", "Impossible de charger le détail de cette offre."));
       return;
     }
-    root.append(node("a", "← Retour à Mes offres", "back-link"));
+    const backLink = node("a", "← Retour à Mes offres", "back-link");
+    backLink.href = "./offers.html";
+    root.append(backLink);
     root.append(node("h2", offerTitle(offer)));
     field(root, "Lieu", offer.location_text);
     field(root, "Date de tournage", offer.shoot_date_text || offer.shoot_date);
