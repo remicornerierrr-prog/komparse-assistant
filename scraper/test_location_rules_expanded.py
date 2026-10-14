@@ -4,7 +4,7 @@ from scraper.location_rules import classify_location
 
 
 class ExpandedLocationRulesTests(unittest.TestCase):
-    def test_nrw_and_nationwide_require_manual_review(self):
+    def test_nrw_and_nationwide_are_valid_scopes(self):
         for location in (
             "NRW",
             "Nordrhein-Westfalen",
@@ -15,7 +15,7 @@ class ExpandedLocationRulesTests(unittest.TestCase):
             "Germany",
         ):
             with self.subTest(location=location):
-                self.assertEqual(classify_location(location), "manual_review")
+                self.assertEqual(classify_location(location), "v1")
 
     def test_supported_target_cities_are_v1(self):
         for location in (
