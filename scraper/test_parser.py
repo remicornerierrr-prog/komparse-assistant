@@ -119,13 +119,14 @@ class TestAgeParsing(unittest.TestCase):
         self.assertEqual(result[0]["age_min"], 25)
         self.assertIsNone(result[0]["age_max"])
 
-    def test_mitte_age_ranges(self):
+    def test_approximate_decade_age_ranges(self):
         for decade in range(20, 100, 10):
-            with self.subTest(decade=decade):
-                result = extract_age_ranges(f"Kleindarstellerin, Mitte {decade}")
-                self.assertTrue(result)
-                self.assertEqual(result[0]["min"], decade)
-                self.assertEqual(result[0]["max"], decade + 9)
+            for label in ("Anfang", "Mitte", "Ende"):
+                with self.subTest(decade=decade, label=label):
+                    result = extract_age_ranges(f"Kleindarstellerin, {label} {decade}")
+                    self.assertTrue(result)
+                    self.assertEqual(result[0]["min"], decade)
+                    self.assertEqual(result[0]["max"], decade + 9)
 
     def test_mitte_40_is_propagated_to_profile(self):
         result = extract_profiles("Raum Köln | Kleindarstellerin, Mitte 40")
