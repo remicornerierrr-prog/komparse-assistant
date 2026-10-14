@@ -1198,7 +1198,7 @@ def enrich_offer_from_detail(parsed: dict, detail_data: dict) -> dict:
     # When no explicit gender or age is stated, treat this generic participant
     # role as open to men and women and adult (18+) rather than flagging it.
     prota_context = bool(re.search(
-        r"\\b(?:prota|protagonist(?:in)?|protagonist\\*innen?)\\b",
+        r"\b(?:prota|protagonist(?:in)?|protagonist\*innen?)\b",
         f"{parsed.get('title', '')} {detail_text}",
         re.IGNORECASE,
     ))
@@ -1296,7 +1296,7 @@ def enrich_offer_from_detail(parsed: dict, detail_data: dict) -> dict:
             is_child_role = (
                 child_max is not None and child_max < 18
             ) or bool(re.search(
-                r"\\b(?:kinder|kind|mädchen|jungen|schulkinder|teenager)\\b",
+                r"\b(?:kinder|kind|mädchen|jungen|schulkinder|teenager)\b",
                 child_context,
                 re.IGNORECASE,
             )) and (child_max is None or child_max < 18)
