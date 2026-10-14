@@ -56,10 +56,10 @@ def classify_location(location: Any) -> str:
     ):
         return "v1"
 
-    # Explicitly approved expanded V1 geography:
-    # NRW and nationwide German searches are eligible.
+    # Broad NRW and nationwide labels are not auto-approved in V1.
+    # They may include locations beyond the configured target area.
     if re.fullmatch(r"(?:nrw|nordrhein[- ]westfalen)(?:\s*\+.*)?", text):
-        return "v1"
+        return "manual_review"
 
     nationwide_patterns = (
         r"^bundesweit$",
@@ -69,19 +69,13 @@ def classify_location(location: Any) -> str:
         r"^germany$",
     )
     if any(re.fullmatch(pattern, text) for pattern in nationwide_patterns):
-        return "v1"
+        return "manual_review"
 
-    # Optional geographic prefix, one supported city or a slash-separated
-    # list of supported cities, then an optional surrounding suffix.
+    # Only supported city labels and combinations are automatically eligible.
+    # Radius/Umgebung labels need explicit configuration or manual review.
     city_list = r"(?:koln|bonn|dusseldorf)(?:/(?:koln|bonn|dusseldorf))*"
     prefix = r"(?:(?:grossraum|raum|region)\s+)?"
-    suffix = (
-        r"(?:"
-        r"\+(?:umgebung|(?:[1-9]\d?|1[0-4]\d|150)\s*km(?:\s+umkreis)?)"
-        r"|\s+(?:und|&)\s+umgebung"
-        r")?"
-    )
-    accepted_pattern = re.compile(r"^" + prefix + city_list + suffix + r"$")
+    accepted_pattern = re.compile(r"^" + prefix + city_list + r"$")
 
     if accepted_pattern.fullmatch(text):
         return "v1"
