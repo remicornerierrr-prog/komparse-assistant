@@ -1,0 +1,51 @@
+name: Critical matching and eligibility tests
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "scraper/location_rules.py"
+      - "scraper/matching.py"
+      - "scraper/notification_eligibility.py"
+      - "scraper/test_location_rules.py"
+      - "scraper/test_location_rules_expanded.py"
+      - "scraper/test_matching.py"
+      - "scraper/test_notification_eligibility.py"
+      - ".github/workflows/critical-tests.yml"
+  pull_request:
+    paths:
+      - "scraper/location_rules.py"
+      - "scraper/matching.py"
+      - "scraper/notification_eligibility.py"
+      - "scraper/test_location_rules.py"
+      - "scraper/test_location_rules_expanded.py"
+      - "scraper/test_matching.py"
+      - "scraper/test_notification_eligibility.py"
+      - ".github/workflows/critical-tests.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: critical-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  critical-rules:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Run blocking location, matching and notification eligibility tests
+        run: |
+          python -m unittest -v \
+            scraper.test_location_rules \
+            scraper.test_location_rules_expanded \
+            scraper.test_matching \
+            scraper.test_notification_eligibility
