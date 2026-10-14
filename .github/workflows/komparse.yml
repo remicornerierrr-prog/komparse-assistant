@@ -16,6 +16,10 @@ on:
 
   workflow_dispatch:
 
+concurrency:
+  group: komparse-scraper
+  cancel-in-progress: false
+
 permissions:
   contents: read
 
