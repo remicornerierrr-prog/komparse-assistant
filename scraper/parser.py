@@ -1096,7 +1096,9 @@ def parse_offer(offer: dict) -> dict:
     review_reasons: list[str] = []
     if location_info["location_status"] == "manual_review":
         review_reasons.append("localisation_ambigue")
-    if shoot_date is None:
+    # Multiple exact shoot dates are valid information: the offer can be
+    # scheduled on any of those days, so this is not a missing-date review.
+    if shoot_date is None and len(title_shoot_dates) < 2:
         review_reasons.append("date_exacte_absente")
     if not profiles or any(not profile.get("gender") for profile in profiles):
         review_reasons.append("sexe_annonce_non_precise")
@@ -1150,6 +1152,48 @@ def enrich_offer_from_detail(parsed: dict, detail_data: dict) -> dict:
             parsed["field_sources"].setdefault(field, {"source": "title"})
 
     detail_text = parsed["detail_text"]
+
+    # "Passanten" in a street/background casting is treated as an adult,
+    # mixed-gender role when no age is stated. This avoids sending a generic
+    # adult passer-by role to manual review just because the title is vague.
+    passanten_context = bool(re.search(
+        r"\\b(?:passanten|passantinnen|passant[*:]innen)\\b",
+        detail_text,
+        re.IGNORECASE,
+    ))
+    profiles_for_passanten = parsed.get("profiles") or []
+    no_numeric_age = (
+        parsed.get("age_min") is None
+        and parsed.get("age_max") is None
+        and not any(
+            isinstance(role, dict)
+            and (
+                role.get("age_min") is not None
+                or role.get("age_max") is not None
+            )
+            for role in profiles_for_passanten
+        )
+    )
+    if passanten_context and len(profiles_for_passanten) == 1 and no_numeric_age:
+        profiles_for_passanten[0]["age_min"] = 18
+        profiles_for_passanten[0]["age_max"] = None
+        profiles_for_passanten[0]["gender"] = ["female", "male"]
+        parsed["profiles"] = profiles_for_passanten
+        parsed["age_min"] = 18
+        parsed["age_max"] = None
+        parsed["age_description"] = "ab 18 Jahren"
+        parsed["gender"] = ["female", "male"]
+        parsed["field_sources"]["age_min"] = {
+            "source": "detail_page",
+            "url": parsed.get("detail_url"),
+            "evidence": "Generic Passanten casting without a stated age: assumed 18+",
+        }
+        parsed["field_sources"]["gender"] = {
+            "source": "detail_page",
+            "url": parsed.get("detail_url"),
+            "evidence": "Passanten is treated as open to men and women",
+        }
+
     if detail_text:
         # Use only explicit casting phrases, not incidental references to genders.
         profiles_for_gender = parsed.get("profiles") or []
@@ -1231,7 +1275,8 @@ def enrich_offer_from_detail(parsed: dict, detail_data: dict) -> dict:
     review_reasons = []
     if parsed.get("location_status") == "manual_review":
         review_reasons.append("localisation_ambigue")
-    if not parsed.get("shoot_date"):
+    # Several extracted exact dates are valid alternatives, not missing data.
+    if not parsed.get("shoot_date") and len(parsed.get("shoot_dates") or []) < 2:
         review_reasons.append("date_exacte_absente")
     profiles = parsed.get("profiles") or []
     if not profiles or any(
