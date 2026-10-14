@@ -1194,6 +1194,39 @@ def enrich_offer_from_detail(parsed: dict, detail_data: dict) -> dict:
             "evidence": "Passanten is treated as open to men and women",
         }
 
+    # "Prota" is shorthand for protagonist/participant, not a female-only role.
+    # When no explicit gender or age is stated, treat this generic participant
+    # role as open to men and women and adult (18+) rather than flagging it.
+    prota_context = bool(re.search(
+        r"\\b(?:prota|protagonist(?:in)?|protagonist\\*innen?)\\b",
+        f"{parsed.get('title', '')} {detail_text}",
+        re.IGNORECASE,
+    ))
+    if prota_context:
+        prota_profiles = parsed.get("profiles") or []
+        if len(prota_profiles) == 1 and isinstance(prota_profiles[0], dict):
+            prota_role = prota_profiles[0]
+            if not prota_role.get("gender"):
+                prota_role["gender"] = ["female", "male"]
+                parsed["gender"] = ["female", "male"]
+                parsed["field_sources"]["gender"] = {
+                    "source": "detail_page" if detail_text else "title",
+                    "url": parsed.get("detail_url"),
+                    "evidence": "Prota is a generic participant role, not a gender restriction",
+                }
+            if prota_role.get("age_min") is None and prota_role.get("age_max") is None:
+                prota_role["age_min"] = 18
+                prota_role["age_max"] = None
+                parsed["age_min"] = 18
+                parsed["age_max"] = None
+                parsed["age_description"] = "ab 18 Jahren"
+                parsed["field_sources"]["age_min"] = {
+                    "source": "detail_page" if detail_text else "title",
+                    "url": parsed.get("detail_url"),
+                    "evidence": "Generic Prota participant role assumed adult when no age is stated",
+                }
+            parsed["profiles"] = prota_profiles
+
     # A "Mehrgenerationenhaus" casting concerns a family across generations.
     # Unless the notice states explicit age/gender restrictions, keep all ages
     # and both genders eligible instead of treating the family as one adult.
