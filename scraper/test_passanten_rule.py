@@ -43,6 +43,35 @@ class TestPassantenCastingRule(unittest.TestCase):
         self.assertNotIn("sexe_annonce_non_precise", enriched["parser_review_reasons"])
         self.assertFalse(enriched["needs_review"])
 
+    def test_mehrgenerationenhaus_is_open_to_all_ages_and_genders(self):
+        parsed = parse_offer({
+            "offer_id": "91347",
+            "publication_date": "2026-10-12 15:25",
+            "title": "NRW | Familien, die in einem Mehrgenerationenhaus leben | zwei Drehtage nach Absprache zwischen Oktober 2026 und März 2027",
+            "raw_text": "",
+            "detail_url": "https://komparse.de/Gesuch91347.htm",
+        })
+        enriched = enrich_offer_from_detail(parsed, {
+            "detail_text": (
+                "Für ein spannendes Verbraucher-Format suchen wir Familien, "
+                "die in einem Mehrgenerationenhaus leben. Es geht um mehrere "
+                "Generationen einer Familie."
+            ),
+            "shoot_dates": [],
+            "shoot_date_text": "nach Absprache zwischen Oktober 2026 und März 2027",
+            "email": None,
+            "subject_keyword": None,
+            "application_url": None,
+            "application_method": "unknown",
+        })
+
+        self.assertIsNone(enriched["age_min"])
+        self.assertIsNone(enriched["age_max"])
+        self.assertEqual(enriched["age_description"], "alle Altersgruppen")
+        self.assertEqual(enriched["gender"], ["female", "male"])
+        self.assertNotIn("age_non_numerique", enriched["parser_review_reasons"])
+        self.assertNotIn("sexe_annonce_non_precise", enriched["parser_review_reasons"])
+
 
 if __name__ == "__main__":
     unittest.main()
