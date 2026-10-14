@@ -104,6 +104,10 @@ def detect_gender(text: str) -> set[str]:
         r"\bsohn\b",
         r"\bjunge(?:n)?\b",
         r"\bjungs?\b",
+        r"\bzwillingsbr(?:u|ü)der(?:n)?\b",
+        r"\bzwillingsjungen?\b",
+        r"\bmännliche\s+zwillinge\b",
+        r"\bmaennliche\s+zwillinge\b",
         r"\bmale\b",
         r"(^|[\s(,/|\-])m(?=[\s),;./|\-]|$)",
     ]
@@ -123,6 +127,11 @@ def detect_gender(text: str) -> set[str]:
         r"\bjournalistin(?:nen)?\b",
         r"\bredakteurin(?:nen)?\b",
         r"\bschauspielerin(?:nen)?\b",
+        r"\bzwillingsschwester(?:n)?\b",
+        r"\bzwillingsmädchen\b",
+        r"\bzwillingsmaedchen\b",
+        r"\bweibliche\s+zwillinge\b",
+        r"\bfemale\s+twins?\b",
         r"\bpatientin(?:nen)?\b",
         r"\b(?:single)?mütter?\b",
         r"\bbeamtin(?:nen)?\b",
@@ -1256,6 +1265,41 @@ def enrich_offer_from_detail(parsed: dict, detail_data: dict) -> dict:
             "source": "detail_page" if detail_text else "title",
             "url": parsed.get("detail_url"),
             "evidence": "Mehrgenerationen casting: open to men and women",
+        }
+
+    # If a casting has no stated age, default to adults unless the role is
+    # explicitly child-focused or the source says it spans generations/all ages.
+    # This covers adult documentary/family participants such as offer 91.144.
+    child_role_in_title = bool(re.search(
+        r"\b(?:kinder?|mädchen|maedchen|jungen?|schüler|schülerin|"
+        r"teenager|jugendliche|jugendlicher|baby|kleinkind|schulkind)\b",
+        normalize_text(parsed.get("title", "")),
+        re.IGNORECASE,
+    ))
+    profiles_for_default_age = parsed.get("profiles") or []
+    if (
+        len(profiles_for_default_age) == 1
+        and not multigeneration_context
+        and not child_role_in_title
+        and not is_varied_age_description(parsed.get("age_description"))
+        and parsed.get("age_min") is None
+        and parsed.get("age_max") is None
+        and not any(
+            isinstance(role, dict)
+            and (role.get("age_min") is not None or role.get("age_max") is not None)
+            for role in profiles_for_default_age
+        )
+    ):
+        profiles_for_default_age[0]["age_min"] = 18
+        profiles_for_default_age[0]["age_max"] = None
+        parsed["profiles"] = profiles_for_default_age
+        parsed["age_min"] = 18
+        parsed["age_max"] = None
+        parsed["age_description"] = "ab 18 Jahren"
+        parsed["field_sources"]["age_min"] = {
+            "source": "inferred_default",
+            "url": parsed.get("detail_url"),
+            "evidence": "No age stated; adult participant default (18+) unless the role is explicitly child-focused or all-ages",
         }
 
     if detail_text:
