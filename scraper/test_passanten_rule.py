@@ -122,6 +122,35 @@ class TestPassantenCastingRule(unittest.TestCase):
         self.assertNotIn("age_non_numerique", enriched["parser_review_reasons"])
         self.assertNotIn("sexe_annonce_non_precise", enriched["parser_review_reasons"])
 
+    def test_unspecified_age_defaults_to_adults_for_family_documentary(self):
+        parsed = parse_offer({
+            "offer_id": "91144",
+            "publication_date": "2026-09-11 17:02",
+            "title": "Bundesweit | Familie in finanziellen Nöten für neue Doku auf VOX | ab Oktober n.V.",
+            "raw_text": "",
+            "detail_url": "https://komparse.de/Gesuch91045.htm",
+        })
+        enriched = enrich_offer_from_detail(parsed, {
+            "detail_text": "Für eine neue Doku suchen wir eine sympathische, authentische Familie, die wir über längere Zeit begleiten dürfen.",
+            "shoot_dates": [],
+            "shoot_date_text": "Ab Oktober 2026, nach Vereinbarung",
+            "email": None,
+            "subject_keyword": None,
+            "application_url": None,
+            "application_method": "email",
+        })
+        self.assertEqual(enriched["age_min"], 18)
+        self.assertIsNone(enriched["age_max"])
+        self.assertEqual(enriched["age_description"], "ab 18 Jahren")
+        self.assertNotIn("age_non_numerique", enriched["parser_review_reasons"])
+
+    def test_twin_sister_and_brother_words_identify_gender(self):
+        from scraper.parser import detect_gender
+        self.assertEqual(detect_gender("Zwillingsschwestern gesucht"), {"female"})
+        self.assertEqual(detect_gender("Zwillingsbrüder gesucht"), {"male"})
+        self.assertEqual(detect_gender("weibliche Zwillinge gesucht"), {"female"})
+        self.assertEqual(detect_gender("männliche Zwillinge gesucht"), {"male"})
+
 
 if __name__ == "__main__":
     unittest.main()
