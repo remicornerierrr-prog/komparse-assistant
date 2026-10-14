@@ -26,6 +26,25 @@ class NotificationEligibilityTests(unittest.TestCase):
         profile["notify_regional"] = False
         self.assertFalse(profile_allows_offer_scope("Großraum Köln", profile))
 
+    def test_nrw_preference_includes_nrw_and_city_only_labels(self):
+        profile = {
+            "city": "Köln",
+            "notify_national": False,
+            "notify_regional": False,
+            "notify_region": "nrw",
+        }
+        self.assertTrue(profile_allows_offer_scope("NRW", profile))
+        self.assertTrue(profile_allows_offer_scope("Münster", profile))
+        self.assertTrue(profile_allows_offer_scope("Dortmund", profile))
+        self.assertTrue(profile_allows_offer_scope("Großraum Düsseldorf", profile))
+        self.assertFalse(profile_allows_offer_scope("Hamburg", profile))
+
+    def test_nrw_city_labels_are_classified_for_profile_matching(self):
+        from scraper.location_rules import classify_location
+        self.assertEqual(classify_location("Münster"), "v1")
+        self.assertEqual(classify_location("Dortmund"), "v1")
+        self.assertEqual(classify_location("NRW"), "v1")
+
 
 if __name__ == "__main__":
     unittest.main()
