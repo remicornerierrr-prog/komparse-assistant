@@ -50,7 +50,10 @@ def classify_location(location: Any) -> str:
         return "manual_review"
 
     # Hürth borders Cologne and is part of the immediate Cologne casting area.
-    if re.fullmatch(r"(?:hurth/koln|koln/hurth)", text):
+    # Casting listings use slash, "und", or ampersand interchangeably.
+    if re.fullmatch(r"(?:hurth|koln)\s*(?:/|und|&)\s*(?:hurth|koln)", text) and (
+        "hurth" in text and "koln" in text
+    ):
         return "v1"
 
     # Explicitly approved expanded V1 geography:
