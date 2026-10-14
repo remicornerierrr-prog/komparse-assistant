@@ -310,8 +310,13 @@ def prepare_offer_status(offer: dict[str, Any]) -> str:
     # Descriptive decade labels such as "Mitte 40" are parsed into an
     # approximate numeric band by extract_age_ranges; they must not trigger
     # manual review just because the top-level numeric fields are empty.
-    described_age_ranges = extract_age_ranges(age_description or "")
-    described_age_is_interpretable = bool(described_age_ranges)
+    described_age_is_interpretable = bool(
+        __import__("re").search(
+            r"\b(?:Anfang|Mitte|Ende)\s+\d{2}\b",
+            str(age_description or ""),
+            __import__("re").IGNORECASE,
+        )
+    )
     # No age mentioned means unrestricted age. Recognizable age descriptions
     # are also accepted and handled by the matching layer.
     open_age_policy = age_unbounded and (
