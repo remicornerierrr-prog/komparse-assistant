@@ -1310,8 +1310,11 @@ def enrich_offer_from_detail(parsed: dict, detail_data: dict) -> dict:
     if not parsed.get("shoot_date") and len(parsed.get("shoot_dates") or []) < 2:
         review_reasons.append("date_exacte_absente")
     profiles = parsed.get("profiles") or []
-    if not profiles or any(
-        not role.get("gender") for role in profiles if isinstance(role, dict)
+    if (
+        (not profiles and not multigeneration_context)
+        or any(
+            not role.get("gender") for role in profiles if isinstance(role, dict)
+        )
     ):
         review_reasons.append("sexe_annonce_non_precise")
     if (
