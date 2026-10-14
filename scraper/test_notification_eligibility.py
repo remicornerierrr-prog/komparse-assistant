@@ -39,10 +39,14 @@ class NotificationEligibilityTests(unittest.TestCase):
         self.assertTrue(profile_allows_offer_scope("Großraum Düsseldorf", profile))
         self.assertFalse(profile_allows_offer_scope("Hamburg", profile))
 
-    def test_nrw_city_labels_are_classified_for_profile_matching(self):
-        from scraper.location_rules import classify_location
-        self.assertEqual(classify_location("Münster"), "v1")
-        self.assertEqual(classify_location("Dortmund"), "v1")
+    def test_nrw_city_detection_does_not_expand_default_v1_area(self):
+        from scraper.location_rules import classify_location, is_nrw_location
+        self.assertTrue(is_nrw_location("Münster"))
+        self.assertTrue(is_nrw_location("Dortmund"))
+        self.assertTrue(is_nrw_location("NRW"))
+        self.assertFalse(is_nrw_location("Hamburg"))
+        self.assertEqual(classify_location("Münster"), "outside")
+        self.assertEqual(classify_location("Dortmund"), "outside")
         self.assertEqual(classify_location("NRW"), "v1")
 
 
