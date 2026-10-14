@@ -1,6 +1,7 @@
 import unittest
 
 from scraper.parser import parse_offer, enrich_offer_from_detail
+from scraper.location_rules import classify_location
 
 
 class TestPassantenCastingRule(unittest.TestCase):
@@ -8,7 +9,7 @@ class TestPassantenCastingRule(unittest.TestCase):
         parsed = parse_offer({
             "offer_id": "91221",
             "publication_date": "2026-10-14 09:00",
-            "title": "Köln | Passanten | 14. oder 15. Oktober",
+            "title": "Köln und Hürth | Passanten | 14. oder 15. Oktober",
             "raw_text": "",
             "detail_url": "https://komparse.de/Gesuch91221.htm",
         })
@@ -26,6 +27,8 @@ class TestPassantenCastingRule(unittest.TestCase):
             "application_method": "unknown",
         })
 
+        self.assertEqual(enriched["location_status"], "v1")
+        self.assertEqual(classify_location("Köln und Hürth"), "v1")
         self.assertEqual(enriched["age_min"], 18)
         self.assertIsNone(enriched["age_max"])
         self.assertEqual(enriched["age_description"], "ab 18 Jahren")
