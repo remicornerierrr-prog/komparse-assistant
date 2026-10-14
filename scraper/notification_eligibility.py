@@ -8,9 +8,9 @@ from typing import Any
 from zoneinfo import ZoneInfo
 
 try:
-    from .location_rules import normalize_location
+    from .location_rules import normalize_location, is_nrw_location
 except ImportError:
-    from location_rules import normalize_location
+    from location_rules import normalize_location, is_nrw_location
 
 BERLIN = ZoneInfo("Europe/Berlin")
 
@@ -69,8 +69,15 @@ def profile_allows_offer_scope(location: Any, profile: dict[str, Any]) -> bool:
     if text in national_labels:
         return profile.get("notify_national", True) is not False
 
-    is_nrw = text in {"nrw", "nordrhein-westfalen", "nordrhein westfalen"}
-    if is_nrw:
+    # Une préférence NRW active couvre toutes les annonces identifiées comme NRW
+    # ainsi que les annonces indiquant directement une ville du Land.
+    if str(profile.get("notify_region") or "").strip().casefold() == "nrw":
+        if is_nrw_location(text):
+            return True
+
+    # Sans préférence NRW, conserver le comportement géographique historique.
+    is_nrw_scope = text in {"nrw", "nordrhein-westfalen", "nordrhein westfalen"}
+    if is_nrw_scope:
         aliases = {"koln", "cologne", "koeln", "bonn", "dusseldorf", "duesseldorf"}
         city_key = {"cologne": "koln", "koeln": "koln", "duesseldorf": "dusseldorf"}.get(city, city)
         return profile.get("notify_regional", True) is not False and city_key in aliases
