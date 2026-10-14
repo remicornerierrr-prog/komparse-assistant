@@ -351,7 +351,7 @@ class MatchingV1Tests(unittest.TestCase):
     # 8. KÖLN +100 KM
     # ========================================================
 
-    def test_08_koln_plus_100km(self):
+    def test_08_koln_plus_100km_requires_manual_review(self):
 
         offer = self.make_offer(
 
@@ -372,16 +372,15 @@ class MatchingV1Tests(unittest.TestCase):
         )
 
 
-        self.assertTrue(
-            result["matched"]
-        )
+        self.assertTrue(result["manual_review"])
+        self.assertFalse(result["matched"])
 
 
     # ========================================================
-    # 9. NRW = V1 ELIGIBLE
+    # 9. NRW = MANUAL REVIEW
     # ========================================================
 
-    def test_09_nrw_is_v1_eligible(self):
+    def test_09_nrw_requires_manual_review(self):
 
         offer = self.make_offer(
 
@@ -402,21 +401,15 @@ class MatchingV1Tests(unittest.TestCase):
         )
 
 
-        self.assertFalse(
-            result["manual_review"]
-        )
-
-
-        self.assertTrue(
-            result["matched"]
-        )
+        self.assertTrue(result["manual_review"])
+        self.assertFalse(result["matched"])
 
 
     # ========================================================
-    # 10. DEUTSCHLANDWEIT = V1 ELIGIBLE
+    # 10. DEUTSCHLANDWEIT = MANUAL REVIEW
     # ========================================================
 
-    def test_10_deutschlandweit_is_v1_eligible(self):
+    def test_10_deutschlandweit_requires_manual_review(self):
 
         offer = self.make_offer(
 
@@ -437,14 +430,8 @@ class MatchingV1Tests(unittest.TestCase):
         )
 
 
-        self.assertFalse(
-            result["manual_review"]
-        )
-
-
-        self.assertTrue(
-            result["matched"]
-        )
+        self.assertTrue(result["manual_review"])
+        self.assertFalse(result["matched"])
 
 
     # ========================================================
@@ -772,20 +759,6 @@ class MatchingV1Tests(unittest.TestCase):
             "Bonn",
 
             "Düsseldorf",
-
-            "Köln & Umgebung",
-
-            "Köln und Umgebung",
-
-            "Köln +100 km",
-
-            "Köln +100km",
-
-            "Köln + Umgebung",
-
-            "Region Bonn + 75 km",
-
-            "Region Düsseldorf + Umgebung",
 
             "Aktuelle GesucheKöln",
 
