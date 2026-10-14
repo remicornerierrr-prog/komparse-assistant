@@ -10,7 +10,7 @@ TARGET_CITIES = ("koln", "bonn", "dusseldorf")
 
 # Cities and municipalities in Nordrhein-Westfalen commonly used as offer locations.
 # Keep normalized ASCII forms so Köln/Düsseldorf and their spelling variants match.
-NRW_CITY_PATTERN = re.compile(r"(?<!\\w)(?:" + r"mulheim\s+an\s+der\s+ruhr|bergisch\s+gladbach|emmerich\s+am\s+rhein|halle\s+\(westfalen\)|monheim\s+am\s+rhein|porta\s+westfalica|monchengladbach|bad\s+oeynhausen|castrop-rauxel|haltern\s+am\s+see|recklinghausen|sankt\s+augustin|wermelskirchen|geilenkirchen|gelsenkirchen|kamp-lintfort|wetter\s+\(ruhr\)|grevenbroich|herzogenrath|konigswinter|huckelhoven|ludenscheid|petershagen|plettenberg|sprockhovel|bad\s+honnef|baesweiler|dusseldorf|eschweiler|euskirchen|gevelsberg|ibbenburen|langenfeld|lennestadt|leverkusen|oberhausen|bielefeld|dinslaken|emsdetten|ennepetal|erftstadt|gutersloh|hattingen|heinsberg|lippstadt|meerbusch|paderborn|remscheid|rheinbach|troisdorf|warendorf|wesseling|wuppertal|arnsberg|bergheim|bornheim|coesfeld|dormagen|dortmund|duisburg|erkelenz|gladbeck|iserlohn|kreuztal|nettetal|ratingen|rietberg|schwerte|siegburg|solingen|stolberg|warstein|wurselen|alsdorf|bocholt|bottrop|detmold|dorsten|frechen|geldern|herford|krefeld|munster|pulheim|schwelm|velbert|viersen|werdohl|aachen|beckum|bochum|borken|brilon|greven|gronau|hennef|herten|hilden|hoxter|julich|kaarst|kempen|kerpen|lohmar|menden|minden|rheine|siegen|voerde|witten|xanten|ahaus|ahlen|bruhl|bunde|duren|essen|hagen|herne|hurth|kamen|kleve|lunen|moers|neuss|oelde|soest|wesel|bonn|goch|hamm|koln|lage|marl|olpe|selm|unna" + r")(?!\\w)")
+NRW_CITY_PATTERN = re.compile(r"(?<!\w)(?:" + r"mulheim\s+an\s+der\s+ruhr|bergisch\s+gladbach|emmerich\s+am\s+rhein|halle\s+\(westfalen\)|monheim\s+am\s+rhein|porta\s+westfalica|monchengladbach|bad\s+oeynhausen|castrop-rauxel|haltern\s+am\s+see|recklinghausen|sankt\s+augustin|wermelskirchen|geilenkirchen|gelsenkirchen|kamp-lintfort|wetter\s+\(ruhr\)|grevenbroich|herzogenrath|konigswinter|huckelhoven|ludenscheid|petershagen|plettenberg|sprockhovel|bad\s+honnef|baesweiler|dusseldorf|eschweiler|euskirchen|gevelsberg|ibbenburen|langenfeld|lennestadt|leverkusen|oberhausen|bielefeld|dinslaken|emsdetten|ennepetal|erftstadt|gutersloh|hattingen|heinsberg|lippstadt|meerbusch|paderborn|remscheid|rheinbach|troisdorf|warendorf|wesseling|wuppertal|arnsberg|bergheim|bornheim|coesfeld|dormagen|dortmund|duisburg|erkelenz|gladbeck|iserlohn|kreuztal|nettetal|ratingen|rietberg|schwerte|siegburg|solingen|stolberg|warstein|wurselen|alsdorf|bocholt|bottrop|detmold|dorsten|frechen|geldern|herford|krefeld|munster|pulheim|schwelm|velbert|viersen|werdohl|aachen|beckum|bochum|borken|brilon|greven|gronau|hennef|herten|hilden|hoxter|julich|kaarst|kempen|kerpen|lohmar|menden|minden|rheine|siegen|voerde|witten|xanten|ahaus|ahlen|bruhl|bunde|duren|essen|hagen|herne|hurth|kamen|kleve|lunen|moers|neuss|oelde|soest|wesel|bonn|goch|hamm|koln|lage|marl|olpe|selm|unna" + r")(?!\w)")
 
 
 def is_nrw_location(value: Any) -> bool:
@@ -18,7 +18,7 @@ def is_nrw_location(value: Any) -> bool:
     text = normalize_location(value)
     if not text:
         return False
-    if re.search(r"(?<!\\w)(?:nrw|nordrhein[- ]westfalen)(?!\\w)", text):
+    if re.search(r"(?<!\w)(?:nrw|nordrhein[- ]westfalen)(?!\w)", text):
         return True
     return bool(NRW_CITY_PATTERN.search(text))
 
