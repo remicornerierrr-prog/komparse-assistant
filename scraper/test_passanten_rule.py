@@ -98,5 +98,30 @@ class TestPassantenCastingRule(unittest.TestCase):
         self.assertNotIn("sexe_annonce_non_precise", enriched["parser_review_reasons"])
 
 
+    def test_prota_without_gender_is_adult_and_open_to_both_genders(self):
+        parsed = parse_offer({
+            "offer_id": "91312",
+            "publication_date": "2026-10-14 10:00",
+            "title": "Köln | Prota, die unter Ungeziefer in Haus oder Wohnung im Herbst leidet (Bsp. Stinkwanzen)",
+            "raw_text": "",
+            "detail_url": "https://komparse.de/Gesuch91312.htm",
+        })
+        enriched = enrich_offer_from_detail(parsed, {
+            "detail_text": "Prota, die unter Ungeziefer in Haus oder Wohnung im Herbst leidet (Bsp. Stinkwanzen).",
+            "shoot_dates": ["2026-10-20"],
+            "shoot_date_text": "20. Oktober 2026",
+            "email": None,
+            "subject_keyword": None,
+            "application_url": None,
+            "application_method": "unknown",
+        })
+
+        self.assertEqual(enriched["age_min"], 18)
+        self.assertIsNone(enriched["age_max"])
+        self.assertEqual(enriched["gender"], ["female", "male"])
+        self.assertNotIn("age_non_numerique", enriched["parser_review_reasons"])
+        self.assertNotIn("sexe_annonce_non_precise", enriched["parser_review_reasons"])
+
+
 if __name__ == "__main__":
     unittest.main()
