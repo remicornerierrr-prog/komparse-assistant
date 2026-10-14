@@ -1194,6 +1194,37 @@ def enrich_offer_from_detail(parsed: dict, detail_data: dict) -> dict:
             "evidence": "Passanten is treated as open to men and women",
         }
 
+    # A "Mehrgenerationenhaus" casting concerns a family across generations.
+    # Unless the notice states explicit age/gender restrictions, keep all ages
+    # and both genders eligible instead of treating the family as one adult.
+    multigeneration_context = bool(re.search(
+        r"\\bmehrgenerationen(?:haus|familie|familien)?\\b",
+        f"{parsed.get('title', '')} {detail_text}",
+        re.IGNORECASE,
+    ))
+    if multigeneration_context:
+        profiles_for_family = parsed.get("profiles") or []
+        for family_role in profiles_for_family:
+            if isinstance(family_role, dict):
+                family_role["age_min"] = None
+                family_role["age_max"] = None
+                family_role["gender"] = ["female", "male"]
+        parsed["profiles"] = profiles_for_family
+        parsed["age_min"] = None
+        parsed["age_max"] = None
+        parsed["age_description"] = "alle Altersgruppen"
+        parsed["gender"] = ["female", "male"]
+        parsed["field_sources"]["age_description"] = {
+            "source": "detail_page" if detail_text else "title",
+            "url": parsed.get("detail_url"),
+            "evidence": "Mehrgenerationen casting: all ages and both genders unless explicitly restricted",
+        }
+        parsed["field_sources"]["gender"] = {
+            "source": "detail_page" if detail_text else "title",
+            "url": parsed.get("detail_url"),
+            "evidence": "Mehrgenerationen casting: open to men and women",
+        }
+
     if detail_text:
         # Use only explicit casting phrases, not incidental references to genders.
         profiles_for_gender = parsed.get("profiles") or []
