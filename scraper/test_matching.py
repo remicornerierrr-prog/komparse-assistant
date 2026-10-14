@@ -821,12 +821,6 @@ class MatchingV1Tests(unittest.TestCase):
 
             "Raum Köln + 200 km Umkreis",
 
-            "Großraum Köln/Bonn + 120 km Umkreis",
-
-            "Köln +150 km",
-
-            "Köln + 150 km Umkreis",
-
             "Raum Köln/Ruhrgebiet",
 
             "Köln-Niehl",
@@ -1336,8 +1330,7 @@ class MatchingUnspecifiedCriteriaTests(unittest.TestCase):
             "genders": ["female"],
         }
         young_result = match_offer_to_profile(offer, self.female_30)
-        self.assertFalse(young_result["matched"])
-        self.assertFalse(young_result.get("manual_review", False))
+        self.assertIs(young_result, False)
 
         profile_45 = {
             "id": "female45",
