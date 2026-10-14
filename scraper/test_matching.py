@@ -380,7 +380,7 @@ class MatchingV1Tests(unittest.TestCase):
     # 9. NRW = MANUAL REVIEW
     # ========================================================
 
-    def test_09_nrw_requires_manual_review(self):
+    def test_09_nrw_matches_when_regional_alerts_are_enabled(self):
 
         offer = self.make_offer(
 
@@ -401,15 +401,14 @@ class MatchingV1Tests(unittest.TestCase):
         )
 
 
-        self.assertTrue(result["manual_review"])
-        self.assertFalse(result["matched"])
+        self.assertTrue(result["matched"])
 
 
     # ========================================================
     # 10. DEUTSCHLANDWEIT = MANUAL REVIEW
     # ========================================================
 
-    def test_10_deutschlandweit_requires_manual_review(self):
+    def test_10_nationwide_matches_when_national_alerts_are_enabled(self):
 
         offer = self.make_offer(
 
