@@ -674,22 +674,15 @@ function validateQualification(data, markReviewed) {
     if (data.age_min !== null && data.age_max !== null && data.age_min > data.age_max) {
         return "L’âge minimum ne peut pas dépasser l’âge maximum.";
     }
-    if (data.shoot_date && data.shoot_date_text) {
-        // Exact date and source wording may coexist; this is intentional.
-    }
     if (data.application_url && !/^https?:\/\//i.test(data.application_url)) {
         return "L’URL de candidature doit commencer par http:// ou https://.";
     }
     if (markReviewed) {
-        if (!data.location_text.trim()) return "Impossible de valider : la localisation manque.";
+        if (!(data.location_text || "").trim()) return "Impossible de valider : la localisation manque.";
         if (data.location_status === "manual_review") return "Confirmez la localisation ou laissez l’annonce en revue.";
-        if (!data.shoot_date && !data.shoot_date_text.trim()) return "Impossible de valider : indiquez une date, une période ou la modalité de tournage.";
-        // L'âge peut rester vide si l'annonce source ne le précise pas.
-        // L'administrateur confirme alors explicitement que cette absence est volontaire.
-        if (!data.gender_male && !data.gender_female) return "Impossible de valider : confirmez le sexe recherché.";
-        if (data.location_status === "outside") {
-            // Out-of-scope offers can be marked reviewed without being matched.
-        }
+        // Une annonce peut être retirée de la file après vérification même si
+        // l'âge, le sexe ou la date ne sont pas précisés dans la source. Ces
+        // champs restent alors inconnus et ne doivent pas bloquer l'enregistrement.
     }
     return "";
 }
