@@ -1166,7 +1166,7 @@ class MatchingParserEdgeCaseTests(unittest.TestCase):
             "genders": [],
         }
         female_result = match_offer_to_profile(offer, self.profile_female_35)
-        male_result = match_offer_to_profile(offer, self.male_35)
+        male_result = match_offer_to_profile(offer, self.profile_male_35)
         self.assertTrue(female_result["matched"])
         self.assertTrue(male_result["matched"])
 
@@ -1320,7 +1320,7 @@ class MatchingUnspecifiedCriteriaTests(unittest.TestCase):
             "genders": [],
         }
         female_result = match_offer_to_profile(offer, self.female_30)
-        male_result = match_offer_to_profile(offer, self.profile_male_35)
+        male_result = match_offer_to_profile(offer, self.male_35)
         self.assertTrue(female_result["matched"])
         self.assertTrue(male_result["matched"])
 
