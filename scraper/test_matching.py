@@ -1156,7 +1156,7 @@ class MatchingParserEdgeCaseTests(unittest.TestCase):
         result = match_offer_to_profile(offer, self.profile_female_35)
         self.assertTrue(result["matched"])
 
-    def test_unspecified_generic_gender_goes_to_manual_review(self):
+    def test_unspecified_gender_matches_all_genders_when_age_matches(self):
         offer = {
             "offer_id": "generic-komparsen",
             "location": "Raum Köln",
@@ -1165,10 +1165,10 @@ class MatchingParserEdgeCaseTests(unittest.TestCase):
             "age_max": 70,
             "genders": [],
         }
-        result = match_offer_to_profile(offer, self.profile_female_35)
-        self.assertFalse(result["matched"])
-        self.assertTrue(result["manual_review"])
-        self.assertEqual(result["manual_review_reason"], "sexe_annonce_non_precise")
+        female_result = match_offer_to_profile(offer, self.profile_female_35)
+        male_result = match_offer_to_profile(offer, self.profile_male_35)
+        self.assertTrue(female_result["matched"])
+        self.assertTrue(male_result["matched"])
 
     def test_varied_age_offer_can_match_without_invented_numeric_bounds(self):
         offer = {
@@ -1294,7 +1294,7 @@ class MatchingUnspecifiedCriteriaTests(unittest.TestCase):
             self.assertTrue(match_offer_to_profile(offer, self.female_30)["matched"])
             self.assertIs(match_offer_to_profile(offer, self.male_35), False)
 
-    def test_unspecified_age_policy_can_be_disabled(self):
+    def test_missing_age_and_gender_match_all_genders_even_if_legacy_flag_is_false(self):
         offer = {
             "offer_id": "no-age-no-gender-review",
             "location": "Raum Köln",
@@ -1304,13 +1304,13 @@ class MatchingUnspecifiedCriteriaTests(unittest.TestCase):
             "genders": [],
         }
         with patch("scraper.matching.NOTIFY_WHEN_AGE_UNSPECIFIED", False):
-            result = match_offer_to_profile(offer, self.female_30)
+            female_result = match_offer_to_profile(offer, self.female_30)
+            male_result = match_offer_to_profile(offer, self.male_35)
 
-        self.assertFalse(result["matched"])
-        self.assertTrue(result["manual_review"])
-        self.assertIn("age_annonce_non_precis", result["manual_review_reason"])
+        self.assertTrue(female_result["matched"])
+        self.assertTrue(male_result["matched"])
 
-    def test_age_specified_but_gender_unspecified_still_requires_review(self):
+    def test_age_specified_but_gender_unspecified_matches_all_genders_in_age_range(self):
         offer = {
             "offer_id": "age-but-no-gender",
             "location": "Raum Köln",
@@ -1319,10 +1319,10 @@ class MatchingUnspecifiedCriteriaTests(unittest.TestCase):
             "age_max": 55,
             "genders": [],
         }
-        result = match_offer_to_profile(offer, self.female_30)
-        self.assertFalse(result["matched"])
-        self.assertTrue(result["manual_review"])
-        self.assertEqual(result["manual_review_reason"], "sexe_annonce_non_precise")
+        female_result = match_offer_to_profile(offer, self.female_30)
+        male_result = match_offer_to_profile(offer, self.profile_male_35)
+        self.assertTrue(female_result["matched"])
+        self.assertTrue(male_result["matched"])
 
 
     def test_non_numeric_but_descriptive_age_stays_in_manual_review(self):
