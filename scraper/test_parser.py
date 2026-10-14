@@ -186,6 +186,22 @@ class TestGenderParsing(unittest.TestCase):
             {"male", "female"},
         )
 
+    def test_familie_mit_kindern_is_mixed(self):
+        title = "Köln + 150 km Umkreis | Familie mit Kindern oder Pärchen"
+        self.assertEqual(detect_gender(title), {"male", "female"})
+
+    def test_offer_91304_family_context_is_gender_qualified_automatically(self):
+        result = parse_offer({
+            "offer_id": "91.304",
+            "publication_date": "2026-10-13 10:00",
+            "title": "Köln + 150 km Umkreis | Familie mit Kindern oder Pärchen",
+            "raw_text": "",
+            "detail_url": "https://komparse.de/Gesuch91304.htm",
+        })
+        self.assertEqual(result["gender"], ["female", "male"])
+        self.assertEqual(result["profiles"][0]["gender"], ["female", "male"])
+        self.assertNotIn("sexe_annonce_non_precise", result["parser_review_reasons"])
+
     def test_damen_und_herren_is_mixed(self):
         title = "Raum KÖLN | 3 Damen und Herren als Redakteure einer Tageszeitung, 25 bis 55 Jahre | 15. Oktober"
         self.assertEqual(detect_gender(title), {"male", "female"})
