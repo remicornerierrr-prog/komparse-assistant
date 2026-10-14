@@ -1157,7 +1157,7 @@ def enrich_offer_from_detail(parsed: dict, detail_data: dict) -> dict:
     # mixed-gender role when no age is stated. This avoids sending a generic
     # adult passer-by role to manual review just because the title is vague.
     passanten_context = bool(re.search(
-        r"\\b(?:passanten|passantinnen|passant[*:]innen)\\b",
+        r"\b(?:passanten|passantinnen|passant[*:]innen)\b",
         detail_text,
         re.IGNORECASE,
     ))
