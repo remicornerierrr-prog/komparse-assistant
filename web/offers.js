@@ -124,51 +124,102 @@
       return;
     }
     const confirmPanel = node("section", undefined, "confirm-panel");
-    confirmPanel.append(node("h3", "Confirmer l'envoi"));
-    field(confirmPanel, "Destinataire", offer.email);
-    field(confirmPanel, "Objet", offer.subject_keyword || ("Bewerbung Komparse " + (offer.shoot_date_text || offer.shoot_date || "")));
-    confirmPanel.append(node("p", "Les photos enregistrées dans votre profil seront jointes à l'email."));
-    const consentLabel = node("label");
-    const consent = document.createElement("input");
-    consent.type = "checkbox";
-    consentLabel.append(consent, document.createTextNode(" Je confirme l'envoi de cette candidature et le partage de mes données et photos avec le destinataire."));
-    confirmPanel.append(consentLabel);
-    const send = node("button", "Confirmer et envoyer");
-    send.type = "button";
-    send.disabled = true;
-    consent.addEventListener("change", () => { send.disabled = !consent.checked; });
-    send.addEventListener("click", async () => {
-      if (!consent.checked) return;
-      send.disabled = true;
-      send.textContent = "Envoi en cours…";
-      const { data: sessionData } = await client.auth.getSession();
-      const token = sessionData.session && sessionData.session.access_token;
-      if (!token) {
-        send.textContent = "Session expirée — reconnectez-vous";
-        return;
-      }
-      try {
-        const response = await fetch(SUPABASE_URL + "/functions/v1/send-application", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token, "apikey": SUPABASE_PUBLISHABLE_KEY },
-          body: JSON.stringify({ offer_id: offer.id, confirm: true })
-        });
-        const result = await response.json();
-        if (!response.ok || !result.success) throw new Error(result.error || "Échec de l'envoi");
-        send.textContent = "Email envoyé";
-        confirmPanel.append(node("p", "Candidature envoyée à " + result.recipient + "."));
-      } catch (error) {
-        send.disabled = false;
-        send.textContent = "Réessayer l'envoi";
-        confirmPanel.append(node("p", error.message || "L'envoi a échoué. Aucun succès n'a été confirmé."));
-      }
-    });
-    const cancel = node("button", "Annuler");
-    cancel.type = "button";
-    cancel.addEventListener("click", () => confirmPanel.remove());
-    confirmPanel.append(send, cancel);
+    confirmPanel.append(node("h3", "Préparer votre candidature"));
+    confirmPanel.append(node("p", "Chargement du brouillon et des photos…"));
     button.after(confirmPanel);
     button.disabled = true;
+
+    const { data: sessionData } = await client.auth.getSession();
+    const token = sessionData.session && sessionData.session.access_token;
+    if (!token) {
+      confirmPanel.replaceChildren(node("p", "Session expirée — reconnectez-vous."));
+      button.disabled = false;
+      return;
+    }
+    try {
+      const response = await fetch(SUPABASE_URL + "/functions/v1/gmail-send-application", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token, "apikey": SUPABASE_PUBLISHABLE_KEY },
+        body: JSON.stringify({ action: "preview", offer_id: offer.id })
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.error || "Impossible de préparer la candidature.");
+
+      confirmPanel.replaceChildren(node("h3", "Relire votre candidature"));
+      field(confirmPanel, "Votre adresse Gmail", result.sender);
+      field(confirmPanel, "Destinataire", result.recipient);
+
+      const subjectLabel = node("label", "Objet de l'email");
+      const subjectInput = document.createElement("input");
+      subjectInput.type = "text";
+      subjectInput.maxLength = 250;
+      subjectInput.value = result.subject || "";
+      subjectInput.style.display = "block";
+      subjectInput.style.width = "100%";
+      subjectInput.style.boxSizing = "border-box";
+      subjectInput.style.margin = "6px 0 12px";
+      subjectLabel.append(subjectInput);
+      confirmPanel.append(subjectLabel);
+
+      const bodyLabel = node("label", "Message (modifiable)");
+      const bodyInput = document.createElement("textarea");
+      bodyInput.rows = 12;
+      bodyInput.maxLength = 12000;
+      bodyInput.value = result.body || "";
+      bodyInput.style.display = "block";
+      bodyInput.style.width = "100%";
+      bodyInput.style.boxSizing = "border-box";
+      bodyInput.style.margin = "6px 0 12px";
+      bodyLabel.append(bodyInput);
+      confirmPanel.append(bodyLabel);
+
+      const photosText = result.photos && result.photos.length
+        ? "Photos jointes : " + result.photos.join(", ")
+        : "Aucune photo détectée.";
+      confirmPanel.append(node("p", photosText));
+      confirmPanel.append(node("p", "Vérifiez le destinataire, l'objet, le message et les photos avant l'envoi."));
+
+      const consentLabel = node("label");
+      const consent = document.createElement("input");
+      consent.type = "checkbox";
+      consentLabel.append(consent, document.createTextNode(" Je confirme l'envoi de cette candidature et le partage de mes données et photos avec ce destinataire."));
+      confirmPanel.append(consentLabel);
+
+      const send = node("button", "Envoyer depuis mon Gmail");
+      send.type = "button";
+      send.disabled = true;
+      consent.addEventListener("change", () => { send.disabled = !consent.checked; });
+      send.addEventListener("click", async () => {
+        if (!consent.checked) return;
+        send.disabled = true;
+        send.textContent = "Envoi en cours…";
+        try {
+          const sendResponse = await fetch(SUPABASE_URL + "/functions/v1/gmail-send-application", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token, "apikey": SUPABASE_PUBLISHABLE_KEY },
+            body: JSON.stringify({ action: "send", offer_id: offer.id, confirm: true, subject: subjectInput.value, body: bodyInput.value })
+          });
+          const sent = await sendResponse.json();
+          if (!sendResponse.ok || !sent.success) throw new Error(sent.error || "Échec de l'envoi.");
+          send.textContent = "Email envoyé";
+          confirmPanel.append(node("p", "Candidature envoyée depuis " + sent.sender + " à " + sent.recipient + "."));
+        } catch (error) {
+          send.disabled = false;
+          send.textContent = "Réessayer l'envoi";
+          confirmPanel.append(node("p", error.message || "L'envoi a échoué. Aucun succès n'a été confirmé."));
+        }
+      });
+      const cancel = node("button", "Annuler");
+      cancel.type = "button";
+      cancel.addEventListener("click", () => { confirmPanel.remove(); button.disabled = false; });
+      confirmPanel.append(send, cancel);
+    } catch (error) {
+      confirmPanel.replaceChildren(node("p", error.message || "Impossible de préparer la candidature."));
+      const close = node("button", "Fermer");
+      close.type = "button";
+      close.addEventListener("click", () => { confirmPanel.remove(); button.disabled = false; });
+      confirmPanel.append(close);
+    }
   }
 
   init().catch(error => {
