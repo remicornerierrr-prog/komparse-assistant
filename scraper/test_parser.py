@@ -199,6 +199,15 @@ class TestGenderParsing(unittest.TestCase):
     def test_herren_only_is_male(self):
         self.assertEqual(detect_gender("Herren für eine Fernsehproduktion"), {"male"})
 
+    def test_zwillingsbrueder_are_male(self):
+        self.assertEqual(detect_gender("Zwillingsbrüder gesucht"), {"male"})
+
+    def test_zwilling_sisters_are_female(self):
+        self.assertEqual(detect_gender("Zwillingsschwestern gesucht"), {"female"})
+
+    def test_generic_zwillinge_do_not_guess_gender(self):
+        self.assertEqual(detect_gender("Zwillinge gesucht"), set())
+
 
 class TestScheduleParsing(unittest.TestCase):
     def test_explicit_date_range_takes_precedence_over_broad_month(self):
