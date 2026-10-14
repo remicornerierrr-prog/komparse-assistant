@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mes offres — Komparse Assistant</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 760px; margin: 0 auto; padding: 20px; background: #f5f5f5; color: #222; }
+    main { background: #fff; padding: 22px; border-radius: 10px; }
+    .offer-card, .description, .confirm-panel { border: 1px solid #ddd; border-radius: 8px; padding: 16px; margin: 16px 0; background: #fafafa; }
+    .offer-card h3 { margin-top: 0; }
+    p { line-height: 1.5; overflow-wrap: anywhere; }
+    a { color: #1459a8; }
+    button { padding: 11px 14px; margin: 12px 8px 0 0; cursor: pointer; }
+    button:disabled { opacity: .6; cursor: not-allowed; }
+    .back-link { display: inline-block; margin-bottom: 16px; }
+    label { display: block; margin: 14px 0; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Komparse Assistant</h1>
+    <p><a href="./index.html">← Retour à mon profil</a></p>
+    <div id="offers-root" aria-live="polite"></div>
+  </main>
+  <script src="./offers.js?v=1"></script>
+</body>
+</html>
