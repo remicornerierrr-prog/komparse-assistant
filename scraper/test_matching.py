@@ -433,8 +433,8 @@ class MatchingV1Tests(unittest.TestCase):
         )
 
 
-        self.assertTrue(result["manual_review"])
-        self.assertFalse(result["matched"])
+        self.assertTrue(result["matched"])
+        self.assertFalse(result["manual_review"])
 
 
     # ========================================================
