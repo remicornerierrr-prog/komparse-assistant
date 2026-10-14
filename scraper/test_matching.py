@@ -1325,7 +1325,7 @@ class MatchingUnspecifiedCriteriaTests(unittest.TestCase):
         self.assertTrue(male_result["matched"])
 
 
-    def test_non_numeric_but_descriptive_age_stays_in_manual_review(self):
+    def test_mitte_40_is_interpreted_as_age_40_to_49_without_manual_review(self):
         offer = {
             "offer_id": "age-mid-forties",
             "location": "Raum Köln",
@@ -1335,12 +1335,38 @@ class MatchingUnspecifiedCriteriaTests(unittest.TestCase):
             "age_description": "Mitte 40",
             "genders": ["female"],
         }
-        with patch("scraper.matching.NOTIFY_WHEN_AGE_UNSPECIFIED", True):
-            result = match_offer_to_profile(offer, self.female_30)
+        young_result = match_offer_to_profile(offer, self.profile_female_35)
+        self.assertFalse(young_result["matched"])
+        self.assertFalse(young_result.get("manual_review", False))
 
-        self.assertFalse(result["matched"])
-        self.assertTrue(result["manual_review"])
-        self.assertEqual(result["manual_review_reason"], "age_annonce_non_precis")
+        profile_45 = {
+            "id": "female45",
+            "birth_date": "1981-01-15",
+            "gender": "female",
+        }
+        matching_result = match_offer_to_profile(offer, profile_45)
+        self.assertTrue(matching_result["matched"])
+        self.assertFalse(matching_result["manual_review"])
+
+    def test_anfang_and_ende_decade_descriptions_are_interpretable(self):
+        for description in ("Anfang 40", "Ende 40"):
+            with self.subTest(description=description):
+                offer = {
+                    "offer_id": "age-decade-" + description,
+                    "location": "Raum Köln",
+                    "shoot_date": "2026-11-07",
+                    "age_min": None,
+                    "age_max": None,
+                    "age_description": description,
+                    "genders": ["female"],
+                }
+                result = match_offer_to_profile(offer, {
+                    "id": "female45",
+                    "birth_date": "1981-01-15",
+                    "gender": "female",
+                })
+                self.assertTrue(result["matched"])
+                self.assertFalse(result["manual_review"])
 
 
 if __name__ == "__main__":
