@@ -65,21 +65,25 @@ function escapeHtml(value) {
 // ============================================================
 
 function renderOfferReference(offer) {
-    const reference = escapeHtml(offer.komparse_id || offer.id || "—");
-    const rawUrl = String(offer.source_url || "").trim();
+    const rawReference = String(offer.komparse_id || "").trim();
+    const reference = escapeHtml(rawReference || offer.id || "—");
 
-    if (!rawUrl) {
-        return reference;
-    }
+    // Certains liens de la liste Komparse pointent vers une ancienne annonce
+    // (ex. 91.144 renvoie vers 91.045). Construire d'abord le lien à partir
+    // de l'identifiant visible afin d'ouvrir la fiche correspondant à la ligne.
+    const digits = rawReference.replace(/\\D/g, "");
+    const rawUrl = digits
+        ? `https://komparse.de/Gesuch${digits}.htm`
+        : String(offer.source_url || "").trim();
+
+    if (!rawUrl) return reference;
 
     try {
         const url = new URL(rawUrl);
-        // Les liens sources attendus sont les pages publiques de Komparse.
         if (url.protocol !== "https:" || url.hostname.toLowerCase() !== "komparse.de") {
             return reference;
         }
-
-        return `<a href="${escapeHtml(url.href)}" target="_blank" rel="noopener noreferrer" title="Ouvrir l’annonce originale Komparse">${reference} ↗</a>`;
+        return `<a href="${escapeHtml(url.href)}" target="_blank" rel="noopener noreferrer" title="Ouvrir la fiche correspondant à l’identifiant">${reference} ↗</a>`;
     } catch {
         return reference;
     }
@@ -751,7 +755,7 @@ qualificationForm.addEventListener("submit", async event => {
         await loadOffers();
     } catch (error) {
         console.error("Erreur lors de la qualification de l’annonce :", error);
-        setEditorMessage("Enregistrement impossible : " + (error.message || "erreur inconnue"));
+        setEditorMessage("Enregistrement impossible : " + (error.message || error.details || error.hint || "erreur inconnue") + " — vérifiez la connexion et les droits administrateur.");
     } finally {
         submitButton.disabled = false;
         submitButton.textContent = "Enregistrer la qualification";
