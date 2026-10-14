@@ -29,7 +29,7 @@ from supabase import Client, create_client
 
 try:
     from .matching import match_offer_to_profile, NOTIFY_WHEN_AGE_UNSPECIFIED
-    from .location_rules import classify_location
+    from .location_rules import classify_location, is_nrw_location
     from .parser import extract_age_ranges, is_varied_age_description
     from .offer_data import (
         as_bool,
@@ -58,7 +58,7 @@ try:
     )
 except ImportError:  # Support `python scraper/main.py` execution.
     from matching import match_offer_to_profile, NOTIFY_WHEN_AGE_UNSPECIFIED
-    from location_rules import classify_location
+    from location_rules import classify_location, is_nrw_location
     from parser import extract_age_ranges, is_varied_age_description
     from offer_data import (
         as_bool,
@@ -426,6 +426,19 @@ def process_offer(
     apply_admin_qualification(offer, existing_offer)
 
     offer_status = prepare_offer_status(offer)
+
+    # City-only NRW announcements normally remain outside the default MVP area.
+    # Let them enter matching only when at least one profile explicitly opted in.
+    if (
+        offer_status == "outside"
+        and is_nrw_location(offer.get("location_text"))
+        and any(
+            str(profile.get("notify_region") or "").strip().casefold() == "nrw"
+            for profile in profiles
+        )
+    ):
+        offer_status = "v1"
+
     OFFER_STATUS_STATS["processed"] += 1
 
     print()
