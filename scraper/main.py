@@ -29,7 +29,7 @@ from supabase import Client, create_client
 try:
     from .matching import match_offer_to_profile, NOTIFY_WHEN_AGE_UNSPECIFIED
     from .location_rules import classify_location
-    from .parser import is_varied_age_description
+    from .parser import extract_age_ranges, is_varied_age_description
     from .offer_data import (
         as_bool,
         as_int,
@@ -58,7 +58,7 @@ try:
 except ImportError:  # Support `python scraper/main.py` execution.
     from matching import match_offer_to_profile, NOTIFY_WHEN_AGE_UNSPECIFIED
     from location_rules import classify_location
-    from parser import is_varied_age_description
+    from parser import extract_age_ranges, is_varied_age_description
     from offer_data import (
         as_bool,
         as_int,
@@ -307,10 +307,15 @@ def prepare_offer_status(offer: dict[str, Any]) -> str:
     age_unbounded = not top_level_has_age and not role_has_age
     age_description = offer.get("age_description")
     explicit_varied_age = is_varied_age_description(age_description)
-    # No age mentioned means unrestricted age; a vague age description
-    # such as "Mitte 40" remains a manual-review case.
+    # Descriptive decade labels such as "Mitte 40" are parsed into an
+    # approximate numeric band by extract_age_ranges; they must not trigger
+    # manual review just because the top-level numeric fields are empty.
+    described_age_ranges = extract_age_ranges(age_description or "")
+    described_age_is_interpretable = bool(described_age_ranges)
+    # No age mentioned means unrestricted age. Recognizable age descriptions
+    # are also accepted and handled by the matching layer.
     open_age_policy = age_unbounded and (
-        explicit_varied_age or not age_description
+        explicit_varied_age or not age_description or described_age_is_interpretable
     )
 
     # Under the explicit open-age policy, absence of a numeric age is not
