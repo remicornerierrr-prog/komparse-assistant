@@ -1247,6 +1247,42 @@ def enrich_offer_from_detail(parsed: dict, detail_data: dict) -> dict:
                     "evidence": evidence,
                 }
 
+        # When a casting explicitly targets children (numeric age band below 18)
+        # but does not specify gender, treat it as open to girls and boys.
+        # Do not override a gender that the notice has explicitly identified.
+        profiles_for_children = parsed.get("profiles") or []
+        child_gender_inferred = False
+        for child_role in profiles_for_children:
+            if not isinstance(child_role, dict) or child_role.get("gender"):
+                continue
+            child_min = child_role.get("age_min")
+            child_max = child_role.get("age_max")
+            child_context = normalize_text(
+                f"{child_role.get('context', '')} {parsed.get('title', '')} {detail_text}"
+            )
+            is_child_role = (
+                child_max is not None and child_max < 18
+            ) or bool(re.search(
+                r"\\b(?:kinder|kind|mädchen|jungen|schulkinder|teenager)\\b",
+                child_context,
+                re.IGNORECASE,
+            )) and (child_max is None or child_max < 18)
+            if is_child_role and (child_min is None or child_min < 18):
+                child_role["gender"] = ["female", "male"]
+                child_gender_inferred = True
+        if child_gender_inferred:
+            parsed["profiles"] = profiles_for_children
+            parsed["gender"] = sorted({
+                gender for role in profiles_for_children
+                if isinstance(role, dict)
+                for gender in role.get("gender", [])
+            })
+            parsed["field_sources"]["gender"] = {
+                "source": "detail_page" if detail_text else "title",
+                "url": parsed.get("detail_url"),
+                "evidence": "Child casting without an explicit gender restriction: open to girls and boys",
+            }
+
         # Accept location only from explicitly labelled fields; incidental city
         # mentions are not reliable evidence of a filming location.
         detail_location = normalize_text(detail_data.get("location_text"))
