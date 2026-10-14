@@ -56,10 +56,10 @@ def classify_location(location: Any) -> str:
     ):
         return "v1"
 
-    # Broad NRW and nationwide labels are not auto-approved in V1.
-    # They may include locations beyond the configured target area.
+    # Nationwide and NRW-wide labels are valid scopes. The matching
+    # layer applies each profile's explicit national/regional preferences.
     if re.fullmatch(r"(?:nrw|nordrhein[- ]westfalen)(?:\s*\+.*)?", text):
-        return "manual_review"
+        return "v1"
 
     nationwide_patterns = (
         r"^bundesweit$",
@@ -69,7 +69,7 @@ def classify_location(location: Any) -> str:
         r"^germany$",
     )
     if any(re.fullmatch(pattern, text) for pattern in nationwide_patterns):
-        return "manual_review"
+        return "v1"
 
     # Only supported city labels and combinations are automatically eligible.
     # Radius/Umgebung labels need explicit configuration or manual review.
