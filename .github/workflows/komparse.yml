@@ -8,10 +8,10 @@ on:
       - "scraper/**"
       - ".github/workflows/komparse.yml"
 
-  # Décaler les exécutions hors des quarts d'heure les plus chargés.
+  # Vérification toutes les 5 minutes pour réduire le délai de détection.
   # GitHub Actions peut malgré tout retarder certaines exécutions planifiées.
   schedule:
-    - cron: "7,22,37,52 * * * *"
+    - cron: "2-57/5 * * * *"
 
   workflow_dispatch:
 
