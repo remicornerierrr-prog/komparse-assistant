@@ -1198,7 +1198,7 @@ def enrich_offer_from_detail(parsed: dict, detail_data: dict) -> dict:
     # Unless the notice states explicit age/gender restrictions, keep all ages
     # and both genders eligible instead of treating the family as one adult.
     multigeneration_context = bool(re.search(
-        r"\\bmehrgenerationen(?:haus|familie|familien)?\\b",
+        r"\bmehrgenerationen(?:haus|familie|familien)?\b",
         f"{parsed.get('title', '')} {detail_text}",
         re.IGNORECASE,
     ))
