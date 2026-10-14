@@ -88,6 +88,46 @@ def _preserve_existing_age_bounds(
         payload["parser_needs_review"] = bool(reasons)
 
 
+
+ADMIN_QUALIFICATION_FIELDS = (
+    "title",
+    "location_text",
+    "location_status",
+    "shoot_date",
+    "shoot_date_text",
+    "shoot_duration_text",
+    "age_min",
+    "age_max",
+    "age_description",
+    "gender_male",
+    "gender_female",
+    "application_method",
+    "application_url",
+    "parser_needs_review",
+    "parser_review_reason",
+    "admin_review_required",
+)
+
+
+def apply_admin_qualification(
+    offer: dict[str, Any],
+    existing: dict[str, Any] | None,
+) -> dict[str, Any]:
+    """Restore fields approved by an administrator over later parser output."""
+    if not existing or not existing.get("admin_qualified"):
+        offer["admin_qualified"] = False
+        return offer
+
+    for field in ADMIN_QUALIFICATION_FIELDS:
+        offer[field] = existing.get(field)
+
+    offer["admin_qualified"] = True
+    offer["parser_needs_review"] = False
+    offer["parser_review_reason"] = None
+    offer["admin_review_required"] = False
+    return offer
+
+
 def save_offer(
     supabase: Client,
     offer: dict[str, Any],
@@ -111,6 +151,7 @@ def save_offer(
         "age_description": offer["age_description"],
         "parser_needs_review": offer["parser_needs_review"],
         "parser_review_reason": offer["parser_review_reason"],
+        "admin_qualified": bool(offer.get("admin_qualified", False)),
 
         "location_text": offer["location_text"],
         "location_status": offer["location_status"],
@@ -135,6 +176,15 @@ def save_offer(
     # --------------------------------------------------------
 
     if existing:
+        if existing.get("admin_qualified"):
+            for field in ADMIN_QUALIFICATION_FIELDS:
+                if field in payload:
+                    payload[field] = existing.get(field)
+            payload["admin_qualified"] = True
+            payload["parser_needs_review"] = False
+            payload["parser_review_reason"] = None
+            payload["admin_review_required"] = False
+
         # Ne pas effacer une correction manuelle d'âge si le parseur
         # ne retrouve pas de tranche d'âge lors d'un scraping ultérieur.
         _preserve_existing_age_bounds(existing, payload)
