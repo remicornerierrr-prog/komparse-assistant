@@ -276,7 +276,7 @@ saveProfileButton.addEventListener(
             const notifyRegion =
                 document.getElementById("notify-region").value;
 
-            if (!notifyNational && !notifyRegional) {
+            if (!notifyNational && !notifyRegional && !notifyRegion) {
                 showMessage(
                     "Veuillez choisir au moins un type d'annonce : nationale et/ou régionale."
                 );
