@@ -91,6 +91,26 @@ def extract_offer_id_from_href(href):
     return f"{number[:-3]}.{number[-3:]}"
 
 
+def extract_repeat_detail_href(text):
+    """Resolve a repeated listing to the latest referenced detail page."""
+    if not text:
+        return None
+
+    match = re.search(r"\bWiederholung\s+von\b", text, re.IGNORECASE)
+    if not match:
+        return None
+
+    # The referenced offer IDs appear immediately after this phrase. Limit the
+    # scan so unrelated IDs later in the full announcement cannot be selected.
+    reference_text = text[match.end():match.end() + 100]
+    references = re.findall(r"\b(\d{2})\.(\d{3})\b", reference_text)
+    if not references:
+        return None
+
+    first, second = references[-1]
+    return f"Gesuch{first}{second}.htm"
+
+
 def extract_source_href(href):
     """
     Normalize any Komparse href to the detail filename.
@@ -299,6 +319,12 @@ def extract_offers(html):
                 full_text
             )
         )
+
+        repeat_detail_href = extract_repeat_detail_href(full_text)
+        if repeat_detail_href:
+            # Some repeat listings link to an index page while explicitly
+            # naming the detail page that contains the current announcement.
+            source_href = repeat_detail_href
 
         detail_url = requests.compat.urljoin(
             URL,
