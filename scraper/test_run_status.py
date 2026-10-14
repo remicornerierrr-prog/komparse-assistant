@@ -72,11 +72,11 @@ class OfferRunStatusTests(unittest.TestCase):
             parser_needs_review=True,
             parser_review_reason="localisation_ambigue",
         )
-        # The location classification is now supported, but the existing
-        # parser flag remains a separate review signal until resolved.
-        self.assertEqual(prepare_offer_status(offer), "manual_review")
+        # A stale location-only review reason must be cleared once the label
+        # is recognized. No unrelated review reason remains, so it is eligible.
+        self.assertEqual(prepare_offer_status(offer), "v1")
         self.assertEqual(offer["location_status"], "v1")
-        self.assertNotIn("localisation_ambigue", offer["parser_review_reason"])
+        self.assertIsNone(offer["parser_review_reason"])
 
 
     def test_open_age_and_unspecified_gender_are_eligible_when_date_is_exact(self):
@@ -116,12 +116,14 @@ class OfferRunStatusTests(unittest.TestCase):
             parser_needs_review=True,
             parser_review_reason="age_non_numerique, sexe_annonce_non_precise",
         )
+        # The product rule is now explicit: a missing age does not block an
+        # offer when location is supported, even if the legacy toggle is false.
         with patch("scraper.main.NOTIFY_WHEN_AGE_UNSPECIFIED", False):
-            self.assertEqual(prepare_offer_status(offer), "manual_review")
-        self.assertTrue(offer["parser_needs_review"])
+            self.assertEqual(prepare_offer_status(offer), "v1")
+        self.assertFalse(offer["parser_needs_review"])
 
 
-    def test_descriptive_non_numeric_age_is_not_treated_as_open_age(self):
+    def test_mitte_40_is_interpreted_without_manual_review(self):
         offer = self.make_offer(
             age_min=None,
             age_max=None,
@@ -130,8 +132,8 @@ class OfferRunStatusTests(unittest.TestCase):
             parser_review_reason=None,
         )
         with patch("scraper.main.NOTIFY_WHEN_AGE_UNSPECIFIED", True):
-            self.assertEqual(prepare_offer_status(offer), "manual_review")
-        self.assertTrue(offer["parser_needs_review"])
+            self.assertEqual(prepare_offer_status(offer), "v1")
+        self.assertFalse(offer["parser_needs_review"])
 
 
 if __name__ == "__main__":
