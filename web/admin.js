@@ -220,6 +220,9 @@ function formatShooting(offer) {
 // ============================================================
 
 function getParserStatus(offer) {
+    if (offer.location_status !== "outside" && offer.admin_qualified === true) {
+        return "OK — qualifiée manuellement";
+    }
     // Les offres hors bassin doivent rester visibles dans la liste générale,
     // sans polluer la file de revue manuelle.
     if (offer.location_status === "outside" && offer.admin_review_required !== true) {
@@ -377,6 +380,8 @@ async function loadOffers() {
             "parser_needs_review",
             "parser_review_reason",
             "admin_review_required",
+    "admin_qualified",
+            "admin_qualified",
             "application_method",
             "application_url"
         ].join(","))
@@ -526,11 +531,14 @@ const OFFER_REVIEW_COLUMNS = [
     "parser_needs_review",
     "parser_review_reason",
     "admin_review_required",
+    "admin_qualified",
     "application_method",
     "application_url"
 ].join(",");
 
 function shouldShowInReview(offer) {
+    if (offer.admin_qualified === true) return false;
+
     // Explicitly out-of-scope offers are not parser review items unless an
     // administrator manually flagged them.
     if (offer.location_status === "outside" && offer.admin_review_required !== true) {
@@ -598,7 +606,8 @@ async function setReviewStatus(offerId, required) {
     const result = await supabaseClient
         .from("offers")
         .update({
-            admin_review_required: required
+            admin_review_required: required,
+            ...(required ? { admin_qualified: false } : {})
         })
         .eq("id", offerId);
 
@@ -721,11 +730,13 @@ qualificationForm.addEventListener("submit", async event => {
     if (markReviewed) {
         data.parser_needs_review = false;
         data.admin_review_required = false;
+        data.admin_qualified = true;
         data.parser_review_reason = null;
     } else {
         // Saving without explicit confirmation keeps the offer in the review queue.
         data.parser_needs_review = true;
         data.admin_review_required = true;
+        data.admin_qualified = false;
     }
 
     const submitButton = qualificationForm.querySelector('button[type="submit"]');
