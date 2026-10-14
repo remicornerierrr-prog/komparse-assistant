@@ -46,6 +46,7 @@ try:
         delete_push_subscription,
         get_existing_match,
         get_existing_offer,
+        apply_admin_qualification,
         get_push_delivery,
         get_push_subscriptions,
         load_profiles,
@@ -74,6 +75,7 @@ except ImportError:  # Support `python scraper/main.py` execution.
         delete_push_subscription,
         get_existing_match,
         get_existing_offer,
+        apply_admin_qualification,
         get_push_delivery,
         get_push_subscriptions,
         load_profiles,
@@ -401,6 +403,10 @@ def process_offer(
     if not offer["komparse_id"]:
         print("Offre ignorée : komparse_id absent.")
         return
+
+    # A human qualification is authoritative over future automatic parses.
+    existing_offer = get_existing_offer(supabase, offer["komparse_id"])
+    apply_admin_qualification(offer, existing_offer)
 
     offer_status = prepare_offer_status(offer)
     OFFER_STATUS_STATS["processed"] += 1
