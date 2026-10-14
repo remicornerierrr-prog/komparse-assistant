@@ -26,7 +26,11 @@ def send_push_notification(
             offer["title"]
             or "Une offre correspond à votre profil."
         ),
-        "url": offer["source_url"] or "/",
+        "url": (
+            f"/offers.html?id={int(offer['id'])}"
+            if str(offer.get("id", "")).isdigit() and int(offer["id"]) > 0
+            else "/offers.html"
+        ),
     }
 
     stats["attempted"] += 1
