@@ -34,11 +34,11 @@ import unicodedata
 from typing import Any
 
 try:
-    from .location_rules import classify_location
+    from .location_rules import classify_location, is_nrw_location
     from .notification_eligibility import profile_allows_offer_scope
     from .parser import extract_age_ranges
 except ImportError:  # pragma: no cover - script execution path
-    from location_rules import classify_location
+    from location_rules import classify_location, is_nrw_location
     from notification_eligibility import profile_allows_offer_scope
     from parser import extract_age_ranges
 
@@ -790,6 +790,14 @@ def match_offer_to_profile(
         location
     )
 
+    # A city-only NRW label is in scope only for a profile that explicitly
+    # selected NRW. Other profiles keep the previous geographic boundaries.
+    if (
+        location_status == "outside"
+        and str(profile.get("notify_region") or "").strip().casefold() == "nrw"
+        and is_nrw_location(location)
+    ):
+        location_status = "v1"
 
     # Out-of-scope offers are rejected. Broad national/regional labels are
     # eligible only when the user explicitly enabled the corresponding scope.
