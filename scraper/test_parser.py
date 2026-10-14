@@ -33,6 +33,40 @@ class TestCompoundLocationRules(unittest.TestCase):
         self.assertEqual(result["location_status"], "v1")
         self.assertTrue(result["matches_mvp"])
 
+    def test_koeln_plus_150_km_umkreis_is_in_v1(self):
+        for label in (
+            "Köln + 150 km Umkreis",
+            "Köln +150 km Umkreis",
+            "Köln + 150 km",
+        ):
+            with self.subTest(label=label):
+                result = detect_location(label)
+                self.assertEqual(result["location_status"], "v1")
+                self.assertTrue(result["matches_mvp"])
+
+    def test_offer_91325_radius_location_is_eligible(self):
+        result = parse_offer({
+            "offer_id": "91.325",
+            "publication_date": "2026-10-14 10:00",
+            "title": "Köln + 150 km Umkreis | Komparsen gesucht",
+            "raw_text": "",
+            "detail_url": "https://komparse.de/Gesuch91325.htm",
+        })
+        self.assertEqual(result["location_status"], "v1")
+        self.assertTrue(result["matches_mvp_location"])
+
+    def test_offer_91304_family_and_150_km_location_is_eligible(self):
+        result = parse_offer({
+            "offer_id": "91.304",
+            "publication_date": "2026-10-13 10:00",
+            "title": "Köln + 150 km Umkreis | Familie mit Kindern oder Pärchen",
+            "raw_text": "",
+            "detail_url": "https://komparse.de/Gesuch91304.htm",
+        })
+        self.assertEqual(result["location_status"], "v1")
+        self.assertTrue(result["matches_mvp_location"])
+        self.assertEqual(result["gender"], ["female", "male"])
+
 
 class TestAgeParsing(unittest.TestCase):
     def test_age_bis(self):
