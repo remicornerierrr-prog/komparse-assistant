@@ -173,10 +173,11 @@ def extract_age_ranges(text: str) -> list[dict]:
         })
         occupied.append((match.start(), match.end()))
 
-    # Decade expression: "Mitte 40" means the 40–49 age range.
-    # Casting language uses this as an approximate but meaningful age band.
-    mitte_pattern = r"\bMitte\s+(\d{2})\b"
-    for match in re.finditer(mitte_pattern, t, re.IGNORECASE):
+    # Approximate decade expressions (Anfang/Mitte/Ende 40) are useful
+    # casting age bands, not reasons for manual review. Since these words are
+    # inherently approximate, use the corresponding full decade (40–49).
+    decade_pattern = r"\b(?:Anfang|Mitte|Ende)\s+(\d{2})\b"
+    for match in re.finditer(decade_pattern, t, re.IGNORECASE):
         decade = int(match.group(1))
         if 20 <= decade <= 90 and decade % 10 == 0:
             add(match, decade, decade + 9)
