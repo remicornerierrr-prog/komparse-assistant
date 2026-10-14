@@ -35,8 +35,10 @@ from typing import Any
 
 try:
     from .location_rules import classify_location
+    from .parser import extract_age_ranges
 except ImportError:  # pragma: no cover - script execution path
     from location_rules import classify_location
+    from parser import extract_age_ranges
 
 
 def _env_bool(name: str, default: bool) -> bool:
@@ -864,6 +866,19 @@ def match_offer_to_profile(
 
     for role_index, role in enumerate(roles):
         age_min, age_max = _extract_age_range(role)
+        if age_min is None and age_max is None:
+            # Recover approximate age bands from descriptions like "Mitte 40"
+            # when the role parser did not propagate numeric bounds.
+            age_description_text = str(
+                role.get("age_description")
+                or role.get("context")
+                or offer.get("age_description")
+                or ""
+            ).strip()
+            described_ranges = extract_age_ranges(age_description_text)
+            if described_ranges:
+                age_min = described_ranges[0].get("min")
+                age_max = described_ranges[0].get("max")
         offer_genders = _extract_offer_genders(role)
 
         # Aucune borne numérique signifie une plage d'âge ouverte quand
@@ -881,9 +896,9 @@ def match_offer_to_profile(
             if varied_age or not age_description:
                 age_match = True
             else:
-                # A descriptive but non-numeric label such as "Mitte 40"
-                # is not the same as no age requirement at all. Keep it in
-                # manual review rather than treating every age as eligible.
+                # A descriptive label that cannot be mapped to a numeric
+                # range remains uncertain; recognizable decade descriptions
+                # have already been converted to bounds above.
                 review_reasons.append("age_annonce_non_precis")
                 continue
         else:
