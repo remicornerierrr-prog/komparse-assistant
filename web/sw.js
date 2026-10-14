@@ -43,9 +43,10 @@ self.addEventListener(
             "Une offre correspondant à votre profil vient d'être publiée.";
 
 
-        const url =
-            data.url ||
-            "/";
+        const requestedUrl = data.url || "/offers.html";
+        const url = requestedUrl.startsWith("/") && !requestedUrl.startsWith("//")
+            ? requestedUrl
+            : "/offers.html";
 
 
         event.waitUntil(
