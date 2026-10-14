@@ -179,6 +179,39 @@
         ? "Photos jointes : " + result.photos.join(", ")
         : "Aucune photo détectée.";
       confirmPanel.append(node("p", photosText));
+
+      if (Array.isArray(result.photo_previews) && result.photo_previews.length) {
+        const photoGallery = node("div", undefined, "application-photo-previews");
+        photoGallery.style.display = "flex";
+        photoGallery.style.flexWrap = "wrap";
+        photoGallery.style.gap = "12px";
+        photoGallery.style.margin = "12px 0";
+        for (const photo of result.photo_previews) {
+          if (!photo || typeof photo.url !== "string") continue;
+          let photoUrl;
+          try {
+            photoUrl = new URL(photo.url);
+            if (photoUrl.protocol !== "https:" || photoUrl.hostname !== "glufyxsdmaccuuqpoxbo.supabase.co") continue;
+          } catch (_) { continue; }
+          const figure = node("figure", undefined, "application-photo-preview");
+          figure.style.margin = "0";
+          const img = document.createElement("img");
+          img.src = photoUrl.href;
+          img.alt = "Aperçu de la photo " + String(photo.name || "de profil");
+          img.loading = "lazy";
+          img.style.width = "120px";
+          img.style.height = "150px";
+          img.style.objectFit = "contain";
+          img.style.borderRadius = "6px";
+          img.addEventListener("error", () => {
+            figure.replaceChildren(node("p", "Aperçu indisponible : " + String(photo.name || "photo")));
+          }, { once: true });
+          figure.append(img, node("figcaption", String(photo.name || "Photo de profil")));
+          photoGallery.append(figure);
+        }
+        if (photoGallery.childElementCount) confirmPanel.append(photoGallery);
+      }
+
       confirmPanel.append(node("p", "Vérifiez le destinataire, l'objet, le message et les photos avant l'envoi."));
 
       const consentLabel = node("label");
