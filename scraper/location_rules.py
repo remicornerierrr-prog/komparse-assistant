@@ -41,9 +41,9 @@ def normalize_location(value: Any) -> str:
 def classify_location(location: Any) -> str:
     """Return v1, manual_review or outside.
 
-    V1 includes the original Köln/Bonn/Düsseldorf area, all of NRW, and
-    nationwide German searches. Radius-based labels and mixed regions that
-    cannot be mapped reliably remain for manual review.
+    V1 includes only the configured Köln/Bonn/Düsseldorf city-area labels.
+    NRW-wide, nationwide, radius-based and ambiguous regional labels require
+    manual review; unrelated locations are outside the V1 area.
     """
     text = normalize_location(location)
     if not text:
