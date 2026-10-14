@@ -127,6 +127,9 @@ async function loadProfile() {
     document.getElementById("notify-regional").checked =
         data.notify_regional !== false;
 
+    document.getElementById("notify-region").value =
+        data.notify_region || "";
+
 
     document.getElementById(
         "height"
@@ -269,6 +272,9 @@ saveProfileButton.addEventListener(
 
             const notifyRegional =
                 document.getElementById("notify-regional").checked;
+
+            const notifyRegion =
+                document.getElementById("notify-region").value;
 
             if (!notifyNational && !notifyRegional) {
                 showMessage(
@@ -433,6 +439,9 @@ saveProfileButton.addEventListener(
 
                 notify_regional:
                     notifyRegional,
+
+                notify_region:
+                    notifyRegion || null,
 
                 height_cm:
                     height
