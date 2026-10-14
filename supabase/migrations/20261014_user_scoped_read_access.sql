@@ -27,7 +27,7 @@ create policy "Users can view offers from own matches"
   );
 
 -- No anonymous access; authenticated users can read only through RLS.
-revoke all on table public.matches, public.offers from anon;
+revoke all on table public.matches, public.offers from anon, public;
 grant select on table public.matches, public.offers to authenticated;
 
 -- Keep the existing admin UPDATE grant/policy on offers intact.
