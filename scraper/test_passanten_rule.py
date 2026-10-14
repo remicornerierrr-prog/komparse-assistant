@@ -73,5 +73,30 @@ class TestPassantenCastingRule(unittest.TestCase):
         self.assertNotIn("sexe_annonce_non_precise", enriched["parser_review_reasons"])
 
 
+    def test_child_casting_with_unspecified_gender_is_open_to_girls_and_boys(self):
+        parsed = parse_offer({
+            "offer_id": "91334",
+            "publication_date": "2026-10-14 10:00",
+            "title": "Köln | Kinder 9–17 Jahre | für eine Produktion gesucht",
+            "raw_text": "",
+            "detail_url": "https://komparse.de/Gesuch91334.htm",
+        })
+        enriched = enrich_offer_from_detail(parsed, {
+            "detail_text": "Für eine Produktion suchen wir Kinder im Alter von 9 bis 17 Jahren.",
+            "shoot_dates": ["2026-10-20"],
+            "shoot_date_text": "20. Oktober 2026",
+            "email": None,
+            "subject_keyword": None,
+            "application_url": None,
+            "application_method": "unknown",
+        })
+
+        self.assertEqual(enriched["age_min"], 9)
+        self.assertEqual(enriched["age_max"], 17)
+        self.assertEqual(enriched["gender"], ["female", "male"])
+        self.assertEqual(enriched["profiles"][0]["gender"], ["female", "male"])
+        self.assertNotIn("sexe_annonce_non_precise", enriched["parser_review_reasons"])
+
+
 if __name__ == "__main__":
     unittest.main()
