@@ -201,8 +201,10 @@
           });
           const sent = await sendResponse.json();
           if (!sendResponse.ok || !sent.success) throw new Error(sent.error || "Échec de l'envoi.");
-          send.textContent = "Email envoyé";
-          confirmPanel.append(node("p", "Candidature envoyée depuis " + sent.sender + " à " + sent.recipient + "."));
+          confirmPanel.replaceChildren(
+            node("h3", "🙌 Candidature envoyée !"),
+            node("p", "Candidature envoyée depuis " + sent.sender + " à " + sent.recipient + ".", "success-message")
+          );
         } catch (error) {
           send.disabled = false;
           send.textContent = "Réessayer l'envoi";
