@@ -43,10 +43,12 @@ self.addEventListener(
             "Une offre correspondant à votre profil vient d'être publiée.";
 
 
-        const requestedUrl = data.url || "/offers.html";
-        const url = requestedUrl.startsWith("/") && !requestedUrl.startsWith("//")
-            ? requestedUrl
-            : "/offers.html";
+        const targetUrl = new URL("./offers.html", self.registration.scope);
+        const offerId = Number(data.offer_id);
+        if (Number.isSafeInteger(offerId) && offerId > 0) {
+            targetUrl.searchParams.set("id", String(offerId));
+        }
+        const url = targetUrl.href;
 
 
         event.waitUntil(
