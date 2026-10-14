@@ -88,6 +88,8 @@ def detect_gender(text: str) -> set[str]:
         r"\bärztinnen?\s*,\s*ärzte\b",
         r"\bärzte\s+und\s+ärztinnen\b",
         r"\beinzelpersonen\s+(?:und|oder|/)\s+paare\b",
+        # A family with children is a mixed-gender casting context unless the notice states otherwise.
+        r"\bfamil(?:ie|ien)\s+mit\s+(?:klein)?kindern?\b",
     ]
     if any(re.search(pattern, t, re.IGNORECASE) for pattern in mixed_patterns):
         return {"male", "female"}
