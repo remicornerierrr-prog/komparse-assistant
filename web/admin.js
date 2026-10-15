@@ -71,7 +71,7 @@ function renderOfferReference(offer) {
     // Certains liens de la liste Komparse pointent vers une ancienne annonce
     // (ex. 91.144 renvoie vers 91.045). Construire d'abord le lien à partir
     // de l'identifiant visible afin d'ouvrir la fiche correspondant à la ligne.
-    const digits = rawReference.replace(/\\D/g, "");
+    const digits = rawReference.replace(/\D/g, "");
     const rawUrl = digits
         ? `https://komparse.de/Gesuch${digits}.htm`
         : String(offer.source_url || "").trim();
