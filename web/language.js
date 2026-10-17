@@ -51,20 +51,33 @@ function init(){
  const selector=document.getElementById("site-language");
  if(selector)selector.addEventListener("change",()=>apply(selector.value));
  apply(saved);
+ // Translate dynamically-rendered UI without observing our own translations forever.
  const observer=new MutationObserver(records=>{
-  // Pause observation while translating to avoid reacting to our own DOM changes.
-  observer.disconnect();
-  records.forEach(record=>{
-   if(record.type==="childList")record.addedNodes.forEach(node=>{if(node.nodeType===Node.ELEMENT_NODE)scan(node);else if(node.nodeType===Node.TEXT_NODE){originals.set(node,reverse.de[node.nodeValue]||reverse.en[node.nodeValue]||node.nodeValue);translateNode(node)}});
-   else if(record.type==="characterData"){
+  for(const record of records){
+   if(record.type==="childList"){
+    record.addedNodes.forEach(node=>{
+     if(node.nodeType===Node.ELEMENT_NODE)scan(node);
+     else if(node.nodeType===Node.TEXT_NODE){
+      if(!originals.has(node)){
+       const value=node.nodeValue||"";
+       originals.set(node,reverse.de[value]||reverse.en[value]||value);
+      }
+      translateNode(node);
+     }
+    });
+   } else if(record.type==="characterData"){
     const node=record.target;
-    originals.set(node,reverse.de[node.nodeValue]||reverse.en[node.nodeValue]||node.nodeValue);
+    const original=originals.get(node);
+    // Ignore the mutation produced by our own translation pass.
+    if(original!==undefined && node.nodeValue===translated(original.trim()) && original.trim()) continue;
+    const value=node.nodeValue||"";
+    originals.set(node,reverse.de[value]||reverse.en[value]||value);
     translateNode(node);
    }
-  });
-  observer.observe(document.body,{subtree:true,childList:true,characterData:true});
+  }
  });
  observer.observe(document.body,{subtree:true,childList:true,characterData:true});
 }
+
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);else init();
 })();
