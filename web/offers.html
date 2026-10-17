@@ -130,6 +130,15 @@ button#admin-logout:before{content:"↪ "}
 
 /* KOMPARSE CINEMA VISUAL SYSTEM */
 html,body{background:#080c12!important;color:#f4f5f7!important}body{max-width:none!important;width:100%!important;margin:0!important;padding:104px clamp(16px,2.5vw,40px) 40px!important;min-height:100vh;background:radial-gradient(ellipse at 68% -10%,rgba(116,69,25,.24),transparent 42%),#080c12!important;font-family:Inter,ui-sans-serif,system-ui,sans-serif!important}.cinema-masthead{position:fixed!important;inset:0 0 auto!important;z-index:1000!important;display:flex!important;align-items:center!important;gap:14px!important;min-height:88px!important;padding:12px clamp(16px,2.8vw,44px)!important;background:linear-gradient(90deg,#080b10,#101218)!important;border-bottom:1px solid #f2c45f55!important;box-shadow:0 8px 30px #0005!important}.cinema-wordmark{font-size:clamp(1.5rem,2.5vw,2.25rem)!important;font-weight:900!important;letter-spacing:.07em!important;color:#f2c45f!important}.cinema-tagline{color:#f2c45f!important}.cinema-language{margin-left:auto!important;padding:7px 11px!important;border:1px solid #f2c45f80!important;border-radius:12px!important;background:#111720!important;color:#fff!important}.cinema-language select{width:auto!important;min-width:130px!important;margin:0!important;background:#10151e!important;color:#fff!important}main,#offers-root{width:min(100%,1450px)!important;max-width:1450px!important;margin:0 auto!important}main,.offer-card,.description,.confirm-panel{background:linear-gradient(145deg,#141c28,#0d131c)!important;border:1px solid #273241!important;border-radius:17px!important;box-shadow:0 12px 34px #0003!important;color:#f4f5f7!important}p{color:#aeb8c7!important}label{color:#e5eaf1!important}input,select,textarea{background:#0b111a!important;color:#f5f6f8!important;border:1px solid #394555!important;border-radius:10px!important}button{background:linear-gradient(135deg,#f4ce77,#d8a844)!important;color:#17130b!important;border:1px solid #f5d68b!important;border-radius:10px!important;font-weight:750!important}a{color:#f2ce79!important}@media(max-width:700px){body{padding:94px 12px 28px!important}.cinema-masthead{min-height:76px!important;padding:9px 12px!important}.cinema-tagline{font-size:.72rem!important}.cinema-language select{min-width:96px!important;max-width:115px!important}}
+
+/* Shared candidate sidebar */
+.candidate-sidebar{position:fixed;z-index:900;left:0;top:88px;bottom:0;width:286px;padding:28px 14px 18px;background:linear-gradient(180deg,#0c1119,#080c12);border-right:1px solid #273241;box-sizing:border-box}
+.candidate-sidebar .side-link{display:flex;align-items:center;gap:14px;min-height:50px;padding:0 15px;margin:0 0 7px;border:1px solid transparent;border-radius:12px;color:#e7eaf0!important;text-decoration:none!important;font-size:.95rem;font-weight:600}
+.candidate-sidebar .side-link>span:first-child{width:24px;text-align:center;color:#f2c45f;font-size:1.25rem}
+.candidate-sidebar .side-link:hover,.candidate-sidebar .side-link.active{background:linear-gradient(100deg,#f2c45f2b,#f2c45f08);border-color:#f2c45f40;box-shadow:inset 3px 0 #f2c45f}
+.candidate-sidebar .sidebar-footer{position:absolute;bottom:20px;left:28px;display:flex;align-items:center;gap:9px;color:#9ba7b8;font-size:.8rem}.sidebar-status-dot{width:8px;height:8px;border-radius:50%;background:#66d19e;box-shadow:0 0 10px #66d19e66}
+@media(min-width:1050px){body{padding-left:320px!important}}
+@media(max-width:1049px){body{padding-top:94px!important}.candidate-sidebar{position:relative;top:auto;bottom:auto;width:auto;margin:0 0 18px;padding:8px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;border:1px solid #273241;border-radius:14px}.candidate-sidebar .side-link{font-size:.82rem;min-height:42px;margin:0;padding:0 8px}.candidate-sidebar .sidebar-footer{display:none}}
 </style>
 </head>
 <body>
@@ -145,6 +154,16 @@ html,body{background:#080c12!important;color:#f4f5f7!important}body{max-width:no
     </select>
   </label>
 </div>
+
+
+<aside class="candidate-sidebar offers-sidebar" aria-label="Navigation candidat">
+<a class="side-link" href="./index.html#profile-section"><span>♙</span><span>Mon profil</span></a>
+<a class="side-link active" href="./offers.html"><span>🎬</span><span>Mes offres</span></a>
+<a class="side-link" href="./index.html#notification-scope"><span>♧</span><span>Notifications</span></a>
+<a class="side-link" href="./index.html#gmail-connection-section"><span>✉</span><span>Candidatures par Gmail</span></a>
+<a class="side-link" href="./index.html#photo-preview-portrait"><span>▧</span><span>Photos de profil</span></a>
+<div class="sidebar-footer"><span class="sidebar-status-dot"></span><span>Espace candidat</span></div>
+</aside>
   <main>
     <h1>Komparse Assistant</h1>
     <p><a href="./index.html">← Retour à mon profil</a></p>
