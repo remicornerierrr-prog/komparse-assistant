@@ -471,7 +471,13 @@ body:before{display:none!important}
 .account-settings-panel{border:1px solid #273241!important;border-radius:17px!important;padding:22px!important;margin:22px 0!important;background:linear-gradient(145deg,#141c28,#0d131c)!important}.account-settings-panel h3{color:#f5f6fa!important}.account-settings-panel label{display:block;margin:12px 0 7px;color:#e5eaf1!important}.account-settings-panel select{display:block;width:min(100%,360px);background:#0b111a!important;color:#f5f6f8!important;border:1px solid #394555!important;border-radius:10px!important;min-height:44px}.settings-shortcuts{display:flex;flex-wrap:wrap;gap:10px;margin:18px 0}.settings-shortcuts a{display:inline-flex;align-items:center;padding:10px 13px;border:1px solid #f2c45f55;border-radius:10px;background:#f2c45f0d;color:#f2ce79!important;text-decoration:none}.settings-note{font-size:.88rem;color:#aeb8c7!important}
 
 .settings-password{border-top:1px solid #273241;margin-top:20px;padding-top:16px}.settings-password h4{color:#f5f6fa;margin:0 0 12px}.settings-password input{display:block;width:min(100%,480px);margin:7px 0 12px}.settings-password button{margin-top:8px}.settings-password #settings-password-status{font-size:.9rem}
-</style>
+
+
+        /* AUTH VISIBILITY SAFETY: logged-out profile must never override .hidden */
+        #profile-section.hidden { display: none !important; }
+        #auth-section.hidden { display: none !important; }
+
+    </style>
 
 </head>
 
