@@ -25,7 +25,12 @@
     message.setAttribute("role", "status");
     message.setAttribute("aria-live", "polite");
     message.className = "gmail-connected-message";
-    message.textContent = "👌 Profil connecté avec l'adresse email " + email;
+    const prefix = document.createElement("span");
+    prefix.setAttribute("data-i18n", "Profil connecté avec l'adresse email");
+    prefix.textContent = "👌 Profil connecté avec l'adresse email ";
+    const address = document.createElement("strong");
+    address.textContent = email;
+    message.append(prefix, address);
     section.append(message);
   }
 
