@@ -72,9 +72,42 @@ main{max-width:1000px;margin:0 auto;padding:clamp(20px,4vw,42px)!important}
 .back-link{display:inline-flex;align-items:center;gap:8px;margin:8px 0 22px;padding:9px 13px;border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.04)}
 .offer-card{padding:20px!important}
 
+
+/* CINEMA SIGNATURE — visible brand symbols and film-set atmosphere */
+.cinema-masthead{display:flex;align-items:center;gap:14px;padding:0 0 22px;margin-bottom:24px;border-bottom:1px solid rgba(232,189,104,.25);position:relative;z-index:2}
+.cinema-logo{width:58px;height:58px;flex:0 0 58px;display:grid;place-items:center;border-radius:16px;background:linear-gradient(145deg,#f5d99a,#b98532);color:#171116;font-size:30px;box-shadow:0 8px 28px rgba(232,189,104,.22);position:relative}
+.cinema-logo:after{content:"";position:absolute;inset:5px;border:1px solid rgba(20,15,10,.28);border-radius:11px}
+.cinema-wordmark{font-size:1.15rem;font-weight:900;letter-spacing:.16em;color:#fff;line-height:1.1}
+.cinema-tagline{font-size:.7rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold2);margin-top:7px}
+.cinema-reel{margin-left:auto;color:rgba(245,217,154,.7);font-size:clamp(24px,4vw,40px);letter-spacing:.16em;white-space:nowrap}
+.cinema-kicker{display:inline-flex;align-items:center;gap:8px;padding:7px 11px;border:1px solid rgba(232,189,104,.32);border-radius:999px;background:rgba(232,189,104,.08);color:var(--gold2);font-size:.72rem;font-weight:800;letter-spacing:.13em;text-transform:uppercase;margin-bottom:16px}
+.cinema-kicker:before{content:"●";font-size:.55rem;color:#e35b5b;text-shadow:0 0 10px #e35b5b}
+body>h1{position:relative;padding-top:4px}
+body>h1:before{content:"🎬  ";font-size:.72em;vertical-align:middle;filter:drop-shadow(0 4px 10px rgba(232,189,104,.2))}
+body>h1:after{content:"CASTING • ALERTES • CANDIDATURES";display:block;font-size:.72rem;letter-spacing:.19em;font-weight:750;color:var(--gold2);margin-top:13px}
+#admin-app .admin-header h1:before{content:"🎬  "}
+#admin-app .admin-header h1:after{content:"✦  CASTING CONTROL ROOM  ✦";display:block;margin-top:15px;color:var(--gold2);font-size:.68rem;letter-spacing:.2em}
+#admin-app .admin-card h3:before{content:"▰  ";color:var(--gold)}
+#offers-root h1:before{content:"🎞️  "}
+#offers-root h1:after{content:"VOTRE PROCHAIN RÔLE COMMENCE ICI";display:block;margin-top:12px;color:var(--gold2);font-size:.7rem;letter-spacing:.18em}
+#offers-root:before{content:"🎥  À L’AFFICHE POUR VOUS";display:block;margin:20px 0 14px;color:var(--gold2);font-size:.75rem;font-weight:850;letter-spacing:.16em}
+.admin-header{background:linear-gradient(110deg,rgba(105,24,36,.72),rgba(28,30,39,.94) 50%,rgba(232,189,104,.13)),repeating-linear-gradient(135deg,transparent 0 18px,rgba(255,255,255,.018) 18px 19px)!important}
+.admin-header:before{content:"🎬  🎞️  🎥";display:block;color:var(--gold2);font-size:1.15rem;letter-spacing:.25em;margin-bottom:14px}
+section:before{pointer-events:none}
+button:before{content:"✦ ";font-size:.8em}
+button#login-button:before{content:"▶ "}
+button#signup-button:before{content:"🎟 "}
+button#admin-logout:before{content:"↪ "}
+@media(max-width:520px){.cinema-masthead{gap:10px}.cinema-logo{width:48px;height:48px;flex-basis:48px;font-size:25px}.cinema-wordmark{font-size:.95rem}.cinema-tagline{font-size:.58rem}.cinema-reel{font-size:21px}}
+
 </style>
 </head>
 <body>
+<div class="cinema-masthead" aria-label="Komparse identité cinéma">
+  <div class="cinema-logo" aria-hidden="true">🎬</div>
+  <div><div class="cinema-wordmark">KOMPARSE</div><div class="cinema-tagline">Le cinéma commence avec vous</div></div>
+  <div class="cinema-reel" aria-hidden="true">▰ ▱ ▰</div>
+</div>
   <main>
     <h1>Komparse Assistant</h1>
     <p><a href="./index.html">← Retour à mon profil</a></p>
