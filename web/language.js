@@ -18,7 +18,7 @@ function translateNode(node){
  let original=originals.get(node);
  if(original===undefined){original=node.nodeValue;originals.set(node,original)}
  const trimmed=original.trim();if(!trimmed)return;
- const next=translated(trimmed);node.nodeValue=original.replace(trimmed,next);
+ const next=translated(trimmed);const result=original.replace(trimmed,next);if(node.nodeValue!==result)node.nodeValue=result;
 }
 function scan(root){
  if(!root)return;
