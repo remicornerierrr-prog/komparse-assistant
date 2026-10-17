@@ -50,7 +50,7 @@ function init(){
  const select=document.getElementById("site-language");if(!select)return;
  let saved="fr";try{saved=localStorage.getItem("komparse-language")||"fr"}catch(e){}
  if(!dict[saved])saved="fr";select.value=saved;
- select.addEventListener("change",()=>setLanguage(select.value));
+ select.addEventListener("change",()=>{try{localStorage.setItem("komparse-language",select.value)}catch(e){};window.location.reload()});
  setLanguage(saved);
 }
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);else init();
