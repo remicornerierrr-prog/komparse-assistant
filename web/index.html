@@ -384,6 +384,33 @@ button#signup-button:before{content:"🎟 "}
 button#admin-logout:before{content:"↪ "}
 @media(max-width:520px){.cinema-masthead{gap:10px}.cinema-logo{width:48px;height:48px;flex-basis:48px;font-size:25px}.cinema-wordmark{font-size:.95rem}.cinema-tagline{font-size:.58rem}.cinema-reel{font-size:21px}}
 
+
+/* Profile notification preferences — compact, readable, dark cinema panel */
+#notification-scope{
+ display:block!important;width:100%;min-width:0;margin:18px 0 24px!important;padding:18px 20px 20px!important;
+ border:1px solid rgba(232,189,104,.25)!important;border-radius:16px!important;
+ background:linear-gradient(135deg,rgba(232,189,104,.075),rgba(255,255,255,.025))!important;
+ color:var(--ink)!important;box-shadow:inset 3px 0 0 var(--gold)!important;
+}
+#notification-scope legend{
+ display:block;float:none;width:auto;max-width:100%;padding:0 10px!important;margin-left:-8px!important;
+ color:var(--gold2)!important;font-size:.82rem!important;font-weight:850!important;
+ letter-spacing:.08em;text-transform:uppercase;line-height:1.4;
+}
+#notification-scope label{display:inline-flex!important;align-items:center;gap:9px;margin:0!important;color:var(--ink)!important;font-weight:600!important}
+#notification-scope>label{display:flex!important;width:100%;padding:10px 12px;border-radius:10px;background:rgba(255,255,255,.035)}
+#notification-scope .regional-preference-row{
+ display:flex!important;align-items:center;gap:12px!important;flex-wrap:wrap;margin-top:9px!important;padding:10px 12px;border-radius:10px;background:rgba(255,255,255,.035)
+}
+#notification-scope input[type=checkbox]{flex:0 0 auto;width:18px!important;height:18px!important;margin:0!important;accent-color:var(--gold);transform:none}
+#notification-scope label[for=notify-region]{font-size:.85rem!important;color:var(--muted)!important}
+#notification-scope #notify-region{width:auto!important;min-width:130px;min-height:40px;padding:8px 34px 8px 12px!important;margin:0!important}
+#notify-region-help{display:block;margin:12px 4px 0;color:var(--muted)!important;font-size:.8rem;line-height:1.5}
+.cinema-language{margin-left:auto;display:flex;align-items:center;gap:8px;color:var(--muted);font-size:.7rem;letter-spacing:.1em;text-transform:uppercase}
+.cinema-language select{width:auto!important;min-width:105px;min-height:40px!important;padding:7px 30px 7px 10px!important;font-size:.83rem!important;border-color:rgba(232,189,104,.35)!important}
+.cinema-masthead{flex-wrap:wrap}
+@media(max-width:600px){#notification-scope{padding:14px!important}#notification-scope .regional-preference-row{align-items:flex-start;flex-direction:column}.cinema-language{width:100%;margin:8px 0 0 58px}.cinema-language select{min-width:145px}}
+
 </style>
 
 </head>
@@ -394,6 +421,13 @@ button#admin-logout:before{content:"↪ "}
   <div class="cinema-logo" aria-hidden="true">🎬</div>
   <div><div class="cinema-wordmark">KOMPARSE</div><div class="cinema-tagline">Le cinéma commence avec vous</div></div>
   <div class="cinema-reel" aria-hidden="true">▰ ▱ ▰</div>
+  <label class="cinema-language" for="site-language"><span>🌐</span><span data-i18n="language">Langue</span>
+    <select id="site-language" aria-label="Site language">
+      <option value="fr">🇫🇷 Français</option>
+      <option value="de">🇩🇪 Deutsch</option>
+      <option value="en">🇬🇧 English</option>
+    </select>
+  </label>
 </div>
 
     <h1>
