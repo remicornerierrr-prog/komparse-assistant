@@ -304,7 +304,59 @@
             color: #555;
         }
 
-    </style>
+    
+/* KOMPARSE — CINEMATIC DESIGN SYSTEM */
+:root{color-scheme:dark;--ink:#f5f1e8;--muted:#b8b6b2;--night:#101116;--panel:#191b23;--panel2:#20232d;--line:rgba(255,255,255,.11);--gold:#e8bd68;--gold2:#f5d99a;--red:#d84c4c;--green:#82c8a4;--radius:18px}
+*{box-sizing:border-box}
+html{background:var(--night)}
+body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif!important;max-width:1120px!important;margin:0 auto!important;padding:clamp(16px,3vw,36px)!important;background:radial-gradient(ellipse at 85% 0%,rgba(142,43,49,.24),transparent 38%),radial-gradient(ellipse at 0% 15%,rgba(232,189,104,.09),transparent 30%),var(--night)!important;color:var(--ink)!important;line-height:1.55}
+body:before{content:"K";position:fixed;right:-.08em;bottom:-.38em;font-size:min(55vw,650px);font-weight:900;line-height:1;color:rgba(255,255,255,.018);pointer-events:none;z-index:0}
+main,#admin-app{position:relative;z-index:1}
+h1,h2,h3{color:#fff!important;letter-spacing:-.035em;line-height:1.12}
+h1{font-size:clamp(2rem,5vw,3.8rem)!important;font-weight:850!important;margin:0 0 16px!important}
+h2{font-size:clamp(1.45rem,3vw,2.2rem)!important;margin:26px 0 16px!important}
+h3{font-size:1.05rem!important;letter-spacing:-.01em}
+p{color:var(--muted);line-height:1.65}
+section,.admin-card,main,.offer-card,.description,.confirm-panel,.qualification-panel{background:linear-gradient(145deg,rgba(31,34,44,.97),rgba(22,24,31,.97))!important;border:1px solid var(--line)!important;border-radius:var(--radius)!important;box-shadow:0 16px 44px rgba(0,0,0,.18)}
+section{padding:clamp(18px,3vw,30px)!important;margin:18px 0!important}
+a{color:var(--gold2)!important;text-decoration:none!important}
+a:hover{color:#fff!important;text-decoration:underline!important}
+label{color:#e9e4da!important;font-size:.92rem;font-weight:650}
+input,select,textarea{width:100%;background:#11131a!important;color:var(--ink)!important;border:1px solid #414451!important;border-radius:10px!important;padding:12px 14px!important;font:inherit!important;min-height:46px}
+input:focus,select:focus,textarea:focus{outline:2px solid rgba(232,189,104,.45);border-color:var(--gold)!important}
+input[type=checkbox],input[type=radio]{width:auto;min-height:0;accent-color:var(--gold);transform:scale(1.12);margin-right:8px}
+button,.admin-button{width:auto!important;min-height:44px;padding:11px 17px!important;border:1px solid var(--gold)!important;border-radius:10px!important;background:linear-gradient(135deg,var(--gold2),var(--gold))!important;color:#211a10!important;font-weight:800!important;letter-spacing:.005em;box-shadow:0 6px 18px rgba(232,189,104,.12);transition:transform .16s ease,filter .16s ease}
+button:hover,.admin-button:hover{filter:brightness(1.08);transform:translateY(-1px);background:linear-gradient(135deg,#ffe7ad,var(--gold))!important}
+button:disabled{opacity:.5;transform:none}
+.text-button{background:transparent!important;color:var(--gold2)!important;border:0!important;box-shadow:none!important;padding-left:0!important}
+#message,.auth-hint,.admin-status,.qualification-validation{border-radius:12px!important}
+#message{padding:14px 16px!important;border:1px solid var(--line)}
+#message.message-success{background:rgba(44,130,87,.18)!important;color:#a8e7c4!important}
+#message.message-info{background:rgba(68,123,183,.18)!important;color:#b8d9ff!important}
+#message.message-error{background:rgba(180,55,55,.18)!important;color:#ffbaba!important}
+.admin-container{max-width:1440px!important;padding:0!important}
+.admin-header{padding:clamp(20px,4vw,38px)!important;border:1px solid var(--line);border-radius:22px;background:linear-gradient(115deg,rgba(112,28,37,.48),rgba(28,30,39,.96) 55%,rgba(232,189,104,.08));position:relative;overflow:hidden}
+.admin-header:after{content:"KOMPARSE  /  CALL SHEET";position:absolute;right:24px;bottom:18px;font-size:.7rem;letter-spacing:.2em;color:rgba(245,217,154,.45);font-weight:800}
+.admin-status{background:rgba(255,255,255,.06)!important;color:var(--gold2);border:1px solid var(--line)}
+.admin-grid{gap:14px!important}
+.admin-card{padding:22px!important;position:relative;overflow:hidden}
+.admin-card h3{color:var(--muted)!important;text-transform:uppercase;letter-spacing:.12em;font-size:.75rem!important}
+.admin-number{font-size:clamp(2rem,4vw,3.2rem)!important;color:var(--gold2);font-weight:850;letter-spacing:-.06em}
+.admin-section{margin:28px 0!important}
+.admin-table-wrapper{overflow:auto;background:rgba(24,26,34,.9)!important;border:1px solid var(--line)!important;border-radius:14px!important}
+table{min-width:880px;border-collapse:separate!important;border-spacing:0!important}
+th{background:#252833!important;color:var(--gold2)!important;font-size:.74rem;text-transform:uppercase;letter-spacing:.09em}
+td,th{padding:13px 14px!important;border-bottom:1px solid var(--line)!important;color:#e8e5df!important}
+tr:hover td{background:rgba(255,255,255,.025)}
+.review{color:#f1c878!important}
+.qualification-modal{background:rgba(4,5,8,.82)!important;backdrop-filter:blur(8px)}
+.qualification-panel{color:var(--ink)!important}
+.qualification-source{background:#11131a!important;color:#d7d5d0;border-color:var(--line)!important}
+.admin-error{background:rgba(180,55,55,.16)!important;color:#ffbaba!important;border-color:rgba(255,100,100,.25)!important}
+@media(max-width:650px){body{padding:14px!important}.admin-header:after{display:none}.admin-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}.admin-card{padding:16px!important}.admin-number{font-size:2rem!important}section{padding:18px!important}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+
+</style>
 
 </head>
 
