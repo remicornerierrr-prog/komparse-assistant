@@ -465,7 +465,7 @@ body:before{display:none!important}
 .candidate-sidebar .side-link:hover,.candidate-sidebar .side-link.active{background:linear-gradient(100deg,#f2c45f2b,#f2c45f08);border-color:#f2c45f40;box-shadow:inset 3px 0 #f2c45f}
 .candidate-sidebar .sidebar-footer{position:absolute;bottom:20px;left:28px;display:flex;align-items:center;gap:9px;color:#9ba7b8;font-size:.8rem}
 .sidebar-status-dot{width:8px;height:8px;border-radius:50%;background:#66d19e;box-shadow:0 0 10px #66d19e66}
-@media(min-width:1050px){body:has(#profile-section:not(.hidden)){padding-left:320px!important}.candidate-sidebar:has(~ #profile-section:not(.hidden)){display:block}}
+@media(min-width:1050px){body:has(#profile-section:not(.hidden)){padding-left:320px!important}body:has(#profile-section:not(.hidden)) .candidate-sidebar{display:block}}
 @media(max-width:1049px){.candidate-sidebar{position:sticky;top:76px;bottom:auto;width:auto;margin:-4px -4px 22px;padding:8px;display:none;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;border:1px solid #273241;border-radius:14px}.candidate-sidebar .side-link{font-size:.82rem;min-height:42px;margin:0;padding:0 8px}.candidate-sidebar .sidebar-footer{display:none}body:has(#profile-section:not(.hidden)) .candidate-sidebar{display:grid}}
 </style>
 
