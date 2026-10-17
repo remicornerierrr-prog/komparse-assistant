@@ -427,6 +427,36 @@ button#admin-logout:before{content:"↪ "}
 #profile-section .push-section{border-top-color:rgba(232,189,104,.22)!important}
 @media(min-width:900px){#profile-section{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:24px}#profile-section>h2,#profile-section>p,#profile-section>#message,#profile-section>#gmail-connection-section,#profile-section>.push-section,#profile-section>#notification-scope{grid-column:1/-1}#profile-section>label{align-self:end}#profile-section>input,#profile-section>select{min-width:0}}
 
+
+/* CINEMA DASHBOARD VISUAL PASS */
+:root{--cinema-gold:#f2c45f;--cinema-line:#273241}
+html,body{background:#080c12!important;color:#f4f5f7!important}
+body{max-width:none!important;width:100%!important;margin:0!important;padding:104px clamp(16px,2.5vw,40px) 40px!important;min-height:100vh;background:radial-gradient(ellipse at 68% -10%,rgba(116,69,25,.24),transparent 42%),#080c12!important}
+body:before{display:none!important}
+.cinema-masthead{position:fixed!important;inset:0 0 auto!important;z-index:1000!important;display:flex!important;align-items:center!important;gap:14px!important;min-height:88px!important;padding:12px clamp(16px,2.8vw,44px)!important;background:linear-gradient(90deg,#080b10,#101218)!important;border-bottom:1px solid rgba(242,196,95,.3)!important;box-shadow:0 8px 30px #0005!important}
+.cinema-logo{font-size:2.8rem!important;filter:drop-shadow(0 2px 10px #f2c45f30)}
+.cinema-wordmark{font-size:clamp(1.5rem,2.5vw,2.25rem)!important;font-weight:900!important;letter-spacing:.07em!important;color:var(--cinema-gold)!important;line-height:1.02}
+.cinema-tagline{font-size:.9rem!important;color:var(--cinema-gold)!important}
+.cinema-reel{position:absolute!important;left:27%;top:-32px!important;font-size:8rem!important;opacity:.1!important;transform:rotate(-10deg)!important;pointer-events:none}
+.cinema-language{margin-left:auto!important;display:flex!important;align-items:center!important;gap:8px!important;padding:7px 11px!important;border:1px solid #f2c45f80!important;border-radius:12px!important;background:#111720!important;color:#fff!important}
+.cinema-language select{width:auto!important;min-width:130px!important;margin:0!important;background:#10151e!important;color:#fff!important}
+#profile-section{width:min(100%,1450px)!important;max-width:1450px!important;margin:0 auto!important;position:relative;z-index:1}
+#profile-section h1,#profile-section h2,#profile-section h3{color:#f5f6fa!important}
+#profile-section p{color:#aeb8c7!important}
+#profile-section section,#profile-section .photo-upload,#gmail-connection-section,#notification-scope{background:linear-gradient(145deg,#141c28,#0d131c)!important;border:1px solid #273241!important;border-radius:17px!important;box-shadow:0 12px 34px #0003!important}
+#profile-section section{padding:clamp(18px,2vw,30px)!important}
+#profile-section label{color:#e5eaf1!important}
+#profile-section input,#profile-section select,#profile-section textarea{background:#0b111a!important;color:#f5f6f8!important;border:1px solid #394555!important;border-radius:10px!important;min-height:44px}
+#profile-section input:focus,#profile-section select:focus{outline:2px solid #f2c45f40!important;border-color:#f2c45f!important}
+#profile-section button{background:linear-gradient(135deg,#f4ce77,#d8a844)!important;color:#17130b!important;border:1px solid #f5d68b!important;border-radius:10px!important;font-weight:750!important}
+#profile-section a{color:#f2ce79!important}
+#profile-section .privacy-note{background:#f3f4f6!important;color:#263242!important;border-radius:10px!important}
+#profile-section .privacy-note *{color:#263242!important}
+#profile-section .photo-upload{padding:18px!important}
+#profile-section .photo-preview{border-radius:12px!important;border-color:#465264!important;background:#0b111a!important}
+#profile-section .photo-section,#profile-section .push-section{border-color:#273241!important}
+@media(min-width:1000px){#profile-section{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:22px;align-items:start}#profile-section>h2,#profile-section>p,#profile-section>#message,#profile-section>#gmail-connection-section,#profile-section>.photo-section,#profile-section>.push-section,#profile-section>#notification-scope,#profile-section>#profile-save-message{grid-column:1/-1}}
+@media(max-width:700px){body{padding:94px 12px 28px!important}.cinema-masthead{min-height:76px!important;padding:9px 12px!important}.cinema-logo{font-size:2rem!important}.cinema-tagline{font-size:.72rem!important}.cinema-language select{min-width:96px!important;max-width:115px!important;font-size:.78rem!important}.cinema-reel{display:none!important}#profile-section{display:block!important}}
 </style>
 
 </head>
