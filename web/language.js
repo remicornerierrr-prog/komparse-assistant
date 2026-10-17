@@ -33,7 +33,14 @@ function scan(root){
  nodes.forEach(translateNode);
  const elements=[];
  if(root.nodeType===Node.ELEMENT_NODE)elements.push(root);
- if(root.querySelectorAll)elements.push(...root.querySelectorAll("[placeholder],[title],[aria-label]"));
+ if(root.querySelectorAll)elements.push(...root.querySelectorAll("[data-i18n],[placeholder],[title],[aria-label]"));
+ for(const el of elements){
+  const key=el.getAttribute("data-i18n");
+  if(key && el.children.length===0){
+   const value=(T[lang]&&T[lang][key])||key;
+   if(el.textContent!==value)el.textContent=value;
+  }
+ }
  for(const el of elements){
   for(const attr of ["placeholder","title","aria-label"]){
    if(!el.hasAttribute(attr))continue;
