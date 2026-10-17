@@ -457,6 +457,16 @@ body:before{display:none!important}
 #profile-section .photo-section,#profile-section .push-section{border-color:#273241!important}
 @media(min-width:1000px){#profile-section{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:22px;align-items:start}#profile-section>h2,#profile-section>p,#profile-section>#message,#profile-section>#gmail-connection-section,#profile-section>.photo-section,#profile-section>.push-section,#profile-section>#notification-scope,#profile-section>#profile-save-message{grid-column:1/-1}}
 @media(max-width:700px){body{padding:94px 12px 28px!important}.cinema-masthead{min-height:76px!important;padding:9px 12px!important}.cinema-logo{font-size:2rem!important}.cinema-tagline{font-size:.72rem!important}.cinema-language select{min-width:96px!important;max-width:115px!important;font-size:.78rem!important}.cinema-reel{display:none!important}#profile-section{display:block!important}}
+
+/* Candidate dashboard shell — navigation links target existing features only */
+.candidate-sidebar{display:none;position:fixed;z-index:900;left:0;top:88px;bottom:0;width:286px;padding:28px 14px 18px;background:linear-gradient(180deg,#0c1119,#080c12);border-right:1px solid #273241;box-sizing:border-box}
+.candidate-sidebar .side-link{display:flex;align-items:center;gap:14px;min-height:50px;padding:0 15px;margin:0 0 7px;border:1px solid transparent;border-radius:12px;color:#e7eaf0!important;text-decoration:none!important;font-size:.95rem;font-weight:600;transition:background .15s,border-color .15s}
+.candidate-sidebar .side-link>span:first-child{width:24px;text-align:center;color:#f2c45f;font-size:1.25rem}
+.candidate-sidebar .side-link:hover,.candidate-sidebar .side-link.active{background:linear-gradient(100deg,#f2c45f2b,#f2c45f08);border-color:#f2c45f40;box-shadow:inset 3px 0 #f2c45f}
+.candidate-sidebar .sidebar-footer{position:absolute;bottom:20px;left:28px;display:flex;align-items:center;gap:9px;color:#9ba7b8;font-size:.8rem}
+.sidebar-status-dot{width:8px;height:8px;border-radius:50%;background:#66d19e;box-shadow:0 0 10px #66d19e66}
+@media(min-width:1050px){body:has(#profile-section:not(.hidden)){padding-left:320px!important}.candidate-sidebar:has(~ #profile-section:not(.hidden)){display:block}}
+@media(max-width:1049px){.candidate-sidebar{position:sticky;top:76px;bottom:auto;width:auto;margin:-4px -4px 22px;padding:8px;display:none;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;border:1px solid #273241;border-radius:14px}.candidate-sidebar .side-link{font-size:.82rem;min-height:42px;margin:0;padding:0 8px}.candidate-sidebar .sidebar-footer{display:none}body:has(#profile-section:not(.hidden)) .candidate-sidebar{display:grid}}
 </style>
 
 </head>
@@ -475,6 +485,16 @@ body:before{display:none!important}
     </select>
   </label>
 </div>
+
+
+<aside class="candidate-sidebar" aria-label="Navigation candidat">
+  <a class="side-link active" href="#profile-section" data-side-target="profile-section"><span>♙</span><span data-i18n="Mon profil">Mon profil</span></a>
+  <a class="side-link" href="./offers.html"><span>🎬</span><span data-i18n="Mes offres">Mes offres</span></a>
+  <a class="side-link" href="#notification-scope" data-side-target="notification-scope"><span>♧</span><span data-i18n="Notifications">Notifications</span></a>
+  <a class="side-link" href="#gmail-connection-section" data-side-target="gmail-connection-section"><span>✉</span><span data-i18n="Candidatures par Gmail">Candidatures par Gmail</span></a>
+  <a class="side-link" href="#photo-preview-portrait" data-side-target="photo-preview-portrait"><span>▧</span><span data-i18n="Photos de profil">Photos de profil</span></a>
+  <div class="sidebar-footer"><span class="sidebar-status-dot"></span><span data-i18n="Espace candidat">Espace candidat</span></div>
+</aside>
 
     <h1>
         Komparse Assistant
