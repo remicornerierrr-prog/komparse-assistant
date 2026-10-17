@@ -467,6 +467,8 @@ body:before{display:none!important}
 .sidebar-status-dot{width:8px;height:8px;border-radius:50%;background:#66d19e;box-shadow:0 0 10px #66d19e66}
 @media(min-width:1050px){body:has(#profile-section:not(.hidden)){padding-left:320px!important}body:has(#profile-section:not(.hidden)) .candidate-sidebar{display:block}}
 @media(max-width:1049px){.candidate-sidebar{position:sticky;top:76px;bottom:auto;width:auto;margin:-4px -4px 22px;padding:8px;display:none;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;border:1px solid #273241;border-radius:14px}.candidate-sidebar .side-link{font-size:.82rem;min-height:42px;margin:0;padding:0 8px}.candidate-sidebar .sidebar-footer{display:none}body:has(#profile-section:not(.hidden)) .candidate-sidebar{display:grid}}
+
+.account-settings-panel{border:1px solid #273241!important;border-radius:17px!important;padding:22px!important;margin:22px 0!important;background:linear-gradient(145deg,#141c28,#0d131c)!important}.account-settings-panel h3{color:#f5f6fa!important}.account-settings-panel label{display:block;margin:12px 0 7px;color:#e5eaf1!important}.account-settings-panel select{display:block;width:min(100%,360px);background:#0b111a!important;color:#f5f6f8!important;border:1px solid #394555!important;border-radius:10px!important;min-height:44px}.settings-shortcuts{display:flex;flex-wrap:wrap;gap:10px;margin:18px 0}.settings-shortcuts a{display:inline-flex;align-items:center;padding:10px 13px;border:1px solid #f2c45f55;border-radius:10px;background:#f2c45f0d;color:#f2ce79!important;text-decoration:none}.settings-note{font-size:.88rem;color:#aeb8c7!important}
 </style>
 
 </head>
@@ -493,6 +495,7 @@ body:before{display:none!important}
   <a class="side-link" href="#notification-scope" data-side-target="notification-scope"><span>♧</span><span data-i18n="Notifications">Notifications</span></a>
   <a class="side-link" href="#gmail-connection-section" data-side-target="gmail-connection-section"><span>✉</span><span data-i18n="Candidatures par Gmail">Candidatures par Gmail</span></a>
   <a class="side-link" href="#photo-preview-portrait" data-side-target="photo-preview-portrait"><span>▧</span><span data-i18n="Photos de profil">Photos de profil</span></a>
+  <a class="side-link" href="#account-settings" data-side-target="account-settings"><span>⚙</span><span data-i18n="Paramètres">Paramètres</span></a>
   <div class="sidebar-footer"><span class="sidebar-status-dot"></span><span data-i18n="Espace candidat">Espace candidat</span></div>
 </aside>
 
@@ -1035,6 +1038,22 @@ body:before{display:none!important}
         <!-- ========================================= -->
         <!-- ENREGISTREMENT PROFIL -->
         <!-- ========================================= -->
+
+
+        <section id="account-settings" class="account-settings-panel">
+          <h3 data-i18n="Paramètres du compte">Paramètres du compte</h3>
+          <p data-i18n="Gérez ici la langue de l’interface et accédez aux préférences déjà disponibles dans votre profil.">Gérez ici la langue de l’interface et accédez aux préférences déjà disponibles dans votre profil.</p>
+          <label for="settings-language" data-i18n="Langue de l’interface">Langue de l’interface</label>
+          <select id="settings-language" aria-label="Langue de l’interface">
+            <option value="fr">🇫🇷 Français</option><option value="de">🇩🇪 Deutsch</option><option value="en">🇬🇧 English</option>
+          </select>
+          <div class="settings-shortcuts">
+            <a href="#notification-scope" data-side-target="notification-scope" data-i18n="Préférences d’annonces">Préférences d’annonces</a>
+            <a href="#enable-push-button" data-side-target="enable-push-button" data-i18n="Notifications push">Notifications push</a>
+            <a href="#gmail-connection-section" data-side-target="gmail-connection-section" data-i18n="Connexion Gmail">Connexion Gmail</a>
+          </div>
+          <p class="settings-note" data-i18n="Les changements de profil doivent être enregistrés avec le bouton Enregistrer mon profil.">Les changements de profil doivent être enregistrés avec le bouton Enregistrer mon profil.</p>
+        </section>
 
         <button id="save-profile-button">
             Enregistrer mon profil
