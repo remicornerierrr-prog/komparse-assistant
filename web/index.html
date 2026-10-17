@@ -469,6 +469,8 @@ body:before{display:none!important}
 @media(max-width:1049px){.candidate-sidebar{position:sticky;top:76px;bottom:auto;width:auto;margin:-4px -4px 22px;padding:8px;display:none;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;border:1px solid #273241;border-radius:14px}.candidate-sidebar .side-link{font-size:.82rem;min-height:42px;margin:0;padding:0 8px}.candidate-sidebar .sidebar-footer{display:none}body:has(#profile-section:not(.hidden)) .candidate-sidebar{display:grid}}
 
 .account-settings-panel{border:1px solid #273241!important;border-radius:17px!important;padding:22px!important;margin:22px 0!important;background:linear-gradient(145deg,#141c28,#0d131c)!important}.account-settings-panel h3{color:#f5f6fa!important}.account-settings-panel label{display:block;margin:12px 0 7px;color:#e5eaf1!important}.account-settings-panel select{display:block;width:min(100%,360px);background:#0b111a!important;color:#f5f6f8!important;border:1px solid #394555!important;border-radius:10px!important;min-height:44px}.settings-shortcuts{display:flex;flex-wrap:wrap;gap:10px;margin:18px 0}.settings-shortcuts a{display:inline-flex;align-items:center;padding:10px 13px;border:1px solid #f2c45f55;border-radius:10px;background:#f2c45f0d;color:#f2ce79!important;text-decoration:none}.settings-note{font-size:.88rem;color:#aeb8c7!important}
+
+.settings-password{border-top:1px solid #273241;margin-top:20px;padding-top:16px}.settings-password h4{color:#f5f6fa;margin:0 0 12px}.settings-password input{display:block;width:min(100%,480px);margin:7px 0 12px}.settings-password button{margin-top:8px}.settings-password #settings-password-status{font-size:.9rem}
 </style>
 
 </head>
@@ -1053,6 +1055,15 @@ body:before{display:none!important}
             <a href="#gmail-connection-section" data-side-target="gmail-connection-section" data-i18n="Connexion Gmail">Connexion Gmail</a>
           </div>
           <p class="settings-note" data-i18n="Les changements de profil doivent être enregistrés avec le bouton Enregistrer mon profil.">Les changements de profil doivent être enregistrés avec le bouton Enregistrer mon profil.</p>
+          <div class="settings-password">
+            <h4 data-i18n="Sécurité du compte">Sécurité du compte</h4>
+            <label for="settings-new-password" data-i18n="Nouveau mot de passe">Nouveau mot de passe</label>
+            <input id="settings-new-password" type="password" autocomplete="new-password" minlength="10" placeholder="10 caractères minimum">
+            <label for="settings-confirm-password" data-i18n="Confirmer le nouveau mot de passe">Confirmer le nouveau mot de passe</label>
+            <input id="settings-confirm-password" type="password" autocomplete="new-password" minlength="10" placeholder="Répétez le nouveau mot de passe">
+            <button id="settings-change-password" type="button" data-i18n="Mettre à jour le mot de passe">Mettre à jour le mot de passe</button>
+            <p id="settings-password-status" role="status" aria-live="polite"></p>
+          </div>
         </section>
 
         <button id="save-profile-button">
@@ -1152,6 +1163,7 @@ body:before{display:none!important}
     <script src="profile.js?v=3"></script>
     <script src="session.js?v=2"></script>
     <script src="gmail-ui.js?v=3"></script>
+    <script src="account-settings.js?v=1"></script>
 
     <script src="./language.js?v=4"></script>
 </body>
