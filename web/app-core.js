@@ -55,6 +55,16 @@ const profileSection =
         "profile-section"
     );
 
+const candidateSidebar = document.querySelector(".candidate-sidebar");
+
+function setCandidateNavigationVisible(visible) {
+    if (!candidateSidebar) return;
+    candidateSidebar.style.display = visible
+        ? (window.matchMedia("(max-width: 1049px)").matches ? "grid" : "block")
+        : "none";
+    candidateSidebar.setAttribute("aria-hidden", visible ? "false" : "true");
+}
+
 
 const emailInput =
     document.getElementById(
@@ -433,6 +443,8 @@ function showLoggedOut() {
         "hidden"
     );
 
+    setCandidateNavigationVisible(false);
+
 
     clearProfileSaveMessage();
 
@@ -484,6 +496,8 @@ function showLoggedIn(user) {
     profileSection.classList.remove(
         "hidden"
     );
+
+    setCandidateNavigationVisible(true);
 
 
     if (
