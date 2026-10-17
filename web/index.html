@@ -411,6 +411,22 @@ button#admin-logout:before{content:"↪ "}
 .cinema-masthead{flex-wrap:wrap}
 @media(max-width:600px){#notification-scope{padding:14px!important}#notification-scope .regional-preference-row{align-items:flex-start;flex-direction:column}.cinema-language{width:100%;margin:8px 0 0 58px}.cinema-language select{min-width:145px}}
 
+
+/* Candidate profile: refined cinematic dashboard panels */
+#profile-section{max-width:100%;padding:clamp(20px,3vw,34px)!important}
+#profile-section>h2{display:flex;align-items:center;gap:12px;padding-bottom:16px;border-bottom:1px solid rgba(232,189,104,.2)}
+#profile-section>h2:before{content:"♟";display:inline-grid;place-items:center;width:42px;height:42px;border-radius:13px;background:rgba(232,189,104,.12);color:var(--gold2);font-size:1.35rem}
+#profile-section>p:first-of-type{margin:18px 0 24px}
+#profile-section>p:first-of-type a{display:inline-flex;align-items:center;gap:10px;padding:12px 16px;border:1px solid rgba(232,189,104,.32);border-radius:12px;background:linear-gradient(120deg,rgba(232,189,104,.12),rgba(255,255,255,.025));font-weight:750}
+#gmail-connection-section{border:1px solid rgba(232,189,104,.2);border-radius:16px;padding:20px!important;background:linear-gradient(135deg,rgba(232,189,104,.065),rgba(255,255,255,.02))}
+#gmail-connection-section h3{display:flex;align-items:center;gap:9px}
+#gmail-connection-section h3:before{content:"✉";color:var(--gold2);font-size:1.15rem}
+#profile-section>label{display:block;margin-top:18px}
+#profile-section>input:not([type=checkbox]),#profile-section>select{margin-top:5px}
+#profile-section .photo-preview{border-radius:14px!important;border-color:rgba(232,189,104,.3)!important;background:#11131a!important}
+#profile-section .push-section{border-top-color:rgba(232,189,104,.22)!important}
+@media(min-width:900px){#profile-section{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:24px}#profile-section>h2,#profile-section>p,#profile-section>#message,#profile-section>#gmail-connection-section,#profile-section>.push-section,#profile-section>#notification-scope{grid-column:1/-1}#profile-section>label{align-self:end}#profile-section>input,#profile-section>select{min-width:0}}
+
 </style>
 
 </head>
