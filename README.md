@@ -32,6 +32,18 @@ Komparse.de → scraping → parsing et contrôles de qualité → mise à jour 
 
 Le workflow GitHub Actions `Komparse scraper` est planifié toutes les 15 minutes et peut aussi être lancé manuellement. Le workflow `Deploy site to GitHub Pages` publie le contenu du dossier `web/` à chaque push sur `main`.
 
+## Traduction des titres d'offres
+
+Les titres restent en allemand lorsque l'interface est en allemand. En français ou en anglais, la fonction Supabase `translate-offer-titles` traduit les titres affichés et conserve le titre allemand original en dessous. La fonction vérifie que chaque offre appartient aux correspondances de l'utilisateur connecté et appelle Google Cloud Translation côté serveur.
+
+Pour activer cette fonctionnalité, activer Cloud Translation API et sa facturation dans Google Cloud, puis créer une clé API restreinte à cette API. Ajouter la clé dans **Supabase Dashboard → Edge Functions → Secrets** sous le nom `GOOGLE_TRANSLATE_API_KEY`, puis déployer la fonction depuis un environnement connecté au projet :
+
+```powershell
+supabase functions deploy translate-offer-titles
+```
+
+La clé ne doit jamais être ajoutée au code du site ni aux secrets GitHub Pages. Sans ce secret, les offres restent accessibles et leur titre original est affiché avec un message signalant que la traduction est indisponible.
+
 ## Notifications push
 
 - Les abonnements Web Push sont enregistrés par utilisateur et par appareil.

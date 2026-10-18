@@ -98,6 +98,7 @@ function apply(next){
  scan(document.body);
  document.querySelectorAll("#site-language,#settings-language").forEach(selector=>{selector.value=lang;});
  try{localStorage.setItem("komparse-language",lang)}catch(e){}
+ document.dispatchEvent(new CustomEvent("komparse:languagechange",{detail:{language:lang}}));
 }
 function init(){
  let saved="fr";try{saved=localStorage.getItem("komparse-language")||"fr"}catch(e){}

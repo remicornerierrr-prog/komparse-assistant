@@ -5,6 +5,9 @@
   const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
   const root = document.getElementById("offers-root");
   if (!root) return;
+  const titleTranslations = new Map();
+  let visibleTitles = [];
+  let titleRenderVersion = 0;
 
   function node(tag, text, className) {
     const el = document.createElement(tag);
@@ -26,6 +29,100 @@
     } catch (_) { return null; }
   }
   function offerTitle(offer) { return offer.title || "Offre Komparse"; }
+  function currentLanguage() {
+    try {
+      const saved = localStorage.getItem("komparse-language");
+      return saved === "de" || saved === "en" ? saved : "fr";
+    } catch (error) {
+      console.error("Impossible de lire la langue de l’interface.", error);
+      return document.documentElement.lang === "de" || document.documentElement.lang === "en"
+        ? document.documentElement.lang
+        : "fr";
+    }
+  }
+
+  function translationUnavailableText(language) {
+    if (language === "de") return "";
+    if (language === "en") return "Translation unavailable; showing the original title.";
+    return "Traduction indisponible ; le titre original est affiché.";
+  }
+
+  function setOfferTitle(element, offer, translation, language, unavailable = false) {
+    const original = offerTitle(offer);
+    element.replaceChildren(node("span", translation || original, "offer-title-primary"));
+    if (language === "de") return;
+
+    if (translation && translation !== original) {
+      element.append(node("small", original, "offer-title-original"));
+    } else if (unavailable) {
+      element.append(node("small", translationUnavailableText(language), "offer-title-translation-status"));
+    }
+  }
+
+  async function updateOfferTitles() {
+    const language = currentLanguage();
+    const renderVersion = ++titleRenderVersion;
+
+    for (const entry of visibleTitles) {
+      const cached = titleTranslations.get(`${language}:${entry.offer.id}`);
+      setOfferTitle(entry.element, entry.offer, cached, language);
+    }
+    if (language === "de") return;
+
+    const missing = visibleTitles.filter(
+      ({ offer }) => !titleTranslations.has(`${language}:${offer.id}`)
+    );
+    if (!missing.length) return;
+
+    try {
+      for (let offset = 0; offset < missing.length; offset += 50) {
+        const batch = missing.slice(offset, offset + 50);
+        const { data, error } = await client.functions.invoke("translate-offer-titles", {
+          body: {
+            offer_ids: batch.map(({ offer }) => offer.id),
+            target_language: language,
+          },
+        });
+        if (error) throw error;
+        if (!data || !Array.isArray(data.translations)) {
+          throw new Error("La réponse de traduction des titres est invalide.");
+        }
+        for (const result of data.translations) {
+          if (
+            Number.isSafeInteger(result.offer_id) &&
+            typeof result.title === "string" &&
+            result.title.trim()
+          ) {
+            titleTranslations.set(`${language}:${result.offer_id}`, result.title);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Impossible de traduire les titres des offres.", error);
+      if (renderVersion !== titleRenderVersion) return;
+      for (const entry of visibleTitles) {
+        if (currentLanguage() !== language) return;
+        const cached = titleTranslations.get(`${language}:${entry.offer.id}`);
+        setOfferTitle(entry.element, entry.offer, cached, language, !cached);
+      }
+      return;
+    }
+
+    if (renderVersion !== titleRenderVersion || currentLanguage() !== language) return;
+    for (const entry of visibleTitles) {
+      setOfferTitle(
+        entry.element,
+        entry.offer,
+        titleTranslations.get(`${language}:${entry.offer.id}`),
+        language,
+        true
+      );
+    }
+  }
+
+  document.addEventListener("komparse:languagechange", () => {
+    updateOfferTitles();
+  });
 
   async function init() {
     const kicker = node("p", "À L’AFFICHE POUR VOUS", "offers-kicker");
@@ -61,7 +158,10 @@
       const offer = match.offers;
       if (!offer) continue;
       const card = node("article", undefined, "offer-card");
-      card.append(node("h3", offerTitle(offer)));
+      const title = node("h3");
+      setOfferTitle(title, offer, null, currentLanguage());
+      card.append(title);
+      visibleTitles.push({ offer, element: title });
       field(card, "Lieu", offer.location_text);
       field(card, "Tournage", offer.shoot_date_text || offer.shoot_date);
       field(card, "Âge", offer.age_description || formatAge(offer));
@@ -70,6 +170,7 @@
       card.append(link);
       root.append(card);
     }
+    await updateOfferTitles();
   }
 
   function formatAge(offer) {
@@ -101,7 +202,11 @@
     const backLink = node("a", "← Retour à Mes offres", "back-link");
     backLink.href = "./offers.html";
     root.append(backLink);
-    root.append(node("h2", offerTitle(offer)));
+    const title = node("h2");
+    setOfferTitle(title, offer, null, currentLanguage());
+    root.append(title);
+    visibleTitles = [{ offer, element: title }];
+    await updateOfferTitles();
     field(root, "Lieu", offer.location_text);
     field(root, "Date de tournage", offer.shoot_date_text || offer.shoot_date);
     field(root, "Âge demandé", offer.age_description || formatAge(offer));

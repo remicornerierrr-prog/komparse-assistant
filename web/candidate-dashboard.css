@@ -563,6 +563,20 @@ body:has(#profile-section:not(.hidden)) .candidate-main > h1 {
   margin: 0 0 12px !important;
 }
 
+.offers-main .offer-title-primary {
+  display: block;
+}
+
+.offers-main .offer-title-original,
+.offers-main .offer-title-translation-status {
+  display: block;
+  margin-top: 5px;
+  color: var(--dashboard-muted);
+  font-size: .78em;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
 .offers-main .offers-kicker {
   color: var(--dashboard-gold) !important;
   font-size: .75rem;
