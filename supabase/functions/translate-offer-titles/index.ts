@@ -15,6 +15,65 @@ function json(data: unknown, status = 200) {
   });
 }
 
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) &&
+    value.every((item): item is string => typeof item === "string" && Boolean(item.trim()));
+}
+
+async function translateWithMyMemory(titles: string[], targetLanguage: string) {
+  const translations: string[] = [];
+  for (let offset = 0; offset < titles.length; offset += 5) {
+    const batch = titles.slice(offset, offset + 5);
+    const results = await Promise.all(batch.map(async (title) => {
+      const url = new URL("https://api.mymemory.translated.net/get");
+      url.searchParams.set("q", title);
+      url.searchParams.set("langpair", `de|${targetLanguage}`);
+      const response = await fetch(url, { signal: AbortSignal.timeout(12000) });
+      if (!response.ok) throw new Error(`MyMemory returned HTTP ${response.status}.`);
+      const payload = await response.json();
+      const translatedTitle: unknown = payload?.responseData?.translatedText;
+      if (
+        payload?.responseStatus !== 200 ||
+        payload?.quotaFinished === true ||
+        typeof translatedTitle !== "string" ||
+        !translatedTitle.trim()
+      ) {
+        throw new Error("MyMemory returned no translation.");
+      }
+      return translatedTitle;
+    }));
+    translations.push(...results);
+  }
+  return translations;
+}
+
+async function translateWithLibreTranslate(titles: string[], targetLanguage: string) {
+  const response = await fetch("https://translate.terraprint.co/translate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      q: titles,
+      source: "de",
+      target: targetLanguage,
+      format: "text",
+    }),
+    signal: AbortSignal.timeout(15000),
+  });
+  if (!response.ok) {
+    throw new Error(`LibreTranslate returned HTTP ${response.status}.`);
+  }
+  const payload = await response.json();
+  const translatedText: unknown = payload?.translatedText;
+  const translations =
+    typeof translatedText === "string" && titles.length === 1
+      ? [translatedText]
+      : translatedText;
+  if (!isStringArray(translations) || translations.length !== titles.length) {
+    throw new Error("LibreTranslate returned an invalid response.");
+  }
+  return translations;
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json({ error: "Method not allowed." }, 405);
@@ -92,45 +151,17 @@ Deno.serve(async (req: Request) => {
       return json({ error: "Un ou plusieurs titres d'offre sont indisponibles." }, 404);
     }
 
-    const translationRequest = new URLSearchParams();
-    for (const title of sourceTitles) {
-      translationRequest.append("q", title);
-    }
-    translationRequest.set("source", "de");
-    translationRequest.set("target", targetLanguage);
-    translationRequest.set("format", "text");
-
-    let translationResponse: Response;
+    let translatedTitles: string[];
     try {
-      translationResponse = await fetch("https://translate.terraprint.co/translate", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: translationRequest,
-        signal: AbortSignal.timeout(15000),
-      });
+      translatedTitles = await translateWithMyMemory(sourceTitles, targetLanguage);
     } catch (error) {
-      console.error("LibreTranslate community instance is unavailable:", error);
-      return json({ error: "Le service communautaire de traduction est indisponible." }, 502);
-    }
-    if (!translationResponse.ok) {
-      const providerError = await translationResponse.text();
-      console.error("LibreTranslate request failed:", providerError);
-      return json({ error: "Le service communautaire de traduction n'a pas pu traduire les titres." }, 502);
-    }
-
-    const payload = await translationResponse.json();
-    const translatedText: unknown = payload?.translatedText;
-    const translatedTitles =
-      typeof translatedText === "string" && offerIds.length === 1
-        ? [translatedText]
-        : translatedText;
-    if (
-      !Array.isArray(translatedTitles) ||
-      translatedTitles.length !== offerIds.length ||
-      !translatedTitles.every((title) => typeof title === "string" && title.trim())
-    ) {
-      console.error("LibreTranslate returned an invalid response.");
-      return json({ error: "La réponse du service de traduction est invalide." }, 502);
+      console.warn("MyMemory translation failed; trying LibreTranslate:", error);
+      try {
+        translatedTitles = await translateWithLibreTranslate(sourceTitles, targetLanguage);
+      } catch (fallbackError) {
+        console.error("Both translation providers failed:", fallbackError);
+        return json({ error: "Les services de traduction sont indisponibles." }, 502);
+      }
     }
 
     return json({

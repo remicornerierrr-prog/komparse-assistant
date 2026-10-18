@@ -6,6 +6,7 @@
   const root = document.getElementById("offers-root");
   if (!root) return;
   const titleTranslations = new Map();
+  const titleTranslationCachePrefix = "komparse-offer-title-translation-v1:";
   let visibleTitles = [];
   let titleRenderVersion = 0;
 
@@ -29,6 +30,44 @@
     } catch (_) { return null; }
   }
   function offerTitle(offer) { return offer.title || "Offre Komparse"; }
+  function titleTranslationKey(language, offer) {
+    return `${language}:${offer.id}`;
+  }
+  function cachedTitleTranslation(language, offer) {
+    const key = titleTranslationKey(language, offer);
+    if (titleTranslations.has(key)) return titleTranslations.get(key);
+    const storageKey = titleTranslationCachePrefix + key;
+    try {
+      const cached = JSON.parse(localStorage.getItem(storageKey) || "null");
+      if (
+        cached &&
+        cached.original === offerTitle(offer) &&
+        typeof cached.title === "string" &&
+        cached.title.trim() &&
+        cached.expiresAt > Date.now()
+      ) {
+        titleTranslations.set(key, cached.title);
+        return cached.title;
+      }
+      if (cached) localStorage.removeItem(storageKey);
+    } catch (error) {
+      console.error("Impossible de lire le cache des traductions.", error);
+    }
+    return null;
+  }
+  function cacheTitleTranslation(language, offer, title) {
+    const key = titleTranslationKey(language, offer);
+    titleTranslations.set(key, title);
+    try {
+      localStorage.setItem(titleTranslationCachePrefix + key, JSON.stringify({
+        original: offerTitle(offer),
+        title,
+        expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000,
+      }));
+    } catch (error) {
+      console.error("Impossible d'enregistrer le cache des traductions.", error);
+    }
+  }
   function currentLanguage() {
     try {
       const saved = localStorage.getItem("komparse-language");
@@ -41,21 +80,25 @@
     }
   }
 
-  function translationUnavailableText(language) {
+  function translationStatusText(language, status) {
+    if (status === "loading") {
+      if (language === "en") return "Translating title…";
+      return "Traduction du titre en cours…";
+    }
     if (language === "de") return "";
     if (language === "en") return "Translation unavailable; showing the original title.";
     return "Traduction indisponible ; le titre original est affiché.";
   }
 
-  function setOfferTitle(element, offer, translation, language, unavailable = false) {
+  function setOfferTitle(element, offer, translation, language, status = null) {
     const original = offerTitle(offer);
     element.replaceChildren(node("span", translation || original, "offer-title-primary"));
     if (language === "de") return;
 
     if (translation && translation !== original) {
       element.append(node("small", original, "offer-title-original"));
-    } else if (unavailable) {
-      element.append(node("small", translationUnavailableText(language), "offer-title-translation-status"));
+    } else if (status) {
+      element.append(node("small", translationStatusText(language, status), "offer-title-translation-status"));
     }
   }
 
@@ -64,13 +107,13 @@
     const renderVersion = ++titleRenderVersion;
 
     for (const entry of visibleTitles) {
-      const cached = titleTranslations.get(`${language}:${entry.offer.id}`);
-      setOfferTitle(entry.element, entry.offer, cached, language);
+      const cached = cachedTitleTranslation(language, entry.offer);
+      setOfferTitle(entry.element, entry.offer, cached, language, cached ? null : "loading");
     }
     if (language === "de") return;
 
     const missing = visibleTitles.filter(
-      ({ offer }) => !titleTranslations.has(`${language}:${offer.id}`)
+      ({ offer }) => !cachedTitleTranslation(language, offer)
     );
     if (!missing.length) return;
 
@@ -93,7 +136,8 @@
             typeof result.title === "string" &&
             result.title.trim()
           ) {
-            titleTranslations.set(`${language}:${result.offer_id}`, result.title);
+            const entry = batch.find(({ offer }) => offer.id === result.offer_id);
+            if (entry) cacheTitleTranslation(language, entry.offer, result.title);
           }
         }
       }
@@ -102,8 +146,8 @@
       if (renderVersion !== titleRenderVersion) return;
       for (const entry of visibleTitles) {
         if (currentLanguage() !== language) return;
-        const cached = titleTranslations.get(`${language}:${entry.offer.id}`);
-        setOfferTitle(entry.element, entry.offer, cached, language, !cached);
+        const cached = cachedTitleTranslation(language, entry.offer);
+        setOfferTitle(entry.element, entry.offer, cached, language, cached ? null : "unavailable");
       }
       return;
     }
@@ -113,9 +157,9 @@
       setOfferTitle(
         entry.element,
         entry.offer,
-        titleTranslations.get(`${language}:${entry.offer.id}`),
+        cachedTitleTranslation(language, entry.offer),
         language,
-        true
+        "unavailable"
       );
     }
   }
