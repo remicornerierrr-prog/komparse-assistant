@@ -527,7 +527,28 @@ body:before{display:none!important}
 #profile-section { padding-top:18px!important; }
 #profile-section > p:first-of-type { margin:10px 0 18px!important; }
 </style>
-</head>
+<style>
+/* Responsive layout across phone, tablet and desktop */
+*,*::before,*::after{box-sizing:border-box}
+html{width:100%;overflow-x:hidden}
+body{width:min(calc(100% - 48px),1240px)!important;max-width:1240px!important;margin:0 auto!important;padding:24px 0 48px!important;overflow-x:clip}
+.cinema-masthead{width:100%!important;min-width:0!important;display:flex!important;align-items:center!important;gap:18px!important;padding:12px 0 22px!important}
+.cinema-masthead>div:nth-child(2){min-width:0!important}
+.cinema-wordmark{font-size:clamp(1.15rem,2vw,2rem)!important}
+.cinema-tagline{font-size:clamp(.65rem,1.1vw,.95rem)!important}
+.cinema-reel{margin-left:auto!important}
+.cinema-language{flex:0 0 auto!important}
+.candidate-sidebar{width:100%!important;display:flex!important;flex-wrap:wrap!important;align-items:stretch!important;justify-content:center!important;gap:8px!important;padding:10px!important;margin:0 0 28px!important}
+.candidate-sidebar .side-link:not([href="./offers.html"]){display:none!important}
+.candidate-sidebar .side-link[href="./offers.html"]{width:100%!important;max-width:360px!important}
+#profile-section,#auth-section{width:100%!important;min-width:0!important;margin:0 auto 24px!important;padding:clamp(20px,3vw,42px)!important}
+#profile-section input,#profile-section select,#profile-section textarea,#auth-section input,#auth-section select,#auth-section button{max-width:100%!important;min-width:0}
+#profile-section .photo-upload{min-width:0!important}
+#profile-section img{max-width:100%;height:auto}
+@media(min-width:1050px){body{padding-top:32px!important}.cinema-masthead{margin-bottom:20px!important}.candidate-sidebar{position:static!important}#profile-section{max-width:100%!important}#profile-section>input,#profile-section>select,#profile-section>label,#profile-section>textarea{max-width:760px!important}}
+@media(min-width:700px) and (max-width:1049px){body{width:calc(100% - 40px)!important;padding-top:22px!important}.candidate-sidebar{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important}.candidate-sidebar .side-link[href="./offers.html"]{max-width:none!important}}
+@media(max-width:699px){body{width:calc(100% - 28px)!important;padding:14px 0 32px!important}.cinema-masthead{gap:9px!important;padding:6px 0 14px!important}.cinema-logo{width:48px!important;height:48px!important;flex:0 0 48px!important;font-size:25px!important}.cinema-wordmark{font-size:clamp(.85rem,4vw,1.1rem)!important}.cinema-tagline{font-size:clamp(.48rem,2.5vw,.65rem)!important}.cinema-reel{display:none!important}.candidate-sidebar{display:grid!important;grid-template-columns:1fr!important}#profile-section,#auth-section{padding:20px 16px!important;border-radius:22px!important}#profile-section input,#profile-section select,#auth-section input{font-size:16px!important}}
+</style></head>
 
 
 <body>
