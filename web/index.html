@@ -662,7 +662,7 @@ body{width:min(calc(100% - 48px),1240px)!important;max-width:1240px!important;ma
 }
 body:has(#profile-section.hidden) .candidate-sidebar { display:none!important; }
 </style>
-<link rel="stylesheet" href="./candidate-dashboard.css?v=1">
+<link rel="stylesheet" href="./candidate-dashboard.css?v=2">
 </head>
 
 
@@ -682,12 +682,12 @@ body:has(#profile-section.hidden) .candidate-sidebar { display:none!important; }
 
 
 <aside class="candidate-sidebar" aria-label="Navigation candidat">
-  <a class="side-link active" href="#profile-section" data-side-target="profile-section"><span>♙</span><span data-i18n="Mon profil">Mon profil</span></a>
+  <a class="side-link active" href="#profile-section" data-side-target="profile-section" data-dashboard-view="profile" aria-current="page"><span>♙</span><span data-i18n="Mon profil">Mon profil</span></a>
   <a class="side-link" href="./offers.html"><span>🎬</span><span data-i18n="Mes offres">Mes offres</span></a>
-  <a class="side-link" href="#notification-scope" data-side-target="notification-scope"><span>♧</span><span data-i18n="Notifications">Notifications</span></a>
-  <a class="side-link" href="#gmail-connection-section" data-side-target="gmail-connection-section"><span>✉</span><span data-i18n="Candidatures par Gmail">Candidatures par Gmail</span></a>
-  <a class="side-link" href="#photo-preview-portrait" data-side-target="photo-preview-portrait"><span>▧</span><span data-i18n="Photos de profil">Photos de profil</span></a>
-  <a class="side-link" href="#account-settings" data-side-target="account-settings"><span>⚙</span><span data-i18n="Paramètres">Paramètres</span></a>
+  <a class="side-link" href="#notification-scope" data-side-target="notification-scope" data-dashboard-view="notifications"><span>♧</span><span data-i18n="Notifications">Notifications</span></a>
+  <a class="side-link" href="#gmail-connection-section" data-side-target="gmail-connection-section" data-dashboard-view="gmail"><span>✉</span><span data-i18n="Candidatures par Gmail">Candidatures par Gmail</span></a>
+  <a class="side-link" href="#photo-section" data-side-target="photo-section" data-dashboard-view="photos"><span>▧</span><span data-i18n="Photos de profil">Photos de profil</span></a>
+  <a class="side-link" href="#account-settings" data-side-target="account-settings" data-dashboard-view="settings"><span>⚙</span><span data-i18n="Paramètres">Paramètres</span></a>
   <div class="sidebar-footer"><span class="sidebar-status-dot"></span><span data-i18n="Espace candidat">Espace candidat</span></div>
 </aside>
 
@@ -808,7 +808,7 @@ body:has(#profile-section.hidden) .candidate-sidebar { display:none!important; }
         class="hidden"
     >
 
-        <header class="profile-heading">
+        <header class="profile-heading" data-dashboard-panel="profile">
             <div>
                 <h2 data-i18n="Mon profil">Mon profil</h2>
                 <p data-i18n="Complétez vos informations une seule fois. Elles pourront ensuite être utilisées automatiquement pour vos candidatures.">Complétez vos informations une seule fois. Elles pourront ensuite être utilisées automatiquement pour vos candidatures.</p>
@@ -816,7 +816,7 @@ body:has(#profile-section.hidden) .candidate-sidebar { display:none!important; }
             <a class="profile-offers-link" href="./offers.html" data-i18n="📋 Mes offres">📋 Mes offres</a>
         </header>
 
-        <div class="profile-fields">
+        <div class="profile-fields" data-dashboard-panel="profile">
             <h3 data-i18n="Informations personnelles">Informations personnelles</h3>
             <div class="profile-field"><label for="first-name">
             Prénom
@@ -952,7 +952,7 @@ body:has(#profile-section.hidden) .candidate-sidebar { display:none!important; }
         ></div>
         </div>
 
-        <fieldset id="notification-scope">
+        <fieldset id="notification-scope" data-dashboard-panel="notifications" hidden>
             <legend>Types d’annonces à recevoir</legend>
             <label><input type="checkbox" id="notify-national" checked> Annonces nationales</label>
             <div class="regional-preference-row">
@@ -971,7 +971,7 @@ body:has(#profile-section.hidden) .candidate-sidebar { display:none!important; }
         <!-- PHOTOS -->
         <!-- ========================================= -->
 
-        <div class="photo-section">
+        <div class="photo-section" id="photo-section" data-dashboard-panel="photos" hidden>
 
             <h3>
                 Mes photos
@@ -1184,7 +1184,7 @@ body:has(#profile-section.hidden) .candidate-sidebar { display:none!important; }
 
         </div>
 
-        <section id="gmail-connection-section" class="push-section">
+        <section id="gmail-connection-section" class="push-section" data-dashboard-panel="gmail" hidden>
             <h3>Connexion Gmail</h3>
             <p class="push-description">Connectez votre compte Gmail pour pouvoir envoyer vos candidatures depuis votre propre adresse, après les avoir relues et confirmées.</p>
             <button id="gmail-connect-button" type="button">Connecter mon compte Gmail</button>
@@ -1196,7 +1196,7 @@ body:has(#profile-section.hidden) .candidate-sidebar { display:none!important; }
         <!-- NOTIFICATIONS -->
         <!-- ========================================= -->
 
-        <div class="push-section">
+        <div class="push-section" data-dashboard-panel="notifications" hidden>
 
             <h3>
                 Notifications
@@ -1230,7 +1230,7 @@ body:has(#profile-section.hidden) .candidate-sidebar { display:none!important; }
         <!-- ========================================= -->
 
 
-        <section id="account-settings" class="account-settings-panel">
+        <section id="account-settings" class="account-settings-panel" data-dashboard-panel="settings" hidden>
           <h3 data-i18n="Paramètres du compte">Paramètres du compte</h3>
           <p data-i18n="Gérez ici la langue de l’interface et accédez aux préférences déjà disponibles dans votre profil.">Gérez ici la langue de l’interface et accédez aux préférences déjà disponibles dans votre profil.</p>
           <label for="settings-language" data-i18n="Langue de l’interface">Langue de l’interface</label>
@@ -1238,9 +1238,9 @@ body:has(#profile-section.hidden) .candidate-sidebar { display:none!important; }
             <option value="fr">🇫🇷 Français</option><option value="de">🇩🇪 Deutsch</option><option value="en">🇬🇧 English</option>
           </select>
           <div class="settings-shortcuts">
-            <a href="#notification-scope" data-side-target="notification-scope" data-i18n="Préférences d’annonces">Préférences d’annonces</a>
-            <a href="#enable-push-button" data-side-target="enable-push-button" data-i18n="Notifications push">Notifications push</a>
-            <a href="#gmail-connection-section" data-side-target="gmail-connection-section" data-i18n="Connexion Gmail">Connexion Gmail</a>
+            <a href="#notification-scope" data-side-target="notification-scope" data-dashboard-view="notifications" data-i18n="Préférences d’annonces">Préférences d’annonces</a>
+            <a href="#enable-push-button" data-side-target="enable-push-button" data-dashboard-view="notifications" data-i18n="Notifications push">Notifications push</a>
+            <a href="#gmail-connection-section" data-side-target="gmail-connection-section" data-dashboard-view="gmail" data-i18n="Connexion Gmail">Connexion Gmail</a>
           </div>
           <p class="settings-note" data-i18n="Les changements de profil doivent être enregistrés avec le bouton Enregistrer mon profil.">Les changements de profil doivent être enregistrés avec le bouton Enregistrer mon profil.</p>
           <div class="settings-password">
@@ -1254,7 +1254,7 @@ body:has(#profile-section.hidden) .candidate-sidebar { display:none!important; }
           </div>
         </section>
 
-        <div class="profile-actions">
+        <div class="profile-actions" data-dashboard-panel="profile">
         <button id="save-profile-button" data-i18n="Enregistrer mon profil">
             Enregistrer mon profil
         </button>
@@ -1347,7 +1347,7 @@ body:has(#profile-section.hidden) .candidate-sidebar { display:none!important; }
 
     <!-- Application -->
 
-    <script src="app-core.js?v=2"></script>
+    <script src="app-core.js?v=3"></script>
     <script src="profile-photos.js?v=1"></script>
     <script src="push-ui.js?v=1"></script>
     <script src="auth-actions.js?v=2"></script>

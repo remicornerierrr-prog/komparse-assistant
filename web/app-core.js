@@ -65,6 +65,51 @@ function setCandidateNavigationVisible(visible) {
     candidateSidebar.setAttribute("aria-hidden", visible ? "false" : "true");
 }
 
+const candidateDashboardPanels = Array.from(
+    document.querySelectorAll("[data-dashboard-panel]")
+);
+const candidateDashboardLinks = Array.from(
+    document.querySelectorAll("[data-dashboard-view]")
+);
+
+function setCandidateDashboardView(view) {
+    const selectedLinks = candidateDashboardLinks.filter(
+        (link) => link.dataset.dashboardView === view
+    );
+
+    if (!selectedLinks.length) return;
+
+    for (const panel of candidateDashboardPanels) {
+        panel.hidden = panel.dataset.dashboardPanel !== view;
+    }
+
+    for (const link of candidateDashboardLinks) {
+        const selected = link.dataset.dashboardView === view;
+        link.classList.toggle("active", selected && link.closest(".candidate-sidebar"));
+        if (link.closest(".candidate-sidebar")) {
+            if (selected) {
+                link.setAttribute("aria-current", "page");
+            } else {
+                link.removeAttribute("aria-current");
+            }
+        }
+    }
+}
+
+document.addEventListener("click", (event) => {
+    const link = event.target.closest("a[data-dashboard-view]");
+    if (!link || profileSection.classList.contains("hidden")) return;
+
+    event.preventDefault();
+    setCandidateDashboardView(link.dataset.dashboardView);
+
+    if (link.hash) {
+        window.history.replaceState(null, "", link.hash);
+    }
+});
+
+setCandidateDashboardView("profile");
+
 
 const emailInput =
     document.getElementById(
@@ -497,6 +542,7 @@ function showLoggedIn(user) {
         "hidden"
     );
 
+    setCandidateDashboardView("profile");
     setCandidateNavigationVisible(true);
 
 
@@ -686,5 +732,4 @@ birthDateInput.addEventListener(
     "change",
     updateDisplayedAge
 );
-
 

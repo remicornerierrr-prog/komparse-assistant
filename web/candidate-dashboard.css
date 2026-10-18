@@ -308,6 +308,17 @@ body:has(#profile-section:not(.hidden)) .candidate-main > h1 {
   color: #f4f5f7 !important;
 }
 
+.candidate-main #profile-section .profile-heading[hidden],
+.candidate-main #profile-section .profile-fields[hidden],
+.candidate-main #profile-section #notification-scope[hidden],
+.candidate-main #profile-section .photo-section[hidden],
+.candidate-main #profile-section #gmail-connection-section[hidden],
+.candidate-main #profile-section .push-section[hidden],
+.candidate-main #profile-section #account-settings[hidden],
+.candidate-main #profile-section .profile-actions[hidden] {
+  display: none !important;
+}
+
 .candidate-main #profile-section .profile-fields {
   display: grid !important;
   grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
