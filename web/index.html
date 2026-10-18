@@ -615,6 +615,38 @@ body{width:min(calc(100% - 48px),1240px)!important;max-width:1240px!important;ma
   #profile-section .photo-section { display:block!important; }
 }
 </style>
+<style>
+/* Root cause fix: legacy body grid placed page sections in the right-hand column. */
+@media (min-width:1050px) {
+  html { display:block!important; width:100%!important; }
+  body {
+    display:block!important;
+    position:relative!important;
+    width:100%!important; max-width:none!important; min-width:0!important;
+    margin:0!important; padding:24px 32px 56px!important;
+    float:none!important; grid-template-columns:none!important;
+    column-count:1!important; transform:none!important;
+  }
+  body > * { grid-column:auto!important; grid-area:auto!important; }
+  .cinema-masthead {
+    display:flex!important; width:100%!important; max-width:none!important;
+    margin:0 auto 28px!important; padding:12px 0 22px!important;
+  }
+  body > h1, body > #auth-section, body > #profile-section, body > #message {
+    position:relative!important; left:auto!important; right:auto!important;
+    float:none!important; transform:none!important;
+    width:100%!important; max-width:1180px!important;
+    margin-left:auto!important; margin-right:auto!important;
+  }
+  body > h1 { margin-top:20px!important; margin-bottom:22px!important; }
+  body > #profile-section, body > #auth-section {
+    padding:clamp(28px,3vw,48px)!important;
+  }
+  #message:empty, #profile-save-message:empty, #settings-password-status:empty,
+  #gmail-connection-status:empty, #push-status:empty { display:none!important; }
+  .cinema-reel { display:none!important; }
+}
+</style>
 </head>
 
 
