@@ -27,12 +27,8 @@ Deno.serve(async (req: Request) => {
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  const googleApiKey = Deno.env.get("GOOGLE_TRANSLATE_API_KEY");
   if (!supabaseUrl || !anonKey || !serviceKey) {
     return json({ error: "Configuration Supabase incomplète." }, 503);
-  }
-  if (!googleApiKey) {
-    return json({ error: "Le service de traduction n'est pas configuré." }, 503);
   }
 
   try {
@@ -96,40 +92,51 @@ Deno.serve(async (req: Request) => {
       return json({ error: "Un ou plusieurs titres d'offre sont indisponibles." }, 404);
     }
 
-    const googleResponse = await fetch("https://translation.googleapis.com/language/translate/v2", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-goog-api-key": googleApiKey,
-      },
-      body: JSON.stringify({
-        q: sourceTitles,
-        source: "de",
-        target: targetLanguage,
-        format: "text",
-      }),
-    });
-    if (!googleResponse.ok) {
-      const providerError = await googleResponse.text();
-      console.error("Google Cloud Translation request failed:", providerError);
-      return json({ error: "Google Cloud Translation n'a pas pu traduire les titres." }, 502);
+    const translationRequest = new URLSearchParams();
+    for (const title of sourceTitles) {
+      translationRequest.append("q", title);
+    }
+    translationRequest.set("source", "de");
+    translationRequest.set("target", targetLanguage);
+    translationRequest.set("format", "text");
+
+    let translationResponse: Response;
+    try {
+      translationResponse = await fetch("https://translate.terraprint.co/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: translationRequest,
+        signal: AbortSignal.timeout(15000),
+      });
+    } catch (error) {
+      console.error("LibreTranslate community instance is unavailable:", error);
+      return json({ error: "Le service communautaire de traduction est indisponible." }, 502);
+    }
+    if (!translationResponse.ok) {
+      const providerError = await translationResponse.text();
+      console.error("LibreTranslate request failed:", providerError);
+      return json({ error: "Le service communautaire de traduction n'a pas pu traduire les titres." }, 502);
     }
 
-    const payload = await googleResponse.json();
-    const translatedTitles: unknown = payload?.data?.translations;
+    const payload = await translationResponse.json();
+    const translatedText: unknown = payload?.translatedText;
+    const translatedTitles =
+      typeof translatedText === "string" && offerIds.length === 1
+        ? [translatedText]
+        : translatedText;
     if (
       !Array.isArray(translatedTitles) ||
       translatedTitles.length !== offerIds.length ||
-      !translatedTitles.every((item) => typeof item?.translatedText === "string")
+      !translatedTitles.every((title) => typeof title === "string" && title.trim())
     ) {
-      console.error("Google Cloud Translation returned an invalid response.");
+      console.error("LibreTranslate returned an invalid response.");
       return json({ error: "La réponse du service de traduction est invalide." }, 502);
     }
 
     return json({
       translations: offerIds.map((offerId, index) => ({
         offer_id: offerId,
-        title: translatedTitles[index].translatedText,
+        title: translatedTitles[index],
       })),
     });
   } catch (error) {

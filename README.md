@@ -34,15 +34,15 @@ Le workflow GitHub Actions `Komparse scraper` est planifié toutes les 15 minute
 
 ## Traduction des titres d'offres
 
-Les titres restent en allemand lorsque l'interface est en allemand. En français ou en anglais, la fonction Supabase `translate-offer-titles` traduit les titres affichés et conserve le titre allemand original en dessous. La fonction vérifie que chaque offre appartient aux correspondances de l'utilisateur connecté et appelle Google Cloud Translation côté serveur.
+Les titres restent en allemand lorsque l'interface est en allemand. En français ou en anglais, la fonction Supabase `translate-offer-titles` traduit les titres affichés et conserve le titre allemand original en dessous. La fonction vérifie que chaque offre appartient aux correspondances de l'utilisateur connecté et relaie la traduction via l'instance communautaire LibreTranslate `translate.terraprint.co`, sans clé API payante.
 
-Pour activer cette fonctionnalité, activer Cloud Translation API et sa facturation dans Google Cloud, puis créer une clé API restreinte à cette API. Ajouter la clé dans **Supabase Dashboard → Edge Functions → Secrets** sous le nom `GOOGLE_TRANSLATE_API_KEY`, puis déployer la fonction depuis un environnement connecté au projet :
+Pour activer cette fonctionnalité, déployer la fonction depuis un environnement connecté au projet :
 
 ```powershell
 supabase functions deploy translate-offer-titles
 ```
 
-La clé ne doit jamais être ajoutée au code du site ni aux secrets GitHub Pages. Sans ce secret, les offres restent accessibles et leur titre original est affiché avec un message signalant que la traduction est indisponible.
+L'instance communautaire est fournie sans garantie de disponibilité, de capacité ou de quota; elle peut limiter ou refuser des requêtes. En cas d'indisponibilité, les offres restent accessibles et leur titre original est affiché avec un message signalant que la traduction est indisponible. L'instance reçoit les titres allemands envoyés pour traduction.
 
 ## Notifications push
 
