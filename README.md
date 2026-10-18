@@ -34,7 +34,7 @@ Le workflow GitHub Actions `Komparse scraper` est planifié toutes les 15 minute
 
 ## Traduction des titres d'offres
 
-Les titres restent en allemand lorsque l'interface est en allemand. En français ou en anglais, la fonction Supabase `translate-offer-titles` traduit les titres affichés et conserve le titre allemand original en dessous. La fonction vérifie que chaque offre appartient aux correspondances de l'utilisateur connecté, utilise MyMemory comme service gratuit principal et tente l'instance communautaire LibreTranslate en secours.
+Les titres restent en allemand lorsque l'interface est en allemand. En français ou en anglais, la fonction Supabase `translate-offer-titles` traduit les titres affichés et conserve le titre allemand original en dessous. La fonction vérifie que chaque offre appartient aux correspondances de l'utilisateur connecté, utilise MyMemory comme service gratuit principal et tente l'instance communautaire LibreTranslate en secours. Les résultats sont mémorisés dans Supabase par offre et par langue, afin que les utilisateurs partagent le même cache et qu'une traduction déjà enregistrée ne consomme pas à nouveau le quota externe.
 
 Pour activer cette fonctionnalité, déployer la fonction depuis un environnement connecté au projet :
 

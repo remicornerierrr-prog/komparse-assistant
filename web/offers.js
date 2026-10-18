@@ -130,6 +130,9 @@
         if (!data || !Array.isArray(data.translations)) {
           throw new Error("La réponse de traduction des titres est invalide.");
         }
+        if (data.cache_persisted === false) {
+          console.error("La traduction a réussi, mais n'a pas été enregistrée dans le cache partagé.");
+        }
         for (const result of data.translations) {
           if (
             Number.isSafeInteger(result.offer_id) &&

@@ -151,24 +151,76 @@ Deno.serve(async (req: Request) => {
       return json({ error: "Un ou plusieurs titres d'offre sont indisponibles." }, 404);
     }
 
-    let translatedTitles: string[];
-    try {
-      translatedTitles = await translateWithMyMemory(sourceTitles, targetLanguage);
-    } catch (error) {
-      console.warn("MyMemory translation failed; trying LibreTranslate:", error);
+    const sourceTitleByOfferId = new Map<string, string>(
+      offerIds.map((offerId, index): [string, string] => [String(offerId), sourceTitles[index]])
+    );
+    const { data: cachedRows, error: cacheReadError } = await admin
+      .from("offer_title_translations")
+      .select("offer_id,source_title,translated_title")
+      .in("offer_id", offerIds.map(String))
+      .eq("target_language", targetLanguage);
+    if (cacheReadError) {
+      console.error("Unable to read shared offer title translations:", cacheReadError.message);
+      return json({ error: "Impossible de charger le cache des traductions." }, 500);
+    }
+
+    const translatedByOfferId = new Map<string, string>();
+    for (const row of cachedRows || []) {
+      if (
+        row.source_title === sourceTitleByOfferId.get(row.offer_id) &&
+        typeof row.translated_title === "string" &&
+        row.translated_title.trim()
+      ) {
+        translatedByOfferId.set(row.offer_id, row.translated_title);
+      }
+    }
+
+    const missingIndices = offerIds
+      .map((_, index) => index)
+      .filter((index) => !translatedByOfferId.has(String(offerIds[index])));
+    let cachePersisted = true;
+    if (missingIndices.length) {
+      const missingTitles = missingIndices.map((index) => sourceTitles[index]);
+      let translatedMissingTitles: string[];
       try {
-        translatedTitles = await translateWithLibreTranslate(sourceTitles, targetLanguage);
-      } catch (fallbackError) {
-        console.error("Both translation providers failed:", fallbackError);
-        return json({ error: "Les services de traduction sont indisponibles." }, 502);
+        translatedMissingTitles = await translateWithMyMemory(missingTitles, targetLanguage);
+      } catch (error) {
+        console.warn("MyMemory translation failed; trying LibreTranslate:", error);
+        try {
+          translatedMissingTitles = await translateWithLibreTranslate(missingTitles, targetLanguage);
+        } catch (fallbackError) {
+          console.error("Both translation providers failed:", fallbackError);
+          return json({ error: "Les services de traduction sont indisponibles." }, 502);
+        }
+      }
+
+      const cacheRows = missingIndices.map((index, translatedIndex) => {
+        const offerId = String(offerIds[index]);
+        const translatedTitle = translatedMissingTitles[translatedIndex];
+        translatedByOfferId.set(offerId, translatedTitle);
+        return {
+          offer_id: offerId,
+          target_language: targetLanguage,
+          source_title: sourceTitles[index],
+          translated_title: translatedTitle,
+          updated_at: new Date().toISOString(),
+        };
+      });
+      const { error: cacheWriteError } = await admin
+        .from("offer_title_translations")
+        .upsert(cacheRows, { onConflict: "offer_id,target_language" });
+      if (cacheWriteError) {
+        cachePersisted = false;
+        console.error("Unable to persist shared offer title translations:", cacheWriteError.message);
       }
     }
 
     return json({
       translations: offerIds.map((offerId, index) => ({
         offer_id: offerId,
-        title: translatedTitles[index],
+        title: translatedByOfferId.get(String(offerId)) || sourceTitles[index],
       })),
+      cache_persisted: cachePersisted,
     });
   } catch (error) {
     console.error("Offer title translation failed:", error);
