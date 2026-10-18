@@ -96,6 +96,19 @@ function setCandidateDashboardView(view) {
     }
 }
 
+function getCandidateDashboardViewFromLocation() {
+    const target = document.getElementById(
+        window.location.hash.slice(1)
+    );
+
+    if (!target) return "profile";
+
+    const targetPanel = target.closest("[data-dashboard-panel]");
+    return targetPanel
+        ? targetPanel.dataset.dashboardPanel
+        : "profile";
+}
+
 document.addEventListener("click", (event) => {
     const link = event.target.closest("a[data-dashboard-view]");
     if (!link || profileSection.classList.contains("hidden")) return;
@@ -108,7 +121,7 @@ document.addEventListener("click", (event) => {
     }
 });
 
-setCandidateDashboardView("profile");
+setCandidateDashboardView(getCandidateDashboardViewFromLocation());
 
 
 const emailInput =
@@ -542,7 +555,7 @@ function showLoggedIn(user) {
         "hidden"
     );
 
-    setCandidateDashboardView("profile");
+    setCandidateDashboardView(getCandidateDashboardViewFromLocation());
     setCandidateNavigationVisible(true);
 
 
@@ -732,4 +745,3 @@ birthDateInput.addEventListener(
     "change",
     updateDisplayedAge
 );
-
