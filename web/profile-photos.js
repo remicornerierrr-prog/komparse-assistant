@@ -134,6 +134,11 @@ function getPhotoElements(
                 config.inputId
             ),
 
+        fileName:
+            document.querySelector(
+                `.photo-upload[data-photo-type="${photoType}"] .photo-file-name`
+            ),
+
         preview:
             document.getElementById(
                 config.previewId
@@ -151,6 +156,17 @@ function getPhotoElements(
 
     };
 
+}
+
+function setPhotoFileName(elements, fileName = "") {
+    if (fileName) {
+        elements.fileName.removeAttribute("data-i18n");
+        elements.fileName.textContent = fileName;
+        return;
+    }
+
+    elements.fileName.setAttribute("data-i18n", "Aucun fichier choisi");
+    elements.fileName.textContent = "Aucun fichier choisi";
 }
 
 
@@ -175,8 +191,20 @@ function setPhotoStatus(
     }
 
 
-    elements.status.textContent =
-        message;
+    const uploadErrorPrefix =
+        "Erreur lors de l'envoi de la photo : ";
+
+    if (message.startsWith(uploadErrorPrefix)) {
+        const prefix = document.createElement("span");
+        prefix.dataset.i18n = "Erreur lors de l'envoi de la photo :";
+        prefix.textContent = "Erreur lors de l'envoi de la photo :";
+        elements.status.replaceChildren(
+            prefix,
+            document.createTextNode(` ${message.slice(uploadErrorPrefix.length)}`)
+        );
+    } else {
+        elements.status.textContent = message;
+    }
 
 
     elements.status.className =
@@ -237,6 +265,8 @@ function clearPhotoUI(
 
     elements.input.value =
         "";
+
+    setPhotoFileName(elements);
 
 }
 
@@ -449,6 +479,8 @@ async function uploadProfilePhoto(
 
         elements.input.value =
             "";
+
+        setPhotoFileName(elements);
 
 
         setPhotoStatus(
@@ -685,6 +717,8 @@ async function uploadProfilePhoto(
         elements.input.value =
             "";
 
+        setPhotoFileName(elements);
+
     }
 
 
@@ -748,6 +782,7 @@ Object.keys(
                         ? elements.input.files[0]
                         : null;
 
+                setPhotoFileName(elements, file ? file.name : "");
 
                 if (!file) {
                     return;
@@ -774,5 +809,3 @@ Object.keys(
 
     }
 );
-
-

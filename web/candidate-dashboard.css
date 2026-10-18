@@ -426,11 +426,57 @@ body:has(#profile-section:not(.hidden)) .candidate-main > h1 {
 }
 
 .candidate-main #profile-section .photo-file-input {
-  width: 100% !important;
-  max-width: 100% !important;
-  min-height: 40px !important;
-  padding: 7px !important;
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  min-height: 1px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  clip-path: inset(50%) !important;
+  border: 0 !important;
+}
+
+.candidate-main #profile-section .photo-file-control {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 12px;
+  margin: 10px 0 !important;
+  padding: 7px 10px;
+  border: 1px solid #394555;
+  border-radius: 10px;
+  background: #0b111a;
+}
+
+.candidate-main #profile-section .photo-file-button {
+  display: inline-flex !important;
+  flex: 0 0 auto;
+  min-height: 34px;
+  align-items: center;
+  margin: 0 !important;
+  padding: 0 12px;
+  border: 1px solid #f2c45f66;
+  border-radius: 7px;
+  background: #f2c45f18;
+  color: #f5f6fa !important;
+  cursor: pointer;
   font-size: .82rem !important;
+}
+
+.candidate-main #profile-section .photo-file-control:focus-within {
+  outline: 2px solid rgba(242, 196, 95, .65);
+  outline-offset: 2px;
+}
+
+.candidate-main #profile-section .photo-file-name {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--dashboard-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .candidate-main #profile-section .profile-actions {

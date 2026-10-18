@@ -24,6 +24,14 @@ Object.assign(T.de,{
  "Informations personnelles":"Persönliche Angaben","Mensurations":"Körperangaben",
  "Navigation candidat":"Casting-Navigation","Komparse identité cinéma":"Komparse Markenauftritt",
  "À L’AFFICHE POUR VOUS":"CASTING-ANGEBOTE FÜR DICH"
+ ,"Choisir un fichier":"Datei auswählen","Aucun fichier choisi":"Keine Datei ausgewählt",
+ "✓ Photo enregistrée":"✓ Foto gespeichert",
+ "Photo enregistrée, mais impossible de charger l'aperçu.":"Foto gespeichert, aber die Vorschau konnte nicht geladen werden.",
+ "Vous devez être connecté.":"Du musst angemeldet sein.","Upload de la photo...":"Foto wird hochgeladen …",
+ "Impossible de préparer le remplacement.":"Der Fotoaustausch konnte nicht vorbereitet werden.",
+ "La photo n'a pas pu être enregistrée.":"Das Foto konnte nicht gespeichert werden.",
+ "Erreur lors de l'envoi de la photo :":"Fehler beim Hochladen des Fotos:",
+ "Une erreur inattendue s'est produite.":"Ein unerwarteter Fehler ist aufgetreten."
 });
 Object.assign(T.en,{
  "Déjà inscrit(e) ? Saisissez l'e-mail et le mot de passe de votre compte, puis cliquez sur « Se connecter ».":"Already registered? Enter your account email and password, then select “Sign in”.",
@@ -37,6 +45,14 @@ Object.assign(T.en,{
  "Informations personnelles":"Personal information","Mensurations":"Measurements",
  "Navigation candidat":"Candidate navigation","Komparse identité cinéma":"Komparse brand",
  "À L’AFFICHE POUR VOUS":"CASTING CALLS FOR YOU"
+ ,"Choisir un fichier":"Choose a file","Aucun fichier choisi":"No file chosen",
+ "✓ Photo enregistrée":"✓ Photo saved",
+ "Photo enregistrée, mais impossible de charger l'aperçu.":"Photo saved, but its preview could not be loaded.",
+ "Vous devez être connecté.":"You must be signed in.","Upload de la photo...":"Uploading photo…",
+ "Impossible de préparer le remplacement.":"Unable to prepare the replacement.",
+ "La photo n'a pas pu être enregistrée.":"The photo could not be saved.",
+ "Erreur lors de l'envoi de la photo :":"Error uploading photo:",
+ "Une erreur inattendue s'est produite.":"An unexpected error occurred."
 });
 let lang="fr";const reverse={de:{},en:{}};
 Object.keys(T).forEach(l=>Object.entries(T[l]).forEach(([a,b])=>reverse[l][b]=a));

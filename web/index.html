@@ -662,7 +662,7 @@ body{width:min(calc(100% - 48px),1240px)!important;max-width:1240px!important;ma
 }
 body:has(#profile-section.hidden) .candidate-sidebar { display:none!important; }
 </style>
-<link rel="stylesheet" href="./candidate-dashboard.css?v=2">
+<link rel="stylesheet" href="./candidate-dashboard.css?v=3">
 </head>
 
 
@@ -1014,12 +1014,16 @@ body:has(#profile-section.hidden) .candidate-sidebar { display:none!important; }
                 </div>
 
 
-                <input
-                    type="file"
-                    id="photo-portrait"
-                    class="photo-file-input"
-                    accept="image/jpeg,image/png,image/webp"
-                >
+                <div class="photo-file-control">
+                    <input
+                        type="file"
+                        id="photo-portrait"
+                        class="photo-file-input"
+                        accept="image/jpeg,image/png,image/webp"
+                    >
+                    <label class="photo-file-button" for="photo-portrait" data-i18n="Choisir un fichier">Choisir un fichier</label>
+                    <span class="photo-file-name" data-i18n="Aucun fichier choisi" aria-live="polite">Aucun fichier choisi</span>
+                </div>
 
 
                 <button
@@ -1062,12 +1066,16 @@ body:has(#profile-section.hidden) .candidate-sidebar { display:none!important; }
                 </div>
 
 
-                <input
-                    type="file"
-                    id="photo-left"
-                    class="photo-file-input"
-                    accept="image/jpeg,image/png,image/webp"
-                >
+                <div class="photo-file-control">
+                    <input
+                        type="file"
+                        id="photo-left"
+                        class="photo-file-input"
+                        accept="image/jpeg,image/png,image/webp"
+                    >
+                    <label class="photo-file-button" for="photo-left" data-i18n="Choisir un fichier">Choisir un fichier</label>
+                    <span class="photo-file-name" data-i18n="Aucun fichier choisi" aria-live="polite">Aucun fichier choisi</span>
+                </div>
 
 
                 <button
@@ -1110,12 +1118,16 @@ body:has(#profile-section.hidden) .candidate-sidebar { display:none!important; }
                 </div>
 
 
-                <input
-                    type="file"
-                    id="photo-right"
-                    class="photo-file-input"
-                    accept="image/jpeg,image/png,image/webp"
-                >
+                <div class="photo-file-control">
+                    <input
+                        type="file"
+                        id="photo-right"
+                        class="photo-file-input"
+                        accept="image/jpeg,image/png,image/webp"
+                    >
+                    <label class="photo-file-button" for="photo-right" data-i18n="Choisir un fichier">Choisir un fichier</label>
+                    <span class="photo-file-name" data-i18n="Aucun fichier choisi" aria-live="polite">Aucun fichier choisi</span>
+                </div>
 
 
                 <button
@@ -1158,12 +1170,16 @@ body:has(#profile-section.hidden) .candidate-sidebar { display:none!important; }
                 </div>
 
 
-                <input
-                    type="file"
-                    id="photo-full-body"
-                    class="photo-file-input"
-                    accept="image/jpeg,image/png,image/webp"
-                >
+                <div class="photo-file-control">
+                    <input
+                        type="file"
+                        id="photo-full-body"
+                        class="photo-file-input"
+                        accept="image/jpeg,image/png,image/webp"
+                    >
+                    <label class="photo-file-button" for="photo-full-body" data-i18n="Choisir un fichier">Choisir un fichier</label>
+                    <span class="photo-file-name" data-i18n="Aucun fichier choisi" aria-live="polite">Aucun fichier choisi</span>
+                </div>
 
 
                 <button
@@ -1348,7 +1364,7 @@ body:has(#profile-section.hidden) .candidate-sidebar { display:none!important; }
     <!-- Application -->
 
     <script src="app-core.js?v=4"></script>
-    <script src="profile-photos.js?v=1"></script>
+    <script src="profile-photos.js?v=2"></script>
     <script src="push-ui.js?v=1"></script>
     <script src="auth-actions.js?v=2"></script>
     <script src="profile.js?v=3"></script>
@@ -1356,7 +1372,7 @@ body:has(#profile-section.hidden) .candidate-sidebar { display:none!important; }
     <script src="gmail-ui.js?v=4"></script>
     <script src="account-settings.js?v=2"></script>
 
-    <script src="./language.js?v=8"></script>
+    <script src="./language.js?v=9"></script>
 </body>
 
 </html>
