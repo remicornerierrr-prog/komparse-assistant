@@ -126,6 +126,7 @@ Deno.serve(async (req: Request) => {
       .from("matches")
       .select("offer_id")
       .eq("user_id", authData.user.id)
+      .eq("is_active", true)
       .in("offer_id", offerIds);
     if (matchError) {
       console.error("Unable to validate offer access:", matchError.message);

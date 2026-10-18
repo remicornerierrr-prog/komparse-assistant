@@ -56,7 +56,7 @@ Deno.serve(async (req: Request) => {
     if (body.confirm !== true) return json({ error: "Explicit confirmation required" }, 400);
 
     const { data: match, error: matchError } = await supabase
-      .from("matches").select("id").eq("user_id", userId).eq("offer_id", offerId).maybeSingle();
+      .from("matches").select("id").eq("user_id", userId).eq("offer_id", offerId).eq("is_active", true).maybeSingle();
     if (matchError) throw matchError;
     if (!match) return json({ error: "Offer not matched to this user" }, 403);
 

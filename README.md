@@ -34,6 +34,8 @@ Le workflow GitHub Actions `Komparse scraper` est planifié toutes les 15 minute
 
 Lorsqu'un profil est créé, les annonces qui le matchent et dont la date de publication se situe dans les sept jours précédant la création du profil sont ajoutées à Mes offres au prochain passage du scraper. Ces matches de bienvenue ne déclenchent pas de notification push rétroactive.
 
+Lorsqu'un profil est modifié, le scraper recalcule les correspondances des annonces publiées au cours des sept derniers jours selon les critères actualisés. Les annonces qui ne correspondent plus sont masquées, sauf si une candidature leur a déjà été envoyée. Les matches recalculés ne génèrent pas de notification push rétroactive.
+
 ## Traduction des titres d'offres
 
 Les titres restent en allemand lorsque l'interface est en allemand. En français ou en anglais, la fonction Supabase `translate-offer-titles` traduit les titres affichés et conserve le titre allemand original en dessous. La fonction vérifie que chaque offre appartient aux correspondances de l'utilisateur connecté, utilise MyMemory comme service gratuit principal et tente l'instance communautaire LibreTranslate en secours. Les résultats sont mémorisés dans Supabase par offre et par langue, afin que les utilisateurs partagent le même cache et qu'une traduction déjà enregistrée ne consomme pas à nouveau le quota externe.

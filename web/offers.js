@@ -191,7 +191,7 @@
     root.append(node("h2", "Mes offres"));
     const { data: matches, error } = await client.from("matches")
       .select("id,offer_id,created_at,offers(id,title,location_text,shoot_date,shoot_date_text,age_min,age_max,age_description,source_url)")
-      .eq("user_id", userId).order("created_at", { ascending: false });
+      .eq("user_id", userId).eq("is_active", true).order("created_at", { ascending: false });
     if (error) {
       root.append(node("p", "Impossible de charger vos offres. Réessayez plus tard."));
       console.error("Erreur Mes offres", error);
@@ -234,7 +234,7 @@
       return;
     }
     const { data: match, error: matchError } = await client.from("matches")
-      .select("id").eq("user_id", userId).eq("offer_id", numericId).maybeSingle();
+      .select("id").eq("user_id", userId).eq("offer_id", numericId).eq("is_active", true).maybeSingle();
     if (matchError || !match) {
       root.append(node("p", "Cette offre n'est pas disponible dans vos correspondances."));
       return;

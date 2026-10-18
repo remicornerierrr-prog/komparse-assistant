@@ -18,7 +18,7 @@ def load_profiles(
         .select(
             "id,first_name,last_name,email,phone,"
             "birth_date,gender,address,city,height_cm,"
-            "shoe_size,clothing_size,profession,created_at,"
+            "shoe_size,clothing_size,profession,created_at,updated_at,"
             "notify_national,notify_regional,notify_region"
         )
         .execute()
@@ -33,6 +33,58 @@ def load_profiles(
 
     return profiles
 
+
+def load_profile_match_refresh_state(
+    supabase: Client,
+) -> dict[str, str]:
+    response = (
+        supabase
+        .table("profile_match_refresh_state")
+        .select("user_id,profile_updated_at")
+        .execute()
+    )
+    return {
+        row["user_id"]: row["profile_updated_at"]
+        for row in response.data or []
+    }
+
+
+def save_profile_match_refresh_state(
+    supabase: Client,
+    user_id: str,
+    profile_updated_at: str,
+) -> None:
+    supabase.table("profile_match_refresh_state").upsert(
+        {
+            "user_id": user_id,
+            "profile_updated_at": profile_updated_at,
+            "refreshed_at": datetime.now(timezone.utc).isoformat(),
+        },
+        on_conflict="user_id",
+    ).execute()
+
+
+def deactivate_unmatched_profile_matches(
+    supabase: Client,
+    user_id: str,
+    evaluated_offer_ids: set[int],
+    matched_offer_ids: set[int],
+) -> int:
+    unmatched_offer_ids = evaluated_offer_ids - matched_offer_ids
+    if not unmatched_offer_ids:
+        return 0
+
+    response = (
+        supabase
+        .table("matches")
+        .update({"is_active": False})
+        .eq("user_id", user_id)
+        .eq("is_active", True)
+        .or_("application_status.is.null,application_status.neq.sent")
+        .in_("offer_id", list(unmatched_offer_ids))
+        .execute()
+    )
+    return len(response.data or [])
 
 
 
@@ -265,7 +317,7 @@ def get_existing_match(
         .table("matches")
         .select(
             "id,offer_id,user_id,reason,"
-            "notified_at,application_status"
+            "notified_at,application_status,is_active"
         )
         .eq("offer_id", offer_id)
         .eq("user_id", user_id)
@@ -315,6 +367,11 @@ def create_match(
     )
 
     if existing is not None:
+        if existing.get("is_active") is False:
+            supabase.table("matches").update({
+                "is_active": True,
+                "reason": reason,
+            }).eq("id", existing["id"]).execute()
         print(
             f"    Match déjà existant : "
             f"offer={offer_id} "

@@ -56,6 +56,9 @@ try:
         get_push_delivery,
         get_push_subscriptions,
         load_profiles,
+        load_profile_match_refresh_state,
+        save_profile_match_refresh_state,
+        deactivate_unmatched_profile_matches,
         mark_match_notified,
         match_already_exists,
         save_offer,
@@ -90,6 +93,9 @@ except ImportError:  # Support `python scraper/main.py` execution.
         get_push_delivery,
         get_push_subscriptions,
         load_profiles,
+        load_profile_match_refresh_state,
+        save_profile_match_refresh_state,
+        deactivate_unmatched_profile_matches,
         mark_match_notified,
         match_already_exists,
         save_offer,
@@ -149,6 +155,8 @@ OFFER_STATUS_STATS = {
     "no_profile_match": 0,
     "too_old_for_push": 0,
     "new_profile_backfilled_matches": 0,
+    "profile_match_refreshes": 0,
+    "profile_matches_deactivated": 0,
 }
 
 
@@ -187,6 +195,19 @@ def create_supabase_client() -> Client:
         SUPABASE_URL,
         SUPABASE_SECRET_KEY,
     )
+
+
+def parse_utc_timestamp(value: Any) -> datetime:
+    if isinstance(value, datetime):
+        parsed = value
+    elif isinstance(value, str):
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    else:
+        raise ValueError("La date doit être une chaîne ISO ou un datetime.")
+
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
 
 
 # ============================================================
@@ -424,9 +445,27 @@ def process_offer(
     supabase: Client,
     raw_parsed_offer: dict[str, Any],
     profiles: list[dict[str, Any]],
+    *,
+    refresh_profile_ids: set[str] | None = None,
+    evaluated_offer_ids_by_user: dict[str, set[int]] | None = None,
+    matched_offer_ids_by_user: dict[str, set[int]] | None = None,
 ) -> None:
 
     offer = normalize_offer(raw_parsed_offer)
+    refresh_profile_ids = refresh_profile_ids or set()
+    if evaluated_offer_ids_by_user is None:
+        evaluated_offer_ids_by_user = {}
+    if matched_offer_ids_by_user is None:
+        matched_offer_ids_by_user = {}
+    refresh_candidate_profile_ids = {
+        profile.get("id")
+        for profile in profiles
+        if profile.get("id") in refresh_profile_ids
+        and is_offer_recent_for_new_profile(
+            offer.get("published_at"),
+            datetime.now(timezone.utc),
+        )
+    }
 
     if not offer["komparse_id"]:
         print("Offre ignorée : komparse_id absent.")
@@ -474,6 +513,8 @@ def process_offer(
     print("  → Nouvelle offre" if is_new else "  → Offre existante mise à jour")
 
     if offer_status == "outside":
+        for user_id in refresh_candidate_profile_ids:
+            evaluated_offer_ids_by_user.setdefault(user_id, set()).add(offer_id)
         OFFER_STATUS_STATS["outside"] += 1
         print(f"  STATUT FINAL: HORS ZONE — aucun matching ni notification (ID {offer['komparse_id']}).")
         return
@@ -500,7 +541,7 @@ def process_offer(
             profile.get("created_at"),
         )
     }
-    if not recent_for_push and not backfill_profile_ids:
+    if not recent_for_push and not backfill_profile_ids and not refresh_candidate_profile_ids:
         OFFER_STATUS_STATS["too_old_for_push"] += 1
         print(
             f"  STATUT FINAL: TROP ANCIENNE / DATE DE PUBLICATION ABSENTE — "
@@ -519,14 +560,17 @@ def process_offer(
         try:
             user_id = profile.get("id")
             profile_backfill = user_id in backfill_profile_ids
+            profile_refresh = user_id in refresh_candidate_profile_ids
             suppress_push = profile_backfill and is_offer_published_before_profile(
                 offer.get("published_at"),
                 profile.get("created_at"),
-            )
-            if not recent_for_push and not profile_backfill:
+            ) or profile_refresh
+            if not recent_for_push and not profile_backfill and not profile_refresh:
                 continue
 
             if not profile_allows_offer_scope(offer.get("location_text"), profile):
+                if profile_refresh:
+                    evaluated_offer_ids_by_user.setdefault(user_id, set()).add(offer_id)
                 print(
                     "    Offre ignorée pour le profil "
                     f"{profile.get('id')} : portée géographique non autorisée "
@@ -535,6 +579,10 @@ def process_offer(
                 continue
 
             result = match_offer_to_profile(matching_offer, profile)
+            if profile_refresh and (
+                result is False or not result.get("manual_review")
+            ):
+                evaluated_offer_ids_by_user.setdefault(user_id, set()).add(offer_id)
 
             if result is False:
                 continue
@@ -564,6 +612,8 @@ def process_offer(
                 "reason",
                 {"location": True, "age": True, "gender": True},
             )
+            if profile_refresh:
+                matched_offer_ids_by_user.setdefault(user_id, set()).add(offer_id)
 
             match_id, match_created = create_match(
                 supabase, offer_id, user_id, reason
@@ -672,6 +722,31 @@ def main() -> None:
 
     # Charger les profils.
     profiles = load_profiles(supabase)
+    refresh_states = load_profile_match_refresh_state(supabase)
+    profiles_to_refresh = {}
+    for profile in profiles:
+        user_id = profile.get("id")
+        updated_at = profile.get("updated_at")
+        if not user_id or not updated_at:
+            continue
+
+        try:
+            profile_updated_at = parse_utc_timestamp(updated_at)
+            refreshed_at = (
+                parse_utc_timestamp(refresh_states[user_id])
+                if user_id in refresh_states
+                else None
+            )
+        except ValueError as error:
+            raise ValueError(
+                f"Date de mise à jour invalide pour le profil {user_id}."
+            ) from error
+
+        if refreshed_at is None or profile_updated_at > refreshed_at:
+            profiles_to_refresh[user_id] = profile
+    refresh_profile_ids = set(profiles_to_refresh)
+    evaluated_offer_ids_by_user: dict[str, set[int]] = {}
+    matched_offer_ids_by_user: dict[str, set[int]] = {}
 
     # Traiter les offres.
     success_count = 0
@@ -683,6 +758,9 @@ def main() -> None:
                 supabase,
                 raw_offer,
                 profiles,
+                refresh_profile_ids=refresh_profile_ids,
+                evaluated_offer_ids_by_user=evaluated_offer_ids_by_user,
+                matched_offer_ids_by_user=matched_offer_ids_by_user,
             )
 
             success_count += 1
@@ -700,6 +778,26 @@ def main() -> None:
             # le traitement des suivantes.
             continue
 
+    if error_count == 0:
+        for user_id, profile in profiles_to_refresh.items():
+            try:
+                deactivated_count = deactivate_unmatched_profile_matches(
+                    supabase,
+                    user_id,
+                    evaluated_offer_ids_by_user.get(user_id, set()),
+                    matched_offer_ids_by_user.get(user_id, set()),
+                )
+                OFFER_STATUS_STATS["profile_matches_deactivated"] += deactivated_count
+                save_profile_match_refresh_state(
+                    supabase,
+                    user_id,
+                    profile["updated_at"],
+                )
+                OFFER_STATUS_STATS["profile_match_refreshes"] += 1
+            except Exception as error:
+                error_count += 1
+                print(f"Impossible d'actualiser les offres du profil {user_id}: {error}")
+
     # Résumé.
     print()
     print("==========================================")
@@ -713,6 +811,8 @@ def main() -> None:
     print(f"  Aucun profil compatible  : {OFFER_STATUS_STATS['no_profile_match']}")
     print(f"  Trop anciennes / date absente : {OFFER_STATUS_STATS['too_old_for_push']}")
     print(f"  Matches de bienvenue créés sans push : {OFFER_STATUS_STATS['new_profile_backfilled_matches']}")
+    print(f"  Profils actualisés après modification : {OFFER_STATUS_STATS['profile_match_refreshes']}")
+    print(f"  Correspondances retirées : {OFFER_STATUS_STATS['profile_matches_deactivated']}")
     print("\nNotifications push — bilan par tentative/appareil :")
     print(f"  Tentatives d'envoi         : {NOTIFICATION_STATS['attempted']}")
     print(f"  Acceptées par la passerelle: {NOTIFICATION_STATS['provider_accepted']}")

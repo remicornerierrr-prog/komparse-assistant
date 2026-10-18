@@ -3,7 +3,12 @@ import unittest
 from contextlib import redirect_stdout
 from unittest.mock import patch
 
-from scraper.main import OFFER_STATUS_STATS, prepare_offer_status, process_offer
+from scraper.main import (
+    OFFER_STATUS_STATS,
+    parse_utc_timestamp,
+    prepare_offer_status,
+    process_offer,
+)
 
 
 class OfferRunStatusTests(unittest.TestCase):
@@ -198,6 +203,123 @@ class OfferRunStatusTests(unittest.TestCase):
         )
         notify_mock.assert_not_called()
         self.assertEqual(OFFER_STATUS_STATS["new_profile_backfilled_matches"], 1)
+
+    def test_profile_refresh_recalculates_recent_offer_without_push(self):
+        offer = self.make_offer(
+            komparse_id="91.320",
+            title="Komparse in Köln",
+            raw_text="Komparse in Köln",
+            detail_text="",
+            published_at="2026-10-16",
+            email=None,
+            subject_keyword=None,
+            application_method=None,
+            application_url=None,
+            source_url="https://komparse.de/Gesuch91320.htm",
+        )
+        profile = {
+            "id": "edited-user",
+            "created_at": "2026-09-01T12:30:00+02:00",
+        }
+        evaluated = {}
+        matched = {}
+
+        with (
+            patch("scraper.main.normalize_offer", return_value=offer),
+            patch("scraper.main.get_existing_offer", return_value=None),
+            patch("scraper.main.apply_admin_qualification"),
+            patch("scraper.main.prepare_offer_status", return_value="v1"),
+            patch("scraper.main.save_offer", return_value=(124, True)),
+            patch("scraper.main.is_offer_recent", return_value=False),
+            patch(
+                "scraper.main.is_offer_recent_for_new_profile",
+                side_effect=[True, False],
+            ),
+            patch("scraper.main.profile_allows_offer_scope", return_value=True),
+            patch(
+                "scraper.main.match_offer_to_profile",
+                return_value={
+                    "matched": True,
+                    "reason": {"location": True, "age": True, "gender": True},
+                },
+            ),
+            patch("scraper.main.create_match", return_value=(457, True)),
+            patch("scraper.main.notify_match_user") as notify_mock,
+        ):
+            with redirect_stdout(io.StringIO()):
+                process_offer(
+                    object(),
+                    {"unused": True},
+                    [profile],
+                    refresh_profile_ids={"edited-user"},
+                    evaluated_offer_ids_by_user=evaluated,
+                    matched_offer_ids_by_user=matched,
+                )
+
+        self.assertEqual(evaluated, {"edited-user": {124}})
+        self.assertEqual(matched, {"edited-user": {124}})
+        notify_mock.assert_not_called()
+
+    def test_profile_refresh_keeps_existing_matches_for_manual_review(self):
+        offer = self.make_offer(
+            komparse_id="91.321",
+            title="Komparse in Köln",
+            raw_text="Komparse in Köln",
+            detail_text="",
+            published_at="2026-10-16",
+            email=None,
+            subject_keyword=None,
+            application_method=None,
+            application_url=None,
+            source_url="https://komparse.de/Gesuch91321.htm",
+        )
+        profile = {
+            "id": "edited-user",
+            "created_at": "2026-09-01T12:30:00+02:00",
+        }
+        evaluated = {}
+
+        with (
+            patch("scraper.main.normalize_offer", return_value=offer),
+            patch("scraper.main.get_existing_offer", return_value=None),
+            patch("scraper.main.apply_admin_qualification"),
+            patch("scraper.main.prepare_offer_status", return_value="v1"),
+            patch("scraper.main.save_offer", return_value=(125, True)),
+            patch("scraper.main.build_matching_offer", return_value={}),
+            patch("scraper.main.is_offer_recent", return_value=False),
+            patch(
+                "scraper.main.is_offer_recent_for_new_profile",
+                side_effect=[True, False],
+            ),
+            patch("scraper.main.profile_allows_offer_scope", return_value=True),
+            patch(
+                "scraper.main.match_offer_to_profile",
+                return_value={
+                    "matched": False,
+                    "manual_review": True,
+                    "manual_review_reason": "age_annonce_non_precis",
+                },
+            ),
+            patch("scraper.main.notify_match_user") as notify_mock,
+        ):
+            with redirect_stdout(io.StringIO()):
+                process_offer(
+                    object(),
+                    {"unused": True},
+                    [profile],
+                    refresh_profile_ids={"edited-user"},
+                    evaluated_offer_ids_by_user=evaluated,
+                    matched_offer_ids_by_user={},
+                )
+
+        self.assertEqual(evaluated, {})
+        notify_mock.assert_not_called()
+
+    def test_profile_refresh_timestamps_compare_in_utc(self):
+        local_time = parse_utc_timestamp("2026-10-18T12:00:00+02:00")
+        utc_time = parse_utc_timestamp("2026-10-18T09:00:00Z")
+
+        self.assertGreater(local_time, utc_time)
 
 
 if __name__ == "__main__":

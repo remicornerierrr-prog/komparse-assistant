@@ -26,7 +26,7 @@ Deno.serve(async(req:Request)=>{
   if(action!=="preview"&&action!=="send") return json({error:"Action invalide."},400);
   if(action==="send"&&input.confirm!==true) return json({error:"Confirmation explicite requise."},400);
   const admin=createClient(url,service,{auth:{persistSession:false}});
-  const {data:match,error:me}=await admin.from("matches").select("id").eq("user_id",u.user.id).eq("offer_id",offerId).maybeSingle(); if(me)throw me; if(!match)return json({error:"Cette offre ne correspond pas à votre compte."},403);
+  const {data:match,error:me}=await admin.from("matches").select("id").eq("user_id",u.user.id).eq("offer_id",offerId).eq("is_active",true).maybeSingle(); if(me)throw me; if(!match)return json({error:"Cette offre ne correspond pas à votre compte."},403);
   const {data:offer,error:oe}=await admin.from("offers").select("id,title,email,subject_keyword,shoot_date,shoot_date_text,admin_review_required,parser_needs_review").eq("id",offerId).maybeSingle(); if(oe)throw oe; if(!offer)return json({error:"Annonce introuvable."},404);
   if(!offer.email||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(offer.email))return json({error:"Cette annonce n'a pas d'adresse email valide."},422);
   if(offer.admin_review_required||offer.parser_needs_review)return json({error:"Cette annonce doit être vérifiée avant l'envoi."},422);
