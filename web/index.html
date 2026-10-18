@@ -950,7 +950,7 @@ body:has(#profile-section.hidden) .candidate-sidebar { display:none!important; }
         ></div>
         </div>
 
-        <fieldset id="notification-scope" data-dashboard-panel="notifications" hidden>
+        <fieldset id="notification-scope" data-dashboard-panel="preferences" hidden>
             <legend>Types d’annonces à recevoir</legend>
             <label><input type="checkbox" id="notify-national" checked> Annonces nationales</label>
             <div class="regional-preference-row">
@@ -1210,7 +1210,7 @@ body:has(#profile-section.hidden) .candidate-sidebar { display:none!important; }
         <!-- NOTIFICATIONS -->
         <!-- ========================================= -->
 
-        <div class="push-section" data-dashboard-panel="notifications" hidden>
+        <div class="push-section" data-dashboard-panel="push" hidden>
 
             <h3>
                 Notifications
@@ -1252,8 +1252,8 @@ body:has(#profile-section.hidden) .candidate-sidebar { display:none!important; }
             <option value="fr">🇫🇷 Français</option><option value="de">🇩🇪 Deutsch</option><option value="en">🇬🇧 English</option>
           </select>
           <div class="settings-shortcuts">
-            <a href="#notification-scope" data-side-target="notification-scope" data-dashboard-view="notifications" data-i18n="Préférences d’annonces">Préférences d’annonces</a>
-            <a href="#enable-push-button" data-side-target="enable-push-button" data-dashboard-view="notifications" data-i18n="Notifications push">Notifications push</a>
+            <a href="#notification-scope" data-side-target="notification-scope" data-dashboard-view="preferences" data-i18n="Préférences d’annonces">Préférences d’annonces</a>
+            <a href="#enable-push-button" data-side-target="enable-push-button" data-dashboard-view="push" data-i18n="Notifications push">Notifications push</a>
             <a href="#gmail-connection-section" data-side-target="gmail-connection-section" data-dashboard-view="gmail" data-i18n="Connexion Gmail">Connexion Gmail</a>
           </div>
           <p class="settings-note" data-i18n="Les changements de profil doivent être enregistrés avec le bouton Enregistrer mon profil.">Les changements de profil doivent être enregistrés avec le bouton Enregistrer mon profil.</p>
@@ -1361,7 +1361,7 @@ body:has(#profile-section.hidden) .candidate-sidebar { display:none!important; }
 
     <!-- Application -->
 
-    <script src="app-core.js?v=4"></script>
+    <script src="app-core.js?v=5"></script>
     <script src="profile-photos.js?v=2"></script>
     <script src="push-ui.js?v=1"></script>
     <script src="auth-actions.js?v=2"></script>
