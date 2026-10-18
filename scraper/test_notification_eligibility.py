@@ -1,7 +1,12 @@
 import unittest
 from datetime import date
 
-from scraper.notification_eligibility import is_offer_recent, profile_allows_offer_scope
+from scraper.notification_eligibility import (
+    is_offer_recent,
+    is_offer_published_before_profile,
+    is_offer_recent_for_new_profile,
+    profile_allows_offer_scope,
+)
 
 
 class NotificationEligibilityTests(unittest.TestCase):
@@ -11,6 +16,20 @@ class NotificationEligibilityTests(unittest.TestCase):
         self.assertTrue(is_offer_recent("2026-10-12", today=today))
         self.assertFalse(is_offer_recent("2026-10-11", today=today))
         self.assertFalse(is_offer_recent(None, today=today))
+
+    def test_new_profile_can_receive_offers_from_the_previous_seven_days(self):
+        created_at = "2026-10-13T12:30:00+02:00"
+        self.assertTrue(is_offer_recent_for_new_profile("2026-10-13", created_at))
+        self.assertTrue(is_offer_recent_for_new_profile("2026-10-06", created_at))
+        self.assertFalse(is_offer_recent_for_new_profile("2026-10-05", created_at))
+        self.assertFalse(is_offer_recent_for_new_profile("2026-10-14", created_at))
+        self.assertFalse(is_offer_recent_for_new_profile(None, created_at))
+        self.assertFalse(is_offer_recent_for_new_profile("2026-10-10", None))
+
+    def test_same_day_offer_is_not_assumed_to_predate_profile_for_push(self):
+        created_at = "2026-10-13T12:30:00+02:00"
+        self.assertTrue(is_offer_published_before_profile("2026-10-12", created_at))
+        self.assertFalse(is_offer_published_before_profile("2026-10-13", created_at))
 
     def test_national_preference(self):
         profile = {"city": "Köln", "notify_national": True, "notify_regional": False}

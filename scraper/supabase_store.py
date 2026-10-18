@@ -18,7 +18,7 @@ def load_profiles(
         .select(
             "id,first_name,last_name,email,phone,"
             "birth_date,gender,address,city,height_cm,"
-            "shoe_size,clothing_size,profession,"
+            "shoe_size,clothing_size,profession,created_at,"
             "notify_national,notify_regional,notify_region"
         )
         .execute()

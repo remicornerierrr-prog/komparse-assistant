@@ -53,6 +53,32 @@ def is_offer_recent(published_at: Any, *, today: date | None = None) -> bool:
     return publication_date is not None and current_date - timedelta(days=1) <= publication_date <= current_date
 
 
+def is_offer_recent_for_new_profile(
+    published_at: Any,
+    profile_created_at: Any,
+) -> bool:
+    """Include offers published within the week before a profile was created."""
+    publication_date = _published_date(published_at)
+    profile_created_date = _published_date(profile_created_at)
+    if publication_date is None or profile_created_date is None:
+        return False
+    return profile_created_date - timedelta(days=7) <= publication_date <= profile_created_date
+
+
+def is_offer_published_before_profile(
+    published_at: Any,
+    profile_created_at: Any,
+) -> bool:
+    """Return true only when the offer's publication date predates the profile date."""
+    publication_date = _published_date(published_at)
+    profile_created_date = _published_date(profile_created_at)
+    return (
+        publication_date is not None
+        and profile_created_date is not None
+        and publication_date < profile_created_date
+    )
+
+
 def profile_allows_offer_scope(location: Any, profile: dict[str, Any]) -> bool:
     """Apply scope preferences and require the profile city to be covered.
 

@@ -1,10 +1,18 @@
+import io
 import unittest
+from contextlib import redirect_stdout
 from unittest.mock import patch
 
-from scraper.main import prepare_offer_status
+from scraper.main import OFFER_STATUS_STATS, prepare_offer_status, process_offer
 
 
 class OfferRunStatusTests(unittest.TestCase):
+    def setUp(self):
+        self.original_offer_stats = OFFER_STATUS_STATS.copy()
+
+    def tearDown(self):
+        OFFER_STATUS_STATS.update(self.original_offer_stats)
+
     @staticmethod
     def make_offer(**overrides):
         offer = {
@@ -134,6 +142,62 @@ class OfferRunStatusTests(unittest.TestCase):
         with patch("scraper.main.NOTIFY_WHEN_AGE_UNSPECIFIED", True):
             self.assertEqual(prepare_offer_status(offer), "v1")
         self.assertFalse(offer["parser_needs_review"])
+
+    def test_week_old_offer_backfills_new_profile_without_push(self):
+        offer = self.make_offer(
+            komparse_id="91.319",
+            title="Komparse in Köln",
+            raw_text="Komparse in Köln",
+            detail_text="",
+            published_at="2026-10-10",
+            email=None,
+            subject_keyword=None,
+            application_method=None,
+            application_url=None,
+            source_url="https://komparse.de/Gesuch91319.htm",
+        )
+        new_profile = {
+            "id": "new-user",
+            "created_at": "2026-10-13T12:30:00+02:00",
+        }
+        established_profile = {
+            "id": "established-user",
+            "created_at": "2026-09-01T12:30:00+02:00",
+        }
+
+        with (
+            patch("scraper.main.normalize_offer", return_value=offer),
+            patch("scraper.main.get_existing_offer", return_value=None),
+            patch("scraper.main.apply_admin_qualification"),
+            patch("scraper.main.prepare_offer_status", return_value="v1"),
+            patch("scraper.main.save_offer", return_value=(123, True)),
+            patch("scraper.main.is_offer_recent", return_value=False),
+            patch(
+                "scraper.main.is_offer_recent_for_new_profile",
+                side_effect=lambda _published, created: created == new_profile["created_at"],
+            ),
+            patch("scraper.main.build_matching_offer", return_value={"offer_id": "91.319"}),
+            patch("scraper.main.profile_allows_offer_scope", return_value=True),
+            patch(
+                "scraper.main.match_offer_to_profile",
+                return_value={
+                    "matched": True,
+                    "reason": {"location": True, "age": True, "gender": True},
+                },
+            ),
+            patch("scraper.main.create_match", return_value=(456, True)) as create_match_mock,
+            patch("scraper.main.notify_match_user") as notify_mock,
+        ):
+            with redirect_stdout(io.StringIO()):
+                process_offer(object(), {"unused": True}, [new_profile, established_profile])
+
+        self.assertEqual(create_match_mock.call_count, 1)
+        self.assertEqual(
+            create_match_mock.call_args.args[1:],
+            (123, "new-user", {"location": True, "age": True, "gender": True}),
+        )
+        notify_mock.assert_not_called()
+        self.assertEqual(OFFER_STATUS_STATS["new_profile_backfilled_matches"], 1)
 
 
 if __name__ == "__main__":

@@ -41,7 +41,12 @@ try:
         normalize_offer,
     )
     from . import notifications
-    from .notification_eligibility import is_offer_recent, profile_allows_offer_scope
+    from .notification_eligibility import (
+        is_offer_recent,
+        is_offer_published_before_profile,
+        is_offer_recent_for_new_profile,
+        profile_allows_offer_scope,
+    )
     from .supabase_store import (
         create_match,
         delete_push_subscription,
@@ -70,7 +75,12 @@ except ImportError:  # Support `python scraper/main.py` execution.
         normalize_offer,
     )
     import notifications
-    from notification_eligibility import is_offer_recent, profile_allows_offer_scope
+    from notification_eligibility import (
+        is_offer_recent,
+        is_offer_published_before_profile,
+        is_offer_recent_for_new_profile,
+        profile_allows_offer_scope,
+    )
     from supabase_store import (
         create_match,
         delete_push_subscription,
@@ -138,6 +148,7 @@ OFFER_STATUS_STATS = {
     "matched_without_notification": 0,
     "no_profile_match": 0,
     "too_old_for_push": 0,
+    "new_profile_backfilled_matches": 0,
 }
 
 
@@ -476,9 +487,20 @@ def process_offer(
         )
         return
 
-    # Only offers published today or yesterday may create matches or push alerts.
-    # Missing or unparsable publication dates fail closed to prevent stale alerts.
-    if not is_offer_recent(offer.get("published_at")):
+    # Regular matching and push alerts remain limited to offers published
+    # today or yesterday. New profiles can also receive matches for offers
+    # published during the week before their profile was created, without pushes.
+    recent_for_push = is_offer_recent(offer.get("published_at"))
+    backfill_profile_ids = {
+        profile.get("id")
+        for profile in profiles
+        if profile.get("id")
+        and is_offer_recent_for_new_profile(
+            offer.get("published_at"),
+            profile.get("created_at"),
+        )
+    }
+    if not recent_for_push and not backfill_profile_ids:
         OFFER_STATUS_STATS["too_old_for_push"] += 1
         print(
             f"  STATUT FINAL: TROP ANCIENNE / DATE DE PUBLICATION ABSENTE — "
@@ -495,6 +517,15 @@ def process_offer(
 
     for profile in profiles:
         try:
+            user_id = profile.get("id")
+            profile_backfill = user_id in backfill_profile_ids
+            suppress_push = profile_backfill and is_offer_published_before_profile(
+                offer.get("published_at"),
+                profile.get("created_at"),
+            )
+            if not recent_for_push and not profile_backfill:
+                continue
+
             if not profile_allows_offer_scope(offer.get("location_text"), profile):
                 print(
                     "    Offre ignorée pour le profil "
@@ -524,7 +555,6 @@ def process_offer(
                     )
                 continue
 
-            user_id = profile.get("id")
             if not user_id:
                 print("    Match éligible mais ID utilisateur absent : notification impossible.")
                 continue
@@ -550,6 +580,12 @@ def process_offer(
                     raise RuntimeError(
                         "Le match existe mais n'a pas pu être relu."
                     )
+
+            if suppress_push:
+                if match_created:
+                    OFFER_STATUS_STATS["new_profile_backfilled_matches"] += 1
+                print("    Match de bienvenue conservé sans notification push.")
+                continue
 
             # A previously successful match is still counted as notified
             # for this offer, but we never send a duplicate.
@@ -676,6 +712,7 @@ def main() -> None:
     print(f"  Match trouvé, sans livraison confirmée : {OFFER_STATUS_STATS['matched_without_notification']}")
     print(f"  Aucun profil compatible  : {OFFER_STATUS_STATS['no_profile_match']}")
     print(f"  Trop anciennes / date absente : {OFFER_STATUS_STATS['too_old_for_push']}")
+    print(f"  Matches de bienvenue créés sans push : {OFFER_STATUS_STATS['new_profile_backfilled_matches']}")
     print("\nNotifications push — bilan par tentative/appareil :")
     print(f"  Tentatives d'envoi         : {NOTIFICATION_STATS['attempted']}")
     print(f"  Acceptées par la passerelle: {NOTIFICATION_STATS['provider_accepted']}")
