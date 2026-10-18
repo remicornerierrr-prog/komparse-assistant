@@ -28,6 +28,10 @@
   function offerTitle(offer) { return offer.title || "Offre Komparse"; }
 
   async function init() {
+    const kicker = node("p", "À L’AFFICHE POUR VOUS", "offers-kicker");
+    kicker.setAttribute("data-i18n", "À L’AFFICHE POUR VOUS");
+    root.append(kicker);
+
     const { data: userResult, error: authError } = await client.auth.getUser();
     if (authError || !userResult.user) {
       root.append(node("p", "Connectez-vous pour consulter vos offres."));

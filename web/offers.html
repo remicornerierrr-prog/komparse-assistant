@@ -140,14 +140,17 @@ html,body{background:#080c12!important;color:#f4f5f7!important}body{max-width:no
 .candidate-sidebar .sidebar-footer{position:absolute;bottom:20px;left:28px;display:flex;align-items:center;gap:9px;color:#9ba7b8;font-size:.8rem}.sidebar-status-dot{width:8px;height:8px;border-radius:50%;background:#66d19e;box-shadow:0 0 10px #66d19e66}
 @media(min-width:1050px){body{padding-left:320px!important}}
 @media(max-width:1049px){body{padding-top:94px!important}.candidate-sidebar{position:relative;top:auto;bottom:auto;width:auto;margin:0 0 18px;padding:8px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;border:1px solid #273241;border-radius:14px}.candidate-sidebar .side-link{font-size:.82rem;min-height:42px;margin:0;padding:0 8px}.candidate-sidebar .sidebar-footer{display:none}}
+#offers-root:before{content:none!important}
+.offers-kicker{margin:20px 0 14px!important;color:var(--gold2)!important;font-size:.75rem;font-weight:850;letter-spacing:.16em}
 </style>
+<link rel="stylesheet" href="./candidate-dashboard.css?v=1">
 </head>
 <body>
 <div class="cinema-masthead" aria-label="Komparse identité cinéma">
   <div class="cinema-logo" aria-hidden="true">🎬</div>
   <div><div class="cinema-wordmark">KOMPARSE</div><div class="cinema-tagline">Le cinéma commence avec vous</div></div>
   <div class="cinema-reel" aria-hidden="true">▰ ▱ ▰</div>
-  <label class="cinema-language" for="site-language"><span>🌐</span><span data-i18n="language">Langue</span>
+  <label class="cinema-language" for="site-language"><span>🌐</span><span data-i18n="Langue">Langue</span>
     <select id="site-language" aria-label="Site language">
       <option value="fr">🇫🇷 Français</option>
       <option value="de">🇩🇪 Deutsch</option>
@@ -166,12 +169,14 @@ html,body{background:#080c12!important;color:#f4f5f7!important}body{max-width:no
 <a class="side-link" href="./index.html#account-settings"><span>⚙</span><span>Paramètres</span></a>
 <div class="sidebar-footer"><span class="sidebar-status-dot"></span><span>Espace candidat</span></div>
 </aside>
+  <div class="candidate-main offers-main">
   <main>
-    <h1>Komparse Assistant</h1>
+    <h1 data-i18n="Mes offres">Mes offres</h1>
     <p><a href="./index.html">← Retour à mon profil</a></p>
     <div id="offers-root" aria-live="polite"></div>
   </main>
-  <script src="./offers.js?v=5"></script>
-    <script src="./language.js?v=6"></script>
+  </div>
+  <script src="./offers.js?v=6"></script>
+    <script src="./language.js?v=7"></script>
 </body>
 </html>

@@ -369,7 +369,9 @@ tr:hover td{background:rgba(255,255,255,.025)}
 .cinema-kicker:before{content:"●";font-size:.55rem;color:#e35b5b;text-shadow:0 0 10px #e35b5b}
 body>h1{position:relative;padding-top:4px}
 body>h1:before{content:"🎬  ";font-size:.72em;vertical-align:middle;filter:drop-shadow(0 4px 10px rgba(232,189,104,.2))}
-body>h1:after{content:"CASTING • ALERTES • CANDIDATURES";display:block;font-size:.72rem;letter-spacing:.19em;font-weight:750;color:var(--gold2);margin-top:13px}
+body>h1:after{content:none!important}
+.page-kicker{display:block;font-size:.72rem;font-weight:750;letter-spacing:.19em;color:var(--gold2);margin-top:13px}
+@media(max-width:699px){.page-kicker{font-size:.55rem;letter-spacing:.1em}}
 #admin-app .admin-header h1:before{content:"🎬  "}
 #admin-app .admin-header h1:after{content:"✦  CASTING CONTROL ROOM  ✦";display:block;margin-top:15px;color:var(--gold2);font-size:.68rem;letter-spacing:.2em}
 #admin-app .admin-card h3:before{content:"▰  ";color:var(--gold)}
@@ -546,8 +548,8 @@ body{width:min(calc(100% - 48px),1240px)!important;max-width:1240px!important;ma
 #profile-section .photo-upload{min-width:0!important}
 #profile-section img{max-width:100%;height:auto}
 @media(min-width:1050px){body{padding-top:32px!important}.cinema-masthead{margin-bottom:20px!important}.candidate-sidebar{position:static!important}#profile-section{max-width:100%!important}#profile-section>input,#profile-section>select,#profile-section>label,#profile-section>textarea{max-width:760px!important}}
-@media(min-width:700px) and (max-width:1049px){body{width:calc(100% - 40px)!important;padding-top:22px!important}.candidate-sidebar{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important}.candidate-sidebar .side-link[href="./offers.html"]{max-width:none!important}}
-@media(max-width:699px){body{width:calc(100% - 28px)!important;padding:14px 0 32px!important}.cinema-masthead{gap:9px!important;padding:6px 0 14px!important}.cinema-logo{width:48px!important;height:48px!important;flex:0 0 48px!important;font-size:25px!important}.cinema-wordmark{font-size:clamp(.85rem,4vw,1.1rem)!important}.cinema-tagline{font-size:clamp(.48rem,2.5vw,.65rem)!important}.cinema-reel{display:none!important}.candidate-sidebar{display:grid!important;grid-template-columns:1fr!important}#profile-section,#auth-section{padding:20px 16px!important;border-radius:22px!important}#profile-section input,#profile-section select,#auth-section input{font-size:16px!important}}
+@media(min-width:700px) and (max-width:1049px){body{width:calc(100% - 40px)!important;padding-top:128px!important}.candidate-sidebar{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important}.candidate-sidebar .side-link[href="./offers.html"]{max-width:none!important}}
+@media(max-width:699px){body{width:calc(100% - 28px)!important;padding:108px 0 32px!important}.cinema-masthead{gap:9px!important;padding:6px 0 14px!important}.cinema-logo{width:48px!important;height:48px!important;flex:0 0 48px!important;font-size:25px!important}.cinema-wordmark{font-size:clamp(.85rem,4vw,1.1rem)!important}.cinema-tagline{font-size:clamp(.48rem,2.5vw,.65rem)!important}.cinema-reel{display:none!important}.candidate-sidebar{display:grid!important;grid-template-columns:1fr!important}#profile-section,#auth-section{padding:20px 16px!important;border-radius:22px!important}#profile-section input,#profile-section select,#auth-section input{font-size:16px!important}}
 </style><style>
 /* Desktop layout correction: remove inherited narrow body and offset main */
 @media (min-width:1050px) {
@@ -594,7 +596,7 @@ body{width:min(calc(100% - 48px),1240px)!important;max-width:1240px!important;ma
   body > .photo-section {
     display:block;
     width:100%!important;
-    max-width:1180px!important;
+    max-width:1450px!important;
     margin-left:auto!important;
     margin-right:auto!important;
   }
@@ -623,7 +625,7 @@ body{width:min(calc(100% - 48px),1240px)!important;max-width:1240px!important;ma
     display:block!important;
     position:relative!important;
     width:100%!important; max-width:none!important; min-width:0!important;
-    margin:0!important; padding:24px 32px 56px!important;
+    margin:0!important; padding:112px 32px 56px!important;
     float:none!important; grid-template-columns:none!important;
     column-count:1!important; transform:none!important;
   }
@@ -635,7 +637,7 @@ body{width:min(calc(100% - 48px),1240px)!important;max-width:1240px!important;ma
   body > h1, body > #auth-section, body > #profile-section, body > #message {
     position:relative!important; left:auto!important; right:auto!important;
     float:none!important; transform:none!important;
-    width:100%!important; max-width:1180px!important;
+    width:100%!important; max-width:1450px!important;
     margin-left:auto!important; margin-right:auto!important;
   }
   body > h1 { margin-top:20px!important; margin-bottom:22px!important; }
@@ -645,8 +647,22 @@ body{width:min(calc(100% - 48px),1240px)!important;max-width:1240px!important;ma
   #message:empty, #profile-save-message:empty, #settings-password-status:empty,
   #gmail-connection-status:empty, #push-status:empty { display:none!important; }
   .cinema-reel { display:none!important; }
+  body:has(#profile-section:not(.hidden)) .candidate-sidebar {
+    position:fixed!important; top:113px!important; right:auto!important; bottom:0!important; left:0!important;
+    width:286px!important; max-width:286px!important; height:auto!important; margin:0!important;
+    padding:28px 14px 18px!important; display:block!important; flex:none!important; flex-wrap:nowrap!important;
+    justify-content:flex-start!important; align-items:stretch!important; gap:0!important;
+    border:0!important; border-right:1px solid #273241!important; border-radius:0!important;
+  }
+  body > h1:after { content:none!important; }
+  body > h1 .page-kicker {
+    display:block!important; margin-top:13px!important; color:var(--gold2)!important;
+    font-size:.72rem!important; font-weight:750!important; letter-spacing:.19em!important;
+  }
 }
+body:has(#profile-section.hidden) .candidate-sidebar { display:none!important; }
 </style>
+<link rel="stylesheet" href="./candidate-dashboard.css?v=1">
 </head>
 
 
@@ -655,7 +671,7 @@ body{width:min(calc(100% - 48px),1240px)!important;max-width:1240px!important;ma
   <div class="cinema-logo" aria-hidden="true">🎬</div>
   <div><div class="cinema-wordmark">KOMPARSE</div><div class="cinema-tagline">Le cinéma commence avec vous</div></div>
   <div class="cinema-reel" aria-hidden="true">▰ ▱ ▰</div>
-  <label class="cinema-language" for="site-language"><span>🌐</span><span data-i18n="language">Langue</span>
+  <label class="cinema-language" for="site-language"><span>🌐</span><span data-i18n="Langue">Langue</span>
     <select id="site-language" aria-label="Site language">
       <option value="fr">🇫🇷 Français</option>
       <option value="de">🇩🇪 Deutsch</option>
@@ -675,8 +691,10 @@ body{width:min(calc(100% - 48px),1240px)!important;max-width:1240px!important;ma
   <div class="sidebar-footer"><span class="sidebar-status-dot"></span><span data-i18n="Espace candidat">Espace candidat</span></div>
 </aside>
 
+<main class="candidate-main">
     <h1>
         Komparse Assistant
+        <span class="page-kicker" data-i18n="CASTING • ALERTES • CANDIDATURES">CASTING • ALERTES • CANDIDATURES</span>
     </h1>
 
 
@@ -691,8 +709,9 @@ body{width:min(calc(100% - 48px),1240px)!important;max-width:1240px!important;ma
         </h2>
 
         <p class="auth-hint">
-            Déjà inscrit(e) ? Saisissez l'e-mail et le mot de passe de votre compte, puis cliquez sur « Se connecter ».
-            « Créer mon compte » est réservé aux nouvelles inscriptions.
+            <span data-i18n="Déjà inscrit(e) ? Saisissez l'e-mail et le mot de passe de votre compte, puis cliquez sur « Se connecter ».">Déjà inscrit(e) ? Saisissez l'e-mail et le mot de passe de votre compte, puis cliquez sur « Se connecter ».</span>
+            <br>
+            <span data-i18n="« Créer mon compte » est réservé aux nouvelles inscriptions.">« Créer mon compte » est réservé aux nouvelles inscriptions.</span>
         </p>
 
 
@@ -789,78 +808,70 @@ body{width:min(calc(100% - 48px),1240px)!important;max-width:1240px!important;ma
         class="hidden"
     >
 
-        <h2>
-            Mon profil
-        </h2>
+        <header class="profile-heading">
+            <div>
+                <h2 data-i18n="Mon profil">Mon profil</h2>
+                <p data-i18n="Complétez vos informations une seule fois. Elles pourront ensuite être utilisées automatiquement pour vos candidatures.">Complétez vos informations une seule fois. Elles pourront ensuite être utilisées automatiquement pour vos candidatures.</p>
+            </div>
+            <a class="profile-offers-link" href="./offers.html" data-i18n="📋 Mes offres">📋 Mes offres</a>
+        </header>
 
-        <p><a href="./offers.html">📋 Mes offres</a></p>
-
-        <section id="gmail-connection-section" class="push-section">
-            <h3>Connexion Gmail</h3>
-            <p class="push-description">Connectez votre compte Gmail pour pouvoir envoyer vos candidatures depuis votre propre adresse, après les avoir relues et confirmées.</p>
-            <button id="gmail-connect-button" type="button">Connecter mon compte Gmail</button>
-            <p id="gmail-connection-status" role="status" aria-live="polite"></p>
-        </section>
-
-
-
-        <p><span data-i18n="Complétez vos informations une seule fois. Elles pourront ensuite être utilisées automatiquement pour vos candidatures.">Complétez vos informations une seule fois. Elles pourront ensuite être utilisées automatiquement pour vos candidatures.</span></p>
-
-
-        <label for="first-name">
+        <div class="profile-fields">
+            <h3 data-i18n="Informations personnelles">Informations personnelles</h3>
+            <div class="profile-field"><label for="first-name">
             Prénom
-        </label>
+            </label>
 
         <input
             type="text"
             id="first-name"
-        >
+        ></div>
 
 
-        <label for="last-name">
+        <div class="profile-field"><label for="last-name">
             Nom
-        </label>
+            </label>
 
         <input
             type="text"
             id="last-name"
-        >
+        ></div>
 
 
-        <label for="profile-email">
+        <div class="profile-field"><label for="profile-email">
             Email
-        </label>
+            </label>
 
         <input
             type="email"
             id="profile-email"
             readonly
-        >
+        ></div>
 
 
-        <label for="phone">
+        <div class="profile-field"><label for="phone">
             Téléphone
-        </label>
+            </label>
 
         <input
             type="tel"
             id="phone"
-        >
+        ></div>
 
 
-        <label for="birth-date">
+        <div class="profile-field"><label for="birth-date">
             Date de naissance
-        </label>
+            </label>
 
         <input
             type="date"
             id="birth-date"
-        >
+        ></div>
 
 
-        <label for="gender">
+        <div class="profile-field"><label for="gender">
             Sexe
-        </label>
+            </label>
 
         <select id="gender">
 
@@ -876,28 +887,70 @@ body{width:min(calc(100% - 48px),1240px)!important;max-width:1240px!important;ma
                 Femme
             </option>
 
-        </select>
+        </select></div>
 
 
-        <label for="address">
+        <div class="profile-field"><label for="address">
             Adresse
-        </label>
+            </label>
 
         <input
             type="text"
             id="address"
-        >
+        ></div>
 
 
-        <label for="city">
+        <div class="profile-field"><label for="city">
             Ville
-        </label>
+            </label>
 
         <input
             type="text"
             id="city"
             placeholder="Ex. Köln"
-        >
+        ></div>
+        <h3 data-i18n="Mensurations">Mensurations</h3>
+        <div class="profile-field"><label for="height">
+            Taille (cm)
+            </label>
+
+        <input
+            type="number"
+            id="height"
+            min="50"
+            max="250"
+        ></div>
+
+
+        <div class="profile-field"><label for="shoe-size">
+            Pointure
+            </label>
+
+        <input
+            type="text"
+            id="shoe-size"
+        ></div>
+
+
+        <div class="profile-field"><label for="clothing-size">
+            Taille de vêtements
+            </label>
+
+        <input
+            type="text"
+            id="clothing-size"
+        ></div>
+
+
+        <div class="profile-field"><label for="profession">
+            Profession
+            </label>
+
+        <input
+            type="text"
+            id="profession"
+        ></div>
+        </div>
 
         <fieldset id="notification-scope">
             <legend>Types d’annonces à recevoir</legend>
@@ -914,48 +967,6 @@ body{width:min(calc(100% - 48px),1240px)!important;max-width:1240px!important;ma
         </fieldset>
 
 
-        <label for="height">
-            Taille (cm)
-        </label>
-
-        <input
-            type="number"
-            id="height"
-            min="50"
-            max="250"
-        >
-
-
-        <label for="shoe-size">
-            Pointure
-        </label>
-
-        <input
-            type="text"
-            id="shoe-size"
-        >
-
-
-        <label for="clothing-size">
-            Taille de vêtements
-        </label>
-
-        <input
-            type="text"
-            id="clothing-size"
-        >
-
-
-        <label for="profession">
-            Profession
-        </label>
-
-        <input
-            type="text"
-            id="profession"
-        >
-
-
         <!-- ========================================= -->
         <!-- PHOTOS -->
         <!-- ========================================= -->
@@ -968,15 +979,15 @@ body{width:min(calc(100% - 48px),1240px)!important;max-width:1240px!important;ma
 
 
             <p class="photo-section-description">
-                Ajoutez vos 4 photos de profil.
-                Formats acceptés : JPG, PNG et WebP.
-                Taille maximale : 5 Mo par photo.
+                <span data-i18n="Ajoutez vos 4 photos de profil.">Ajoutez vos 4 photos de profil.</span>
+                <span data-i18n="Formats acceptés : JPG, PNG et WebP.">Formats acceptés : JPG, PNG et WebP.</span>
+                <span data-i18n="Taille maximale : 5 Mo par photo.">Taille maximale : 5 Mo par photo.</span>
             </p>
 
 
             <div class="privacy-note">
-                Vos photos sont stockées dans un espace privé.
-                Elles ne sont pas accessibles via une URL publique permanente.
+                <span data-i18n="Vos photos sont stockées dans un espace privé.">Vos photos sont stockées dans un espace privé.</span>
+                <span data-i18n="Elles ne sont pas accessibles via une URL publique permanente.">Elles ne sont pas accessibles via une URL publique permanente.</span>
             </div>
 
 
@@ -1173,6 +1184,13 @@ body{width:min(calc(100% - 48px),1240px)!important;max-width:1240px!important;ma
 
         </div>
 
+        <section id="gmail-connection-section" class="push-section">
+            <h3>Connexion Gmail</h3>
+            <p class="push-description">Connectez votre compte Gmail pour pouvoir envoyer vos candidatures depuis votre propre adresse, après les avoir relues et confirmées.</p>
+            <button id="gmail-connect-button" type="button">Connecter mon compte Gmail</button>
+            <p id="gmail-connection-status" role="status" aria-live="polite"></p>
+        </section>
+
 
         <!-- ========================================= -->
         <!-- NOTIFICATIONS -->
@@ -1186,8 +1204,8 @@ body{width:min(calc(100% - 48px),1240px)!important;max-width:1240px!important;ma
 
 
             <p class="push-description">
-                Activez les notifications pour être averti
-                lorsqu'une offre correspond à votre profil.
+                <span data-i18n="Activez les notifications pour être averti">Activez les notifications pour être averti</span>
+                <span data-i18n="lorsqu'une offre correspond à votre profil.">lorsqu'une offre correspond à votre profil.</span>
             </p>
 
 
@@ -1236,7 +1254,8 @@ body{width:min(calc(100% - 48px),1240px)!important;max-width:1240px!important;ma
           </div>
         </section>
 
-        <button id="save-profile-button">
+        <div class="profile-actions">
+        <button id="save-profile-button" data-i18n="Enregistrer mon profil">
             Enregistrer mon profil
         </button>
 
@@ -1253,6 +1272,7 @@ body{width:min(calc(100% - 48px),1240px)!important;max-width:1240px!important;ma
         <button id="logout-button">
             Se déconnecter
         </button>
+        </div>
 
 
         <!-- ========================================= -->
@@ -1268,6 +1288,7 @@ body{width:min(calc(100% - 48px),1240px)!important;max-width:1240px!important;ma
         </p>
 
     </section>
+</main>
 
 
     <!-- ========================================= -->
@@ -1335,7 +1356,7 @@ body{width:min(calc(100% - 48px),1240px)!important;max-width:1240px!important;ma
     <script src="gmail-ui.js?v=4"></script>
     <script src="account-settings.js?v=2"></script>
 
-    <script src="./language.js?v=7"></script>
+    <script src="./language.js?v=8"></script>
 </body>
 
 </html>

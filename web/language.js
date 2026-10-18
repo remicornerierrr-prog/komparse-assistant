@@ -12,6 +12,32 @@ en:{
 ,"Paramètres":"Settings","Paramètres du compte":"Account settings","Gérez ici la langue de l’interface et accédez aux préférences déjà disponibles dans votre profil.":"Manage the interface language here and access preferences already available in your profile.","Langue de l’interface":"Interface language","Préférences d’annonces":"Casting preferences","Notifications push":"Push notifications","Les changements de profil doivent être enregistrés avec le bouton Enregistrer mon profil.":"Profile changes must be saved using the Save my profile button.","Photos de profil":"Profile photos","Espace candidat":"Candidate area"
 ,"Sécurité du compte":"Account security","Nouveau mot de passe":"New password","Confirmer le nouveau mot de passe":"Confirm new password","Mettre à jour le mot de passe":"Update password","10 caractères minimum":"At least 10 characters","Répétez le nouveau mot de passe":"Repeat the new password","Le mot de passe doit contenir au moins 10 caractères.":"Password must contain at least 10 characters.","Les deux mots de passe ne correspondent pas.":"The passwords do not match.","Le service de compte n’est pas disponible. Rechargez la page.":"Account service is unavailable. Please reload the page.","Vous devez être connecté pour modifier votre mot de passe.":"You must be signed in to change your password.","Mise à jour du mot de passe…":"Updating password…","Mot de passe mis à jour.":"Password updated.","Impossible de modifier le mot de passe. Réessayez.":"Unable to change password. Please try again."
 }};
+Object.assign(T.de,{
+ "Déjà inscrit(e) ? Saisissez l'e-mail et le mot de passe de votre compte, puis cliquez sur « Se connecter ».":"Schon registriert? Gib die E-Mail-Adresse und das Passwort deines Kontos ein und klicke auf „Anmelden“.",
+ "« Créer mon compte » est réservé aux nouvelles inscriptions.":"„Konto erstellen“ ist nur für neue Registrierungen.",
+ "votre@email.com":"du@beispiel.de","Votre mot de passe":"Dein Passwort",
+ "Au moins 10 caractères":"Mindestens 10 Zeichen","Répétez le mot de passe":"Passwort wiederholen",
+ "Ex. Köln":"z. B. Köln","Aperçu du portrait":"Vorschau des Porträts",
+ "Aperçu du regard gauche":"Vorschau linkes Profil","Aperçu du regard droit":"Vorschau rechtes Profil",
+ "Aperçu de la photo plein pied":"Vorschau des Ganzkörperfotos","Site language":"Sprache",
+ "CASTING • ALERTES • CANDIDATURES":"CASTING • CASTING-ALARME • BEWERBUNGEN",
+ "Informations personnelles":"Persönliche Angaben","Mensurations":"Körperangaben",
+ "Navigation candidat":"Casting-Navigation","Komparse identité cinéma":"Komparse Markenauftritt",
+ "À L’AFFICHE POUR VOUS":"CASTING-ANGEBOTE FÜR DICH"
+});
+Object.assign(T.en,{
+ "Déjà inscrit(e) ? Saisissez l'e-mail et le mot de passe de votre compte, puis cliquez sur « Se connecter ».":"Already registered? Enter your account email and password, then select “Sign in”.",
+ "« Créer mon compte » est réservé aux nouvelles inscriptions.":"“Create account” is for new users only.",
+ "votre@email.com":"name@example.com","Votre mot de passe":"Your password",
+ "Au moins 10 caractères":"At least 10 characters","Répétez le mot de passe":"Repeat password",
+ "Ex. Köln":"e.g. Cologne","Aperçu du portrait":"Portrait preview",
+ "Aperçu du regard gauche":"Left profile preview","Aperçu du regard droit":"Right profile preview",
+ "Aperçu de la photo plein pied":"Full-length photo preview","Site language":"Language",
+ "CASTING • ALERTES • CANDIDATURES":"CASTING • ALERTS • APPLICATIONS",
+ "Informations personnelles":"Personal information","Mensurations":"Measurements",
+ "Navigation candidat":"Candidate navigation","Komparse identité cinéma":"Komparse brand",
+ "À L’AFFICHE POUR VOUS":"CASTING CALLS FOR YOU"
+});
 let lang="fr";const reverse={de:{},en:{}};
 Object.keys(T).forEach(l=>Object.entries(T[l]).forEach(([a,b])=>reverse[l][b]=a));
 function source(s){return reverse.de[s]||reverse.en[s]||s}
