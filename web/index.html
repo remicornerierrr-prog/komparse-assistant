@@ -548,7 +548,26 @@ body{width:min(calc(100% - 48px),1240px)!important;max-width:1240px!important;ma
 @media(min-width:1050px){body{padding-top:32px!important}.cinema-masthead{margin-bottom:20px!important}.candidate-sidebar{position:static!important}#profile-section{max-width:100%!important}#profile-section>input,#profile-section>select,#profile-section>label,#profile-section>textarea{max-width:760px!important}}
 @media(min-width:700px) and (max-width:1049px){body{width:calc(100% - 40px)!important;padding-top:22px!important}.candidate-sidebar{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important}.candidate-sidebar .side-link[href="./offers.html"]{max-width:none!important}}
 @media(max-width:699px){body{width:calc(100% - 28px)!important;padding:14px 0 32px!important}.cinema-masthead{gap:9px!important;padding:6px 0 14px!important}.cinema-logo{width:48px!important;height:48px!important;flex:0 0 48px!important;font-size:25px!important}.cinema-wordmark{font-size:clamp(.85rem,4vw,1.1rem)!important}.cinema-tagline{font-size:clamp(.48rem,2.5vw,.65rem)!important}.cinema-reel{display:none!important}.candidate-sidebar{display:grid!important;grid-template-columns:1fr!important}#profile-section,#auth-section{padding:20px 16px!important;border-radius:22px!important}#profile-section input,#profile-section select,#auth-section input{font-size:16px!important}}
-</style></head>
+</style><style>
+/* Desktop layout correction: remove inherited narrow body and offset main */
+@media (min-width:1050px) {
+ html, body { width:100%!important; max-width:none!important; }
+ body { margin:0!important; padding:28px clamp(28px,4vw,72px) 56px!important; }
+ body > main, body > #admin-app, main {
+   display:block!important; width:100%!important; max-width:1240px!important;
+   min-width:0!important; margin-left:auto!important; margin-right:auto!important;
+   float:none!important; transform:none!important;
+ }
+ .cinema-masthead { width:100%!important; max-width:1240px!important; margin:0 auto 24px!important; }
+ #profile-section, #auth-section { width:100%!important; max-width:1000px!important; margin:24px auto!important; }
+ #profile-section input:not([type="checkbox"]):not([type="radio"]),
+ #profile-section select, #profile-section textarea,
+ #auth-section input:not([type="checkbox"]):not([type="radio"]),
+ #auth-section select { width:100%!important; max-width:680px!important; }
+ #profile-section .photo-section { display:block!important; }
+}
+</style>
+</head>
 
 
 <body>
