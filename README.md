@@ -56,6 +56,19 @@ Ces services externes reçoivent les titres allemands envoyés pour traduction e
 - Une réponse positive de la passerelle signifie qu'elle a accepté la notification, pas nécessairement que le système d'exploitation l'a affichée à l'écran.
 - Les secrets `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` et `VAPID_SUBJECT` doivent être configurés dans les secrets GitHub Actions.
 
+## Photos de profil
+
+Jusqu'à 10 photos peuvent être stockées dans le profil. Elles sont redimensionnées à 1 600 pixels maximum sur leur plus grand côté, puis converties en JPEG dans le navigateur avant l'envoi. Seule la version optimisée est stockée dans le bucket privé Supabase, avec une limite de 5 Mo par photo. Les fichiers d'origine ne sont pas envoyés à un service externe.
+
+Lors de la préparation d'une candidature Gmail, l'adresse du destinataire peut être modifiée et validée avant l'envoi. Chaque photo du profil peut aussi être cochée/décochée et son nom de pièce jointe modifié. Seules les photos cochées sont jointes, dans la limite totale de 15 Mo.
+
+Pour déployer la limite de 10 photos et la prise en charge des pièces jointes personnalisées, appliquer la migration Supabase puis déployer la fonction :
+
+```powershell
+supabase db push
+supabase functions deploy gmail-send-application
+```
+
 ## Règles de qualité du parsing
 
 - Le titre de page « Aktuelle Gesuche » est retiré avant l'analyse de la localisation.

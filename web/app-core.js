@@ -287,30 +287,46 @@ const ALLOWED_PHOTO_TYPES = [
 const PHOTO_CONFIG = {
 
     portrait: {
+        label: "Portrait",
         inputId: "photo-portrait",
         previewId: "photo-preview-portrait",
         statusId: "photo-status-portrait"
     },
 
     left: {
+        label: "Regard gauche",
         inputId: "photo-left",
         previewId: "photo-preview-left",
         statusId: "photo-status-left"
     },
 
     right: {
+        label: "Regard droit",
         inputId: "photo-right",
         previewId: "photo-preview-right",
         statusId: "photo-status-right"
     },
 
     full_body: {
+        label: "Plein pied",
         inputId: "photo-full-body",
         previewId: "photo-preview-full_body",
-        statusId: "photo-status-full_body"
+        statusId: "photo-status-full_body",
+        previewClass: "full-body-preview"
     }
 
 };
+
+for (let photoNumber = 5; photoNumber <= 10; photoNumber += 1) {
+    const photoType = `photo_${photoNumber}`;
+
+    PHOTO_CONFIG[photoType] = {
+        label: `Photo ${photoNumber}`,
+        inputId: `photo-${photoNumber}`,
+        previewId: `photo-preview-${photoNumber}`,
+        statusId: `photo-status-${photoNumber}`
+    };
+}
 
 
 // ============================================================

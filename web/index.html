@@ -976,224 +976,19 @@ body:has(#profile-section.hidden) .candidate-sidebar { display:none!important; }
 
 
             <p class="photo-section-description">
-                <span data-i18n="Ajoutez vos 4 photos de profil.">Ajoutez vos 4 photos de profil.</span>
+                <span>Ajoutez jusqu'à 10 photos de profil.</span>
                 <span data-i18n="Formats acceptés : JPG, PNG et WebP.">Formats acceptés : JPG, PNG et WebP.</span>
                 <span data-i18n="Taille maximale : 5 Mo par photo.">Taille maximale : 5 Mo par photo.</span>
             </p>
 
+            <p id="profile-photo-count" aria-live="polite">0 photo sur 10</p>
 
             <div class="privacy-note">
                 <span data-i18n="Vos photos sont stockées dans un espace privé.">Vos photos sont stockées dans un espace privé.</span>
                 <span data-i18n="Elles ne sont pas accessibles via une URL publique permanente.">Elles ne sont pas accessibles via une URL publique permanente.</span>
             </div>
 
-
-            <!-- PORTRAIT -->
-
-            <div
-                class="photo-upload"
-                data-photo-type="portrait"
-            >
-
-                <label for="photo-portrait">
-                    Portrait
-                </label>
-
-
-                <div class="photo-preview-container">
-
-                    <img
-                        id="photo-preview-portrait"
-                        class="photo-preview hidden"
-                        alt="Aperçu du portrait"
-                    >
-
-                </div>
-
-
-                <div class="photo-file-control">
-                    <input
-                        type="file"
-                        id="photo-portrait"
-                        class="photo-file-input"
-                        accept="image/jpeg,image/png,image/webp"
-                    >
-                    <label class="photo-file-button" for="photo-portrait" data-i18n="Choisir un fichier">Choisir un fichier</label>
-                    <span class="photo-file-name" data-i18n="Aucun fichier choisi" aria-live="polite">Aucun fichier choisi</span>
-                </div>
-
-
-                <button
-                    type="button"
-                    class="replace-photo-button hidden"
-                    data-photo-type="portrait"
-                >
-                    Remplacer
-                </button>
-
-
-                <div
-                    id="photo-status-portrait"
-                    class="photo-status"
-                ></div>
-
-            </div>
-
-
-            <!-- REGARD GAUCHE -->
-
-            <div
-                class="photo-upload"
-                data-photo-type="left"
-            >
-
-                <label for="photo-left">
-                    Regard gauche
-                </label>
-
-
-                <div class="photo-preview-container">
-
-                    <img
-                        id="photo-preview-left"
-                        class="photo-preview hidden"
-                        alt="Aperçu du regard gauche"
-                    >
-
-                </div>
-
-
-                <div class="photo-file-control">
-                    <input
-                        type="file"
-                        id="photo-left"
-                        class="photo-file-input"
-                        accept="image/jpeg,image/png,image/webp"
-                    >
-                    <label class="photo-file-button" for="photo-left" data-i18n="Choisir un fichier">Choisir un fichier</label>
-                    <span class="photo-file-name" data-i18n="Aucun fichier choisi" aria-live="polite">Aucun fichier choisi</span>
-                </div>
-
-
-                <button
-                    type="button"
-                    class="replace-photo-button hidden"
-                    data-photo-type="left"
-                >
-                    Remplacer
-                </button>
-
-
-                <div
-                    id="photo-status-left"
-                    class="photo-status"
-                ></div>
-
-            </div>
-
-
-            <!-- REGARD DROIT -->
-
-            <div
-                class="photo-upload"
-                data-photo-type="right"
-            >
-
-                <label for="photo-right">
-                    Regard droit
-                </label>
-
-
-                <div class="photo-preview-container">
-
-                    <img
-                        id="photo-preview-right"
-                        class="photo-preview hidden"
-                        alt="Aperçu du regard droit"
-                    >
-
-                </div>
-
-
-                <div class="photo-file-control">
-                    <input
-                        type="file"
-                        id="photo-right"
-                        class="photo-file-input"
-                        accept="image/jpeg,image/png,image/webp"
-                    >
-                    <label class="photo-file-button" for="photo-right" data-i18n="Choisir un fichier">Choisir un fichier</label>
-                    <span class="photo-file-name" data-i18n="Aucun fichier choisi" aria-live="polite">Aucun fichier choisi</span>
-                </div>
-
-
-                <button
-                    type="button"
-                    class="replace-photo-button hidden"
-                    data-photo-type="right"
-                >
-                    Remplacer
-                </button>
-
-
-                <div
-                    id="photo-status-right"
-                    class="photo-status"
-                ></div>
-
-            </div>
-
-
-            <!-- PLEIN PIED -->
-
-            <div
-                class="photo-upload"
-                data-photo-type="full_body"
-            >
-
-                <label for="photo-full-body">
-                    Plein pied
-                </label>
-
-
-                <div class="photo-preview-container">
-
-                    <img
-                        id="photo-preview-full_body"
-                        class="photo-preview full-body-preview hidden"
-                        alt="Aperçu de la photo plein pied"
-                    >
-
-                </div>
-
-
-                <div class="photo-file-control">
-                    <input
-                        type="file"
-                        id="photo-full-body"
-                        class="photo-file-input"
-                        accept="image/jpeg,image/png,image/webp"
-                    >
-                    <label class="photo-file-button" for="photo-full-body" data-i18n="Choisir un fichier">Choisir un fichier</label>
-                    <span class="photo-file-name" data-i18n="Aucun fichier choisi" aria-live="polite">Aucun fichier choisi</span>
-                </div>
-
-
-                <button
-                    type="button"
-                    class="replace-photo-button hidden"
-                    data-photo-type="full_body"
-                >
-                    Remplacer
-                </button>
-
-
-                <div
-                    id="photo-status-full_body"
-                    class="photo-status"
-                ></div>
-
-            </div>
+            <div id="profile-photo-list"></div>
 
         </div>
 
@@ -1360,8 +1155,8 @@ body:has(#profile-section.hidden) .candidate-sidebar { display:none!important; }
 
     <!-- Application -->
 
-    <script src="app-core.js?v=5"></script>
-    <script src="profile-photos.js?v=2"></script>
+    <script src="app-core.js?v=6"></script>
+    <script src="profile-photos.js?v=4"></script>
     <script src="push-ui.js?v=1"></script>
     <script src="auth-actions.js?v=2"></script>
     <script src="profile.js?v=3"></script>

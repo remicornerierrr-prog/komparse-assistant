@@ -277,10 +277,6 @@
   }
 
   async function showApplicationConfirmation(offer, button) {
-    if (!offer.email) {
-      alert("Cette annonce ne contient pas d'adresse email de candidature. Consultez l'annonce originale.");
-      return;
-    }
     const confirmPanel = node("section", undefined, "confirm-panel");
     confirmPanel.append(node("h3", "Préparer votre candidature"));
     confirmPanel.append(node("p", "Chargement du brouillon et des photos…"));
@@ -305,7 +301,20 @@
 
       confirmPanel.replaceChildren(node("h3", "Relire votre candidature"));
       field(confirmPanel, "Votre adresse Gmail", result.sender);
-      field(confirmPanel, "Destinataire", result.recipient);
+
+      const recipientLabel = node("label", "Adresse email du destinataire");
+      const recipientInput = document.createElement("input");
+      recipientInput.type = "email";
+      recipientInput.maxLength = 254;
+      recipientInput.required = true;
+      recipientInput.autocomplete = "email";
+      recipientInput.value = result.recipient || "";
+      recipientInput.style.display = "block";
+      recipientInput.style.width = "100%";
+      recipientInput.style.boxSizing = "border-box";
+      recipientInput.style.margin = "6px 0 12px";
+      recipientLabel.append(recipientInput);
+      confirmPanel.append(recipientLabel);
 
       const subjectLabel = node("label", "Objet de l'email");
       const subjectInput = document.createElement("input");
@@ -331,11 +340,7 @@
       bodyLabel.append(bodyInput);
       confirmPanel.append(bodyLabel);
 
-      const photosText = result.photos && result.photos.length
-        ? "Photos jointes : " + result.photos.join(", ")
-        : "Aucune photo détectée.";
-      confirmPanel.append(node("p", photosText));
-
+      const photoControls = [];
       if (Array.isArray(result.photo_previews) && result.photo_previews.length) {
         const photoGallery = node("div", undefined, "application-photo-previews");
         photoGallery.style.display = "flex";
@@ -359,21 +364,51 @@
           img.style.height = "150px";
           img.style.objectFit = "contain";
           img.style.borderRadius = "6px";
+          const photoType = String(photo.photo_type || "");
+          if (!photoType) continue;
+
+          const attachmentChoice = document.createElement("label");
+          attachmentChoice.style.display = "block";
+          const checkbox = document.createElement("input");
+          checkbox.type = "checkbox";
+          checkbox.checked = true;
+          checkbox.style.width = "auto";
+          checkbox.style.minHeight = "0";
+          attachmentChoice.append(checkbox, document.createTextNode(" Joindre cette photo"));
+
+          const filenameLabel = node("label", "Nom du fichier joint");
+          filenameLabel.style.display = "block";
+          filenameLabel.style.margin = "8px 0 0";
+          const filenameInput = document.createElement("input");
+          filenameInput.type = "text";
+          filenameInput.maxLength = 64;
+          filenameInput.value = String(photo.name || "");
+          filenameInput.setAttribute("aria-label", "Nom du fichier joint");
+          filenameLabel.append(filenameInput);
+          filenameLabel.append(node("small", "L’extension est ajoutée automatiquement."));
+
           img.addEventListener("error", () => {
+            checkbox.checked = false;
+            checkbox.disabled = true;
+            filenameInput.disabled = true;
             figure.replaceChildren(node("p", "Aperçu indisponible : " + String(photo.name || "photo")));
           }, { once: true });
-          figure.append(img, node("figcaption", String(photo.name || "Photo de profil")));
+          figure.append(img, node("figcaption", String(photo.name || "Photo de profil")), attachmentChoice, filenameLabel);
           photoGallery.append(figure);
+          photoControls.push({ photoType, checkbox, filenameInput });
         }
         if (photoGallery.childElementCount) confirmPanel.append(photoGallery);
+      } else {
+        confirmPanel.append(node("p", "Aucune photo dans votre profil. Vous pouvez tout de même envoyer la candidature."));
       }
 
+      confirmPanel.append(node("p", "Cochez les photos à joindre et modifiez leur nom de fichier si besoin. Décochez-les toutes pour envoyer sans photo."));
       confirmPanel.append(node("p", "Vérifiez le destinataire, l'objet, le message et les photos avant l'envoi."));
 
       const consentLabel = node("label");
       const consent = document.createElement("input");
       consent.type = "checkbox";
-      consentLabel.append(consent, document.createTextNode(" Je confirme l'envoi de cette candidature et le partage de mes données et photos avec ce destinataire."));
+      consentLabel.append(consent, document.createTextNode(" Je confirme l'envoi de cette candidature et le partage de mes données et des photos cochées avec ce destinataire."));
       confirmPanel.append(consentLabel);
 
       const send = node("button", "Envoyer depuis mon Gmail");
@@ -382,13 +417,31 @@
       consent.addEventListener("change", () => { send.disabled = !consent.checked; });
       send.addEventListener("click", async () => {
         if (!consent.checked) return;
+        recipientInput.value = recipientInput.value.trim();
+        if (!recipientInput.checkValidity()) {
+          recipientInput.reportValidity();
+          return;
+        }
         send.disabled = true;
         send.textContent = "Envoi en cours…";
         try {
           const sendResponse = await fetch(SUPABASE_URL + "/functions/v1/gmail-send-application", {
             method: "POST",
             headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token, "apikey": SUPABASE_PUBLISHABLE_KEY },
-            body: JSON.stringify({ action: "send", offer_id: offer.id, confirm: true, subject: subjectInput.value, body: bodyInput.value })
+            body: JSON.stringify({
+              action: "send",
+              offer_id: offer.id,
+              confirm: true,
+              recipient: recipientInput.value,
+              subject: subjectInput.value,
+              body: bodyInput.value,
+              photos: photoControls
+                .filter(({ checkbox }) => checkbox.checked)
+                .map(({ photoType, filenameInput }) => ({
+                  photo_type: photoType,
+                  filename: filenameInput.value
+                }))
+            })
           });
           const sent = await sendResponse.json();
           if (!sendResponse.ok || !sent.success) throw new Error(sent.error || "Échec de l'envoi.");

@@ -11,6 +11,12 @@ function b64(b:Uint8Array) { let s=""; for(let i=0;i<b.length;i+=32768)s+=String
 function b64url(s:string) { return b64(new TextEncoder().encode(s)).replaceAll("+","-").replaceAll("/","_").replaceAll("=",""); }
 function clean(s:string) { return s.replace(/[\r\n]+/g," ").trim(); }
 function header(s:string) { return "=?UTF-8?B?"+b64(new TextEncoder().encode(s))+"?="; }
+function defaultPhotoName(photoType:string) { return ({portrait:"portrait",left:"blick-links",right:"blick-rechts",full_body:"ganzkoerper"} as Record<string,string>)[photoType]||photoType.replace(/[^a-zA-Z0-9_-]/g,"-"); }
+function attachmentFilename(value:unknown,photoType:string,ext:string) {
+ const raw=typeof value==="string"?value:"";
+ const base=raw.normalize("NFKD").replace(/[\u0300-\u036f]/g,"").replace(/\.[^.]*$/,"").replace(/[^a-zA-Z0-9_-]+/g,"-").replace(/^-+|-+$/g,"").slice(0,64);
+ return (base||defaultPhotoName(photoType))+"."+ext;
+}
 function draft(offer:any,p:any) { const name=[p.first_name,p.last_name].filter(Boolean).join(" ").trim(); const date=offer.shoot_date_text||offer.shoot_date||""; const subject=(offer.subject_keyword||"").trim()||(date?"Bewerbung Komparse "+date:"Bewerbung Komparse"); const body=["Hallo,","", "ich möchte mich gerne für den Einsatz als Komparse"+(date?" am "+date:"")+" bewerben.","","Nachfolgend finden Sie meine Angaben:","", "Vollständiger Name: "+name,"Wohnort: "+(p.city||""),"Telefon: "+(p.phone||""),"Geburtsdatum: "+(p.birth_date||""),"Kleidergröße: "+(p.clothing_size||""),"Größe: "+(p.height_cm??"")+" cm","Schuhgröße: "+(p.shoe_size||""),"","Vielen Dank.","","Mit freundlichen Grüßen,",name].join("\n"); return {subject,body}; }
 Deno.serve(async(req:Request)=>{
  if(req.method==="OPTIONS") return new Response("ok",{headers:cors});
@@ -28,21 +34,31 @@ Deno.serve(async(req:Request)=>{
   const admin=createClient(url,service,{auth:{persistSession:false}});
   const {data:match,error:me}=await admin.from("matches").select("id").eq("user_id",u.user.id).eq("offer_id",offerId).eq("is_active",true).maybeSingle(); if(me)throw me; if(!match)return json({error:"Cette offre ne correspond pas à votre compte."},403);
   const {data:offer,error:oe}=await admin.from("offers").select("id,title,email,subject_keyword,shoot_date,shoot_date_text,admin_review_required,parser_needs_review").eq("id",offerId).maybeSingle(); if(oe)throw oe; if(!offer)return json({error:"Annonce introuvable."},404);
-  if(!offer.email||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(offer.email))return json({error:"Cette annonce n'a pas d'adresse email valide."},422);
   if(offer.admin_review_required||offer.parser_needs_review)return json({error:"Cette annonce doit être vérifiée avant l'envoi."},422);
   const {data:p,error:pe}=await admin.from("profiles").select("first_name,last_name,phone,birth_date,city,height_cm,shoe_size,clothing_size").eq("id",u.user.id).maybeSingle(); if(pe)throw pe; if(!p)return json({error:"Complétez votre profil avant de candidater."},422);
-  const {data:photos,error:ph}=await admin.from("profile_photos").select("photo_type,storage_path").eq("user_id",u.user.id).order("id"); if(ph)throw ph; if(!photos?.length)return json({error:"Ajoutez des photos à votre profil avant de candidater."},422);
-  const names:Record<string,string>={portrait:"portrait",left:"blick-links",right:"blick-rechts",full_body:"ganzkoerper"};
+  const {data:photos,error:ph}=await admin.from("profile_photos").select("photo_type,storage_path").eq("user_id",u.user.id).order("id"); if(ph)throw ph; const profilePhotos=photos||[]; if(profilePhotos.length>10)return json({error:"Votre profil contient plus de 10 photos. Réduisez leur nombre avant de candidater."},422);
   const d=draft(offer,p);
   const {data:connection,error:ce}=await admin.from("gmail_connections").select("*").eq("user_id",u.user.id).maybeSingle(); if(ce)throw ce; if(!connection)return json({error:"Connectez d'abord votre compte Gmail."},422);
   if(action==="preview"){
    const photoPreviews=[];
-   for(const photo of photos){
+   for(const photo of profilePhotos){
     const {data:signed,error:se}=await admin.storage.from("profile-photos").createSignedUrl(photo.storage_path,300);
     if(se||!signed?.signedUrl)throw new Error("Photo inaccessible");
-    photoPreviews.push({name:names[photo.photo_type]||"profilfoto",url:signed.signedUrl});
+    photoPreviews.push({photo_type:photo.photo_type,name:defaultPhotoName(photo.photo_type),url:signed.signedUrl});
    }
-   return json({success:true,sender:connection.gmail_email,recipient:offer.email,subject:d.subject,body:d.body,photos:photoPreviews.map((x:any)=>x.name),photo_previews:photoPreviews});
+   return json({success:true,sender:connection.gmail_email,recipient:offer.email||"",subject:d.subject,body:d.body,photo_previews:photoPreviews});
+  }
+  const recipient=typeof input.recipient==="string"?input.recipient.trim():"";
+  if(recipient.length>254||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient))return json({error:"Saisissez une adresse email valide pour le destinataire."},400);
+  if(!Array.isArray(input.photos)||input.photos.length>10)return json({error:"Sélection de photos invalide."},400);
+  const selectedPhotos=[];
+  const selectedTypes=new Set<string>();
+  for(const selection of input.photos){
+   if(!selection||typeof selection.photo_type!=="string"||selectedTypes.has(selection.photo_type))return json({error:"Sélection de photos invalide."},400);
+   const photo=profilePhotos.find((candidate:any)=>candidate.photo_type===selection.photo_type);
+   if(!photo)return json({error:"Une photo sélectionnée n'appartient pas à votre profil."},403);
+   selectedTypes.add(selection.photo_type);
+   selectedPhotos.push({photo,filename:selection.filename});
   }
   const subject=typeof input.subject==="string"?input.subject.trim():"", emailBody=typeof input.body==="string"?input.body:"";
   if(!subject||subject.length>250||!emailBody.trim()||emailBody.length>12000)return json({error:"Objet ou message invalide."},400);
@@ -56,14 +72,15 @@ Deno.serve(async(req:Request)=>{
    const {error:save}=await admin.from("gmail_connections").update({access_token_ciphertext:cipher,access_token_expires_at:new Date(Date.now()+Number(rt.expires_in||3600)*1000).toISOString(),updated_at:new Date().toISOString()}).eq("user_id",u.user.id); if(save)throw save;
   }
   const boundary="komparse_"+crypto.randomUUID().replaceAll("-",""), lines=[
-   "From: "+header(connection.gmail_email)+" <"+clean(connection.gmail_email)+">","To: <"+clean(offer.email)+">","Subject: "+header(subject),"MIME-Version: 1.0",'Content-Type: multipart/mixed; boundary="'+boundary+'"',"","--"+boundary,'Content-Type: text/plain; charset="UTF-8"',"Content-Transfer-Encoding: base64","",b64(new TextEncoder().encode(emailBody))
+   "From: "+header(connection.gmail_email)+" <"+clean(connection.gmail_email)+">","To: <"+clean(recipient)+">","Subject: "+header(subject),"MIME-Version: 1.0",'Content-Type: multipart/mixed; boundary="'+boundary+'"',"","--"+boundary,'Content-Type: text/plain; charset="UTF-8"',"Content-Transfer-Encoding: base64","",b64(new TextEncoder().encode(emailBody))
   ];
   let total=0;
-  for(const photo of photos){
+  for(const selection of selectedPhotos){
+   const {photo}=selection;
    const {data:blob,error:de}=await admin.storage.from("profile-photos").download(photo.storage_path); if(de||!blob)throw new Error("Photo inaccessible");
    if(!["image/jpeg","image/png","image/webp"].includes(blob.type))return json({error:"Format de photo non autorisé."},422);
    total+=blob.size; if(blob.size>5*1024*1024||total>15*1024*1024)return json({error:"Les photos dépassent la taille totale autorisée de 15 Mo."},413);
-   const ext=blob.type==="image/png"?"png":blob.type==="image/webp"?"webp":"jpg", filename=(names[photo.photo_type]||"profilfoto")+"."+ext, encoded=b64(new Uint8Array(await blob.arrayBuffer()));
+   const ext=blob.type==="image/png"?"png":blob.type==="image/webp"?"webp":"jpg", filename=attachmentFilename(selection.filename,photo.photo_type,ext), encoded=b64(new Uint8Array(await blob.arrayBuffer()));
    lines.push("","--"+boundary,"Content-Type: "+blob.type+'; name="'+filename+'"',"Content-Transfer-Encoding: base64",'Content-Disposition: attachment; filename="'+filename+'"',"");
    for(let i=0;i<encoded.length;i+=76)lines.push(encoded.slice(i,i+76));
   }
@@ -71,6 +88,6 @@ Deno.serve(async(req:Request)=>{
   const sent=await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send",{method:"POST",headers:{Authorization:"Bearer "+access,"Content-Type":"application/json"},body:JSON.stringify({raw:b64url(lines.join("\r\n"))}),signal:AbortSignal.timeout(20000)});
   const result=await sent.json().catch(()=>({})); if(!sent.ok){const googleStatus=result?.error?.status||"UNKNOWN"; const googleMessage=String(result?.error?.message||"Erreur Google sans détail").slice(0,400); console.error("Gmail API rejected send",sent.status,googleStatus,googleMessage); return json({error:"Google/Gmail a refusé l’envoi ("+sent.status+" — "+googleStatus+"): "+googleMessage},502);}
   const {error:statusError}=await admin.from("matches").update({application_status:"sent"}).eq("user_id",u.user.id).eq("offer_id",offerId); if(statusError)console.error("Could not update application status",statusError);
-  return json({success:true,message_id:result.id,sender:connection.gmail_email,recipient:offer.email,subject});
+  return json({success:true,message_id:result.id,sender:connection.gmail_email,recipient,subject});
  }catch(e){console.error("gmail-send-application error",e);return json({error:"Impossible de traiter la candidature. Réessayez plus tard."},500);}
 });
