@@ -743,3 +743,27 @@ body:has(#profile-section:not(.hidden)) .candidate-main > h1 {
     transition: none !important;
   }
 }
+
+
+/* Admin shortcut: desktop sidebar, directly above the candidate status.
+   Its visibility remains controlled by the Supabase is_admin() check. */
+@media (min-width: 1050px) {
+  .candidate-sidebar #admin-button {
+    position: absolute;
+    left: 14px;
+    bottom: 58px;
+    width: calc(100% - 28px) !important;
+    min-height: 42px !important;
+    margin: 0 !important;
+    padding: 9px 12px !important;
+    justify-content: center;
+    font-size: .88rem !important;
+    z-index: 2;
+  }
+}
+
+@media (max-width: 1049px) {
+  .candidate-sidebar #admin-button {
+    display: none !important;
+  }
+}
