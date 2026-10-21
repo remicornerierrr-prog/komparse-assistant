@@ -662,7 +662,7 @@ body{width:min(calc(100% - 48px),1240px)!important;max-width:1240px!important;ma
 }
 body:has(#profile-section.hidden) .candidate-sidebar { display:none!important; }
 </style>
-<link rel="stylesheet" href="./candidate-dashboard.css?v=4">
+<link rel="stylesheet" href="./candidate-dashboard.css?v=5">
 </head>
 
 
@@ -686,6 +686,7 @@ body:has(#profile-section.hidden) .candidate-sidebar { display:none!important; }
   <a class="side-link" href="./offers.html"><span>🎬</span><span data-i18n="Mes offres">Mes offres</span></a>
   <a class="side-link" href="#photo-section" data-side-target="photo-section" data-dashboard-view="photos"><span>▧</span><span data-i18n="Photos de profil">Photos de profil</span></a>
   <a class="side-link" href="#account-settings" data-side-target="account-settings" data-dashboard-view="settings"><span>⚙</span><span data-i18n="Paramètres">Paramètres</span></a>
+  <button id="admin-button" type="button" style="display: none;" data-i18n="Administration">🔧 Administration</button>
   <div class="sidebar-footer"><span class="sidebar-status-dot"></span><span data-i18n="Espace candidat">Espace candidat</span></div>
 </aside>
 
@@ -1068,14 +1069,6 @@ body:has(#profile-section.hidden) .candidate-sidebar { display:none!important; }
         </button>
 
         <div id="profile-save-message"></div>
-
-        <button
-    id="admin-button"
-    type="button"
-    style="display: none;"
->
-    🔧 Administration
-</button>
 
         <button id="logout-button">
             Se déconnecter
