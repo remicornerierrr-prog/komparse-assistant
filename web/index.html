@@ -524,7 +524,7 @@ body:before{display:none!important}
 <style>
 /* Keep the candidate experience focused on matching offers; retain data/code for later use. */
 #gmail-connection-section, #notification-scope, .push-section, #account-settings,
-#save-profile-button, #profile-save-message, #admin-button, #calculated-age,
+#save-profile-button, #profile-save-message, #calculated-age,
 #profile-section > h3 { display:none!important; }
 #profile-section { padding-top:18px!important; }
 #profile-section > p:first-of-type { margin:10px 0 18px!important; }
@@ -686,7 +686,7 @@ body:has(#profile-section.hidden) .candidate-sidebar { display:none!important; }
   <a class="side-link" href="./offers.html"><span>🎬</span><span data-i18n="Mes offres">Mes offres</span></a>
   <a class="side-link" href="#photo-section" data-side-target="photo-section" data-dashboard-view="photos"><span>▧</span><span data-i18n="Photos de profil">Photos de profil</span></a>
   <a class="side-link" href="#account-settings" data-side-target="account-settings" data-dashboard-view="settings"><span>⚙</span><span data-i18n="Paramètres">Paramètres</span></a>
-  <button id="admin-button" type="button" style="display: none;" data-i18n="Administration">🔧 Administration</button>
+  <button id="admin-button" class="side-link" type="button" hidden><span data-i18n="🔧 Administration">🔧 Administration</span></button>
   <div class="sidebar-footer"><span class="sidebar-status-dot"></span><span data-i18n="Espace candidat">Espace candidat</span></div>
 </aside>
 
@@ -1148,7 +1148,7 @@ body:has(#profile-section.hidden) .candidate-sidebar { display:none!important; }
 
     <!-- Application -->
 
-    <script src="app-core.js?v=6"></script>
+    <script src="app-core.js?v=7"></script>
     <script src="profile-photos.js?v=4"></script>
     <script src="push-ui.js?v=1"></script>
     <script src="auth-actions.js?v=2"></script>

@@ -539,8 +539,7 @@ function showLoggedOut() {
 
     if (adminButton) {
 
-        adminButton.style.display =
-            "none";
+        adminButton.hidden = true;
 
     }
 
@@ -603,8 +602,7 @@ async function updateAdminUI() {
     // Il n'apparaît que si Supabase confirme
     // que l'utilisateur est administrateur.
 
-    adminButton.style.display =
-        "none";
+    adminButton.hidden = true;
 
 
     try {
@@ -633,8 +631,7 @@ async function updateAdminUI() {
 
         if (data === true) {
 
-            adminButton.style.display =
-                "block";
+            adminButton.hidden = false;
 
         }
 
