@@ -155,6 +155,21 @@ body {
   display: none !important;
 }
 
+.candidate-sidebar #admin-button {
+  border: 1px solid #f2c45f !important;
+  background: linear-gradient(135deg, #ffe7ad, #f2c45f) !important;
+  box-shadow: 0 4px 14px #f2c45f30 !important;
+  color: #17130b !important;
+  font-weight: 800 !important;
+}
+
+.candidate-sidebar #admin-button:hover,
+.candidate-sidebar #admin-button:focus-visible {
+  border-color: #fff0c7 !important;
+  background: linear-gradient(135deg, #fff0c7, #ffd875) !important;
+  color: #17130b !important;
+}
+
 body:has(#profile-section:not(.hidden)) .candidate-sidebar,
 body:has(.offers-sidebar) .candidate-sidebar {
   display: block !important;
@@ -768,6 +783,13 @@ body:has(#profile-section:not(.hidden)) .candidate-main > h1 {
 
 @media (max-width: 1049px) {
   .candidate-sidebar #admin-button {
-    display: none !important;
+    position: static !important;
+    grid-column: 1 / -1;
+    width: 100% !important;
+    min-height: 42px !important;
+    margin: 0 !important;
+    padding: 0 12px !important;
+    justify-content: flex-start;
+    font-size: .88rem !important;
   }
 }

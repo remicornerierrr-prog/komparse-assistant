@@ -4,7 +4,32 @@
   const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_RdYDH-Ez9SGoLxMaKceXsQ_KQPQmwBu";
   const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
   const root = document.getElementById("offers-root");
+  const adminButton = document.getElementById("admin-button");
   if (!root) return;
+  if (adminButton) {
+    let adminCheckVersion = 0;
+    adminButton.addEventListener("click", () => {
+      window.location.href = "./admin.html";
+    });
+    client.auth.onAuthStateChange((_event, session) => {
+      const checkVersion = ++adminCheckVersion;
+      adminButton.hidden = true;
+      if (!session) return;
+      window.setTimeout(async () => {
+        try {
+          const { data, error } = await client.rpc("is_admin");
+          if (error) {
+            console.error("Erreur vérification admin :", error);
+            return;
+          }
+          if (checkVersion !== adminCheckVersion) return;
+          adminButton.hidden = data !== true;
+        } catch (error) {
+          console.error("Erreur inattendue vérification admin :", error);
+        }
+      }, 0);
+    });
+  }
   const titleTranslations = new Map();
   const titleTranslationCachePrefix = "komparse-offer-title-translation-v1:";
   let visibleTitles = [];
