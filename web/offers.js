@@ -8,26 +8,39 @@
   if (!root) return;
   if (adminButton) {
     let adminCheckVersion = 0;
+    async function updateAdminButton(session) {
+      const checkVersion = ++adminCheckVersion;
+      adminButton.hidden = true;
+      if (!session) return;
+      try {
+        const { data, error } = await client.rpc("is_admin");
+        if (error) {
+          console.error("Erreur vérification admin :", error);
+          return;
+        }
+        if (checkVersion === adminCheckVersion) {
+          adminButton.hidden = data !== true;
+        }
+      } catch (error) {
+        console.error("Erreur inattendue vérification admin :", error);
+      }
+    }
     adminButton.addEventListener("click", () => {
       window.location.href = "./admin.html";
     });
     client.auth.onAuthStateChange((_event, session) => {
-      const checkVersion = ++adminCheckVersion;
-      adminButton.hidden = true;
-      if (!session) return;
-      window.setTimeout(async () => {
-        try {
-          const { data, error } = await client.rpc("is_admin");
-          if (error) {
-            console.error("Erreur vérification admin :", error);
-            return;
-          }
-          if (checkVersion !== adminCheckVersion) return;
-          adminButton.hidden = data !== true;
-        } catch (error) {
-          console.error("Erreur inattendue vérification admin :", error);
-        }
+      window.setTimeout(() => {
+        updateAdminButton(session);
       }, 0);
+    });
+    client.auth.getSession().then(({ data, error }) => {
+      if (error) {
+        console.error("Erreur de récupération de session :", error);
+        return;
+      }
+      updateAdminButton(data.session);
+    }).catch(error => {
+      console.error("Erreur inattendue de récupération de session :", error);
     });
   }
   const titleTranslations = new Map();

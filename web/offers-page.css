@@ -1,0 +1,128 @@
+body { font-family: Arial, sans-serif; max-width: 760px; margin: 0 auto; padding: 20px; background: #f5f5f5; color: #222; }
+    main { background: #fff; padding: 22px; border-radius: 10px; }
+    .offer-card, .description, .confirm-panel { border: 1px solid #ddd; border-radius: 8px; padding: 16px; margin: 16px 0; background: #fafafa; }
+    .offer-card h3 { margin-top: 0; }
+    p { line-height: 1.5; overflow-wrap: anywhere; }
+    a { color: #1459a8; }
+    button { padding: 11px 14px; margin: 12px 8px 0 0; cursor: pointer; }
+    button:disabled { opacity: .6; cursor: not-allowed; }
+    .back-link { display: inline-block; margin-bottom: 16px; }
+    label { display: block; margin: 14px 0; }
+
+/* KOMPARSE — CINEMATIC DESIGN SYSTEM */
+:root{color-scheme:dark;--ink:#f5f1e8;--muted:#b8b6b2;--night:#101116;--panel:#191b23;--panel2:#20232d;--line:rgba(255,255,255,.11);--gold:#e8bd68;--gold2:#f5d99a;--red:#d84c4c;--green:#82c8a4;--radius:18px}
+*{box-sizing:border-box}
+html{background:var(--night)}
+body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif!important;max-width:1120px!important;margin:0 auto!important;padding:clamp(16px,3vw,36px)!important;background:radial-gradient(ellipse at 85% 0%,rgba(142,43,49,.24),transparent 38%),radial-gradient(ellipse at 0% 15%,rgba(232,189,104,.09),transparent 30%),var(--night)!important;color:var(--ink)!important;line-height:1.55}
+body:before{content:"K";position:fixed;right:-.08em;bottom:-.38em;font-size:min(55vw,650px);font-weight:900;line-height:1;color:rgba(255,255,255,.018);pointer-events:none;z-index:0}
+main,#admin-app{position:relative;z-index:1}
+h1,h2,h3{color:#fff!important;letter-spacing:-.035em;line-height:1.12}
+h1{font-size:clamp(2rem,5vw,3.8rem)!important;font-weight:850!important;margin:0 0 16px!important}
+h2{font-size:clamp(1.45rem,3vw,2.2rem)!important;margin:26px 0 16px!important}
+h3{font-size:1.05rem!important;letter-spacing:-.01em}
+p{color:var(--muted);line-height:1.65}
+section,.admin-card,main,.offer-card,.description,.confirm-panel,.qualification-panel{background:linear-gradient(145deg,rgba(31,34,44,.97),rgba(22,24,31,.97))!important;border:1px solid var(--line)!important;border-radius:var(--radius)!important;box-shadow:0 16px 44px rgba(0,0,0,.18)}
+section{padding:clamp(18px,3vw,30px)!important;margin:18px 0!important}
+a{color:var(--gold2)!important;text-decoration:none!important}
+a:hover{color:#fff!important;text-decoration:underline!important}
+label{color:#e9e4da!important;font-size:.92rem;font-weight:650}
+input,select,textarea{width:100%;background:#11131a!important;color:var(--ink)!important;border:1px solid #414451!important;border-radius:10px!important;padding:12px 14px!important;font:inherit!important;min-height:46px}
+input:focus,select:focus,textarea:focus{outline:2px solid rgba(232,189,104,.45);border-color:var(--gold)!important}
+input[type=checkbox],input[type=radio]{width:auto;min-height:0;accent-color:var(--gold);transform:scale(1.12);margin-right:8px}
+button,.admin-button{width:auto!important;min-height:44px;padding:11px 17px!important;border:1px solid var(--gold)!important;border-radius:10px!important;background:linear-gradient(135deg,var(--gold2),var(--gold))!important;color:#211a10!important;font-weight:800!important;letter-spacing:.005em;box-shadow:0 6px 18px rgba(232,189,104,.12);transition:transform .16s ease,filter .16s ease}
+button:hover,.admin-button:hover{filter:brightness(1.08);transform:translateY(-1px);background:linear-gradient(135deg,#ffe7ad,var(--gold))!important}
+button:disabled{opacity:.5;transform:none}
+.text-button{background:transparent!important;color:var(--gold2)!important;border:0!important;box-shadow:none!important;padding-left:0!important}
+#message,.auth-hint,.admin-status,.qualification-validation{border-radius:12px!important}
+#message{padding:14px 16px!important;border:1px solid var(--line)}
+#message.message-success{background:rgba(44,130,87,.18)!important;color:#a8e7c4!important}
+#message.message-info{background:rgba(68,123,183,.18)!important;color:#b8d9ff!important}
+#message.message-error{background:rgba(180,55,55,.18)!important;color:#ffbaba!important}
+.admin-container{max-width:1440px!important;padding:0!important}
+.admin-header{padding:clamp(20px,4vw,38px)!important;border:1px solid var(--line);border-radius:22px;background:linear-gradient(115deg,rgba(112,28,37,.48),rgba(28,30,39,.96) 55%,rgba(232,189,104,.08));position:relative;overflow:hidden}
+.admin-header:after{content:"KOMPARSE  /  CALL SHEET";position:absolute;right:24px;bottom:18px;font-size:.7rem;letter-spacing:.2em;color:rgba(245,217,154,.45);font-weight:800}
+.admin-status{background:rgba(255,255,255,.06)!important;color:var(--gold2);border:1px solid var(--line)}
+.admin-grid{gap:14px!important}
+.admin-card{padding:22px!important;position:relative;overflow:hidden}
+.admin-card h3{color:var(--muted)!important;text-transform:uppercase;letter-spacing:.12em;font-size:.75rem!important}
+.admin-number{font-size:clamp(2rem,4vw,3.2rem)!important;color:var(--gold2);font-weight:850;letter-spacing:-.06em}
+.admin-section{margin:28px 0!important}
+.admin-table-wrapper{overflow:auto;background:rgba(24,26,34,.9)!important;border:1px solid var(--line)!important;border-radius:14px!important}
+table{min-width:880px;border-collapse:separate!important;border-spacing:0!important}
+th{background:#252833!important;color:var(--gold2)!important;font-size:.74rem;text-transform:uppercase;letter-spacing:.09em}
+td,th{padding:13px 14px!important;border-bottom:1px solid var(--line)!important;color:#e8e5df!important}
+tr:hover td{background:rgba(255,255,255,.025)}
+.review{color:#f1c878!important}
+.qualification-modal{background:rgba(4,5,8,.82)!important;backdrop-filter:blur(8px)}
+.qualification-panel{color:var(--ink)!important}
+.qualification-source{background:#11131a!important;color:#d7d5d0;border-color:var(--line)!important}
+.admin-error{background:rgba(180,55,55,.16)!important;color:#ffbaba!important;border-color:rgba(255,100,100,.25)!important}
+@media(max-width:650px){body{padding:14px!important}.admin-header:after{display:none}.admin-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}.admin-card{padding:16px!important}.admin-number{font-size:2rem!important}section{padding:18px!important}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+
+main{max-width:1000px;margin:0 auto;padding:clamp(20px,4vw,42px)!important}
+.back-link{display:inline-flex;align-items:center;gap:8px;margin:8px 0 22px;padding:9px 13px;border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.04)}
+.offer-card{padding:20px!important}
+
+
+/* CINEMA SIGNATURE — visible brand symbols and film-set atmosphere */
+.cinema-masthead{display:flex;align-items:center;gap:14px;padding:0 0 22px;margin-bottom:24px;border-bottom:1px solid rgba(232,189,104,.25);position:relative;z-index:2}
+.cinema-logo{width:58px;height:58px;flex:0 0 58px;display:grid;place-items:center;border-radius:16px;background:linear-gradient(145deg,#f5d99a,#b98532);color:#171116;font-size:30px;box-shadow:0 8px 28px rgba(232,189,104,.22);position:relative}
+.cinema-logo:after{content:"";position:absolute;inset:5px;border:1px solid rgba(20,15,10,.28);border-radius:11px}
+.cinema-wordmark{font-size:1.15rem;font-weight:900;letter-spacing:.16em;color:#fff;line-height:1.1}
+.cinema-tagline{font-size:.7rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold2);margin-top:7px}
+.cinema-reel{margin-left:auto;color:rgba(245,217,154,.7);font-size:clamp(24px,4vw,40px);letter-spacing:.16em;white-space:nowrap}
+.cinema-kicker{display:inline-flex;align-items:center;gap:8px;padding:7px 11px;border:1px solid rgba(232,189,104,.32);border-radius:999px;background:rgba(232,189,104,.08);color:var(--gold2);font-size:.72rem;font-weight:800;letter-spacing:.13em;text-transform:uppercase;margin-bottom:16px}
+.cinema-kicker:before{content:"●";font-size:.55rem;color:#e35b5b;text-shadow:0 0 10px #e35b5b}
+body>h1{position:relative;padding-top:4px}
+body>h1:before{content:"🎬  ";font-size:.72em;vertical-align:middle;filter:drop-shadow(0 4px 10px rgba(232,189,104,.2))}
+body>h1:after{content:"CASTING • ALERTES • CANDIDATURES";display:block;font-size:.72rem;letter-spacing:.19em;font-weight:750;color:var(--gold2);margin-top:13px}
+#admin-app .admin-header h1:before{content:"🎬  "}
+#admin-app .admin-header h1:after{content:"✦  CASTING CONTROL ROOM  ✦";display:block;margin-top:15px;color:var(--gold2);font-size:.68rem;letter-spacing:.2em}
+#admin-app .admin-card h3:before{content:"▰  ";color:var(--gold)}
+#offers-root h1:before{content:"🎞️  "}
+#offers-root h1:after{content:"VOTRE PROCHAIN RÔLE COMMENCE ICI";display:block;margin-top:12px;color:var(--gold2);font-size:.7rem;letter-spacing:.18em}
+#offers-root:before{content:"🎥  À L’AFFICHE POUR VOUS";display:block;margin:20px 0 14px;color:var(--gold2);font-size:.75rem;font-weight:850;letter-spacing:.16em}
+.admin-header{background:linear-gradient(110deg,rgba(105,24,36,.72),rgba(28,30,39,.94) 50%,rgba(232,189,104,.13)),repeating-linear-gradient(135deg,transparent 0 18px,rgba(255,255,255,.018) 18px 19px)!important}
+.admin-header:before{content:"🎬  🎞️  🎥";display:block;color:var(--gold2);font-size:1.15rem;letter-spacing:.25em;margin-bottom:14px}
+section:before{pointer-events:none}
+button:before{content:"✦ ";font-size:.8em}
+button#login-button:before{content:"▶ "}
+button#signup-button:before{content:"🎟 "}
+button#admin-logout:before{content:"↪ "}
+@media(max-width:520px){.cinema-masthead{gap:10px}.cinema-logo{width:48px;height:48px;flex-basis:48px;font-size:25px}.cinema-wordmark{font-size:.95rem}.cinema-tagline{font-size:.58rem}.cinema-reel{font-size:21px}}
+
+
+/* Profile notification preferences — compact, readable, dark cinema panel */
+#notification-scope{
+ display:block!important;width:100%;min-width:0;margin:18px 0 24px!important;padding:18px 20px 20px!important;
+ border:1px solid rgba(232,189,104,.25)!important;border-radius:16px!important;
+ background:linear-gradient(135deg,rgba(232,189,104,.075),rgba(255,255,255,.025))!important;
+ color:var(--ink)!important;box-shadow:inset 3px 0 0 var(--gold)!important;
+}
+#notification-scope legend{
+ display:block;float:none;width:auto;max-width:100%;padding:0 10px!important;margin-left:-8px!important;
+ color:var(--gold2)!important;font-size:.82rem!important;font-weight:850!important;
+ letter-spacing:.08em;text-transform:uppercase;line-height:1.4;
+}
+#notification-scope label{display:inline-flex!important;align-items:center;gap:9px;margin:0!important;color:var(--ink)!important;font-weight:600!important}
+#notification-scope>label{display:flex!important;width:100%;padding:10px 12px;border-radius:10px;background:rgba(255,255,255,.035)}
+#notification-scope .regional-preference-row{
+ display:flex!important;align-items:center;gap:12px!important;flex-wrap:wrap;margin-top:9px!important;padding:10px 12px;border-radius:10px;background:rgba(255,255,255,.035)
+}
+#notification-scope input[type=checkbox]{flex:0 0 auto;width:18px!important;height:18px!important;margin:0!important;accent-color:var(--gold);transform:none}
+#notification-scope label[for=notify-region]{font-size:.85rem!important;color:var(--muted)!important}
+#notification-scope #notify-region{width:auto!important;min-width:130px;min-height:40px;padding:8px 34px 8px 12px!important;margin:0!important}
+#notify-region-help{display:block;margin:12px 4px 0;color:var(--muted)!important;font-size:.8rem;line-height:1.5}
+.cinema-language{margin-left:auto;display:flex;align-items:center;gap:8px;color:var(--muted);font-size:.7rem;letter-spacing:.1em;text-transform:uppercase}
+.cinema-language select{width:auto!important;min-width:105px;min-height:40px!important;padding:7px 30px 7px 10px!important;font-size:.83rem!important;border-color:rgba(232,189,104,.35)!important}
+.cinema-masthead{flex-wrap:wrap}
+@media(max-width:600px){#notification-scope{padding:14px!important}#notification-scope .regional-preference-row{align-items:flex-start;flex-direction:column}.cinema-language{width:100%;margin:8px 0 0 58px}.cinema-language select{min-width:145px}}
+
+
+/* KOMPARSE CINEMA VISUAL SYSTEM */
+html,body{background:#080c12!important;color:#f4f5f7!important}body{max-width:none!important;width:100%!important;margin:0!important;padding:104px clamp(16px,2.5vw,40px) 40px!important;min-height:100vh;background:radial-gradient(ellipse at 68% -10%,rgba(116,69,25,.24),transparent 42%),#080c12!important;font-family:Inter,ui-sans-serif,system-ui,sans-serif!important}.cinema-masthead{position:fixed!important;inset:0 0 auto!important;z-index:1000!important;display:flex!important;align-items:center!important;gap:14px!important;min-height:88px!important;padding:12px clamp(16px,2.8vw,44px)!important;background:linear-gradient(90deg,#080b10,#101218)!important;border-bottom:1px solid #f2c45f55!important;box-shadow:0 8px 30px #0005!important}.cinema-wordmark{font-size:clamp(1.5rem,2.5vw,2.25rem)!important;font-weight:900!important;letter-spacing:.07em!important;color:#f2c45f!important}.cinema-tagline{color:#f2c45f!important}.cinema-language{margin-left:auto!important;padding:7px 11px!important;border:1px solid #f2c45f80!important;border-radius:12px!important;background:#111720!important;color:#fff!important}.cinema-language select{width:auto!important;min-width:130px!important;margin:0!important;background:#10151e!important;color:#fff!important}main,#offers-root{width:min(100%,1450px)!important;max-width:1450px!important;margin:0 auto!important}main,.offer-card,.description,.confirm-panel{background:linear-gradient(145deg,#141c28,#0d131c)!important;border:1px solid #273241!important;border-radius:17px!important;box-shadow:0 12px 34px #0003!important;color:#f4f5f7!important}p{color:#aeb8c7!important}label{color:#e5eaf1!important}input,select,textarea{background:#0b111a!important;color:#f5f6f8!important;border:1px solid #394555!important;border-radius:10px!important}button{background:linear-gradient(135deg,#f4ce77,#d8a844)!important;color:#17130b!important;border:1px solid #f5d68b!important;border-radius:10px!important;font-weight:750!important}a{color:#f2ce79!important}@media(max-width:700px){body{padding:94px 12px 28px!important}.cinema-masthead{min-height:76px!important;padding:9px 12px!important}.cinema-tagline{font-size:.72rem!important}.cinema-language select{min-width:96px!important;max-width:115px!important}}
+
+@media(max-width:700px){body{padding-top:94px!important}}
+#offers-root:before{content:none!important}
+.offers-kicker{margin:20px 0 14px!important;color:var(--gold2)!important;font-size:.75rem;font-weight:850;letter-spacing:.16em}

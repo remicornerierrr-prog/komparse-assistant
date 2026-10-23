@@ -151,23 +151,69 @@ body {
   left: 20px !important;
 }
 
+.sidebar-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #66d19e;
+  box-shadow: 0 0 10px #66d19e66;
+}
+
 #admin-button[hidden] {
   display: none !important;
 }
 
 .candidate-sidebar #admin-button {
-  border: 1px solid #f2c45f !important;
-  background: linear-gradient(135deg, #ffe7ad, #f2c45f) !important;
-  box-shadow: 0 4px 14px #f2c45f30 !important;
-  color: #17130b !important;
-  font-weight: 800 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 10px !important;
+  width: calc(100% - 28px) !important;
+  min-height: 48px !important;
+  padding: 9px 12px !important;
+  border: 1px solid #a2fff2 !important;
+  border-radius: 10px !important;
+  background: #56e0ce !important;
+  box-shadow: 0 4px 18px #56e0ce55 !important;
+  color: #08211d !important;
+  font-weight: 900 !important;
+  font-size: 1rem !important;
+  line-height: 1.2 !important;
+  text-align: left !important;
+  text-shadow: none !important;
+  cursor: pointer !important;
+}
+
+.candidate-sidebar #admin-button > span {
+  color: #08211d !important;
+}
+
+.candidate-sidebar #admin-button > span:first-child {
+  flex: 0 0 24px !important;
+  width: 24px !important;
+  font-size: 1.1rem !important;
+  text-align: center !important;
+}
+
+.candidate-sidebar #admin-button::before {
+  content: none !important;
 }
 
 .candidate-sidebar #admin-button:hover,
 .candidate-sidebar #admin-button:focus-visible {
-  border-color: #fff0c7 !important;
-  background: linear-gradient(135deg, #fff0c7, #ffd875) !important;
-  color: #17130b !important;
+  border-color: #d6fff8 !important;
+  background: #79eedf !important;
+  color: #08211d !important;
+}
+
+.candidate-sidebar #admin-button:focus-visible {
+  outline: 3px solid #fff !important;
+  outline-offset: 2px !important;
+}
+
+.candidate-sidebar #admin-button:hover > span,
+.candidate-sidebar #admin-button:focus-visible > span {
+  color: #08211d !important;
 }
 
 body:has(#profile-section:not(.hidden)) .candidate-sidebar,
@@ -772,11 +818,10 @@ body:has(#profile-section:not(.hidden)) .candidate-main > h1 {
     left: 14px;
     bottom: 58px;
     width: calc(100% - 28px) !important;
-    min-height: 42px !important;
+    min-height: 48px !important;
     margin: 0 !important;
-    padding: 9px 12px !important;
-    justify-content: center;
-    font-size: .88rem !important;
+    justify-content: flex-start !important;
+    font-size: 1rem !important;
     z-index: 2;
   }
 }
@@ -786,10 +831,10 @@ body:has(#profile-section:not(.hidden)) .candidate-main > h1 {
     position: static !important;
     grid-column: 1 / -1;
     width: 100% !important;
-    min-height: 42px !important;
+    min-height: 48px !important;
     margin: 0 !important;
-    padding: 0 12px !important;
+    padding: 9px 12px !important;
     justify-content: flex-start;
-    font-size: .88rem !important;
+    font-size: 1rem !important;
   }
 }
