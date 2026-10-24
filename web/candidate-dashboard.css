@@ -159,7 +159,7 @@ body {
   box-shadow: 0 0 10px #66d19e66;
 }
 
-#admin-button[hidden] {
+.candidate-sidebar #admin-button[hidden] {
   display: none !important;
 }
 
